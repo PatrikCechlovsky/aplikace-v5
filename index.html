@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="cs">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aplikace – Auth</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <main class="max-w-md mx-auto p-6 space-y-4">
+    <h1 class="text-xl font-semibold">Přihlášení</h1>
+
+    <div class="p-4 bg-white rounded-2xl shadow space-y-3">
+      <input id="email" type="email" class="w-full border rounded p-2" placeholder="email" />
+      <input id="pass"  type="password" class="w-full border rounded p-2" placeholder="heslo" />
+      <div class="flex gap-2">
+        <button id="btn-login"  class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
+        <button id="btn-signup" class="px-3 py-2 border rounded">Registrovat</button>
+        <button id="btn-forgot" class="px-3 py-2 border rounded">Zapomenuté heslo</button>
+        <button id="btn-logout" class="ml-auto px-3 py-2 border rounded hidden">Odhlásit</button>
+      </div>
+      <p id="msg" class="text-sm text-slate-500"></p>
+      <pre id="who" class="text-xs bg-slate-50 border p-2 rounded"></pre>
+    </div>
+  </main>
+
+  <script type="module" src="./src/supabase.js"></script>
+  <script type="module" src="./src/auth.js"></script>
+</body>
+</html>
