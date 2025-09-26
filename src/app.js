@@ -9,9 +9,6 @@ import { renderContent } from './ui/content.js';
 import { renderHeaderActions } from './ui/headerActions.js';
 import { renderCommonActions } from './ui/commonActions.js';
 
-console.log('[APP] MODULES import:', MODULES);
-console.log('[APP] typeof renderSidebar:', typeof renderSidebar);
-
 const $ = (id) => document.getElementById(id);
 const setHTML = (el, html) => { if (el) el.innerHTML = html; };
 const clear = (el) => { if (el) el.innerHTML = ''; };
@@ -88,9 +85,7 @@ async function renderModuleSpecific(root, { mod, kind, id }) {
 
 async function mountModuleView({ mod, kind, id }) {
   console.log('[APP] mountModuleView', mod?.id, kind, id);
-  try {
-    renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
-  } catch (e) { console.warn('[APP] breadcrumbs error:', e); }
+  try { renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id }); } catch (e) { console.warn('[APP] breadcrumbs error:', e); }
   try { renderCommonActions($('#crumb-actions')); } catch {}
   clear($('#actions-bar'));
 
@@ -137,17 +132,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
   }
 
-  $('#logoutBtn')?.addEventListener('click', hardLogout);
+  $('#logoutBtn')?.addEventListener('click', () => hardLogout());
+
   $('#homeBtn')?.addEventListener('click', goHome);
 
   try {
     renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+    const sb = $('#sidebar');
+    console.log('[APP] sidebar innerHTML length:', sb ? sb.innerHTML.length : 'no-root');
   } catch (e) {
     console.error('[APP] sidebar render failed:', e);
-    // nouzové zobrazení sidebaru (jen pro debug)
     const sb = $('#sidebar');
     if (sb) {
-      sb.innerHTML = `<ul class="space-y-1">${MODULES.map(m =>
+      sb.innerHTML = `<ul class="space-y-1 text-slate-900">${MODULES.map(m =>
         `<li><a class="block px-3 py-2 rounded hover:bg-slate-100" href="#/m/${m.id}/t/${m.defaultTile || m.tiles?.[0]?.id || ''}">${m.icon||'📁'} ${m.title}</a></li>`
       ).join('')}</ul>`;
     }
