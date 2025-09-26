@@ -82,4 +82,58 @@ async function renderModuleSpecific(root, { mod, kind, id }) {
 
 async function mountModuleView({ mod, kind, id }) {
   renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
-  renderCommonActions($('#crumb-ac
+  renderCommonActions($('#crumb-actions')); // modul si může přepsat
+  clear($('#actions-bar'));
+
+  const ok = await renderModuleSpecific($('#content'), { mod, kind, id });
+  if (!ok) renderContent($('#content'), { mod, kind, id });
+}
+
+async function route() {
+  const h = parseHash();
+  if (h.view === 'dashboard') { mountDashboard(); return; }
+  const mod = findModule(h.mod);
+  if (!mod) { setHTML($('#content'), `<div class="p-4 bg-white rounded-2xl border">Neznámý modul.</div>`); return; }
+  const activeTile = h.kind === 'tile'
+    ? (h.id || mod.defaultTile || mod.tiles?.[0]?.id || null)
+    : (mod.defaultTile || mod.tiles?.[0]?.id || null);
+  await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
+}
+
+// ---------- Home ----------
+function goHome() {
+  if (window.appDirty) {
+    const ok = confirm('Máš rozpracované změny. Pokračovat bez uložení a otevřít hlavní stránku?');
+    if (!ok) return;
+  }
+  location.hash = '#/dashboard';
+}
+
+// ---------- Start ----------
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await ensureSignedIn(); if (!session) return;
+  currentSession = session;
+
+  renderHeaderActions($('#header-actions'));
+
+  // profil – tooltip s emailem, klik → Můj účet
+  const btn = $('#btnProfile');
+  if (btn) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      btn.title = user?.email || session.user?.email || '—';
+    } catch {
+      btn.title = session.user?.email || '—';
+    }
+    btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
+  }
+
+  $('#logoutBtn')?.addEventListener('click', hardLogout);
+  $('#homeBtn')?.addEventListener('click', goHome);
+
+  renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+
+  await route();
+});
+
+window.addEventListener('hashchange', route);
