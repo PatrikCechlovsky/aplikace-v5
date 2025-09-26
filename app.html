@@ -4,18 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Aplikace v5 – App</title>
-  <!-- Tailwind via CDN (dočasně, build přidáme ve Fázi 6) -->
+  <!-- Dočasně Tailwind z CDN (build přidáme až ve Fázi 6) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="color-scheme" content="light dark" />
 </head>
 <body class="h-screen bg-gray-50 text-gray-900">
-  <!-- App wrapper -->
   <div class="flex h-screen">
-
     <!-- Sidebar -->
-    <aside id="sidebar"
-      class="w-72 shrink-0 border-r border-gray-200 bg-white hidden md:flex md:flex-col">
-      <!-- App brand -->
+    <aside id="sidebar" class="w-72 shrink-0 border-r border-gray-200 bg-white hidden md:flex md:flex-col">
       <div class="flex items-center gap-3 p-4 border-b">
         <div class="size-9 grid place-content-center rounded-xl bg-gray-900 text-white text-sm">A</div>
         <div>
@@ -24,55 +20,40 @@
         </div>
       </div>
 
-      <!-- Menu -->
       <nav class="flex-1 overflow-y-auto p-2">
-        <!-- Sekce menu: upravíme podle v4 (Fáze 2) -->
         <ul class="space-y-1" id="menu">
-          <li><button data-section="dashboard"
-            class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
+          <li><button data-section="dashboard" class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
             <span>🏠</span><span>Dashboard</span></button></li>
 
           <li class="mt-3 px-3 text-xs uppercase tracking-wide text-gray-500">Pronajímatel</li>
-          <li><button data-section="pronajimatel"
-            class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
+          <li><button data-section="pronajimatel" class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
             <span>🧑‍💼</span><span>Pronajímatel</span></button></li>
 
           <li class="mt-3 px-3 text-xs uppercase tracking-wide text-gray-500">Nájemníci</li>
-          <li><button data-section="najemnici"
-            class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
+          <li><button data-section="najemnici" class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
             <span>👥</span><span>Nájemníci</span></button></li>
 
           <li class="mt-3 px-3 text-xs uppercase tracking-wide text-gray-500">Služby & Finance</li>
-          <li><button data-section="sluzby"
-            class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
+          <li><button data-section="sluzby" class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
             <span>🧰</span><span>Služby</span></button></li>
-          <li><button data-section="finance"
-            class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
+          <li><button data-section="finance" class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
             <span>💶</span><span>Finance</span></button></li>
 
           <li class="mt-3 px-3 text-xs uppercase tracking-wide text-gray-500">Systém</li>
-          <li><button data-section="nastaveni"
-            class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
+          <li><button data-section="nastaveni" class="menu-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 flex items-center gap-2">
             <span>⚙️</span><span>Nastavení</span></button></li>
         </ul>
       </nav>
 
-      <!-- Footer sidebar (verze apky apod.) -->
-      <div class="p-3 border-t text-xs text-gray-500">
-        v5 · layout Fáze 1
-      </div>
+      <div class="p-3 border-t text-xs text-gray-500">v5 · layout Fáze 1</div>
     </aside>
 
-    <!-- Main column -->
+    <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0">
-
-      <!-- Header -->
       <header class="sticky top-0 z-10 bg-white border-b">
         <div class="h-14 flex items-center justify-between px-3 gap-3">
-          <!-- Left: burger -->
           <div class="flex items-center gap-2">
             <button id="burger" class="md:hidden p-2 rounded-lg hover:bg-gray-100" aria-label="Menu">
-              <!-- jednoduchý burger bez externího SVG -->
               <span class="block w-5 h-0.5 bg-gray-900 mb-1"></span>
               <span class="block w-5 h-0.5 bg-gray-900 mb-1"></span>
               <span class="block w-5 h-0.5 bg-gray-900"></span>
@@ -80,75 +61,27 @@
             <div class="hidden md:block font-semibold">App</div>
           </div>
 
-          <!-- Middle: breadcrumb / aktivní sekce -->
-          <div id="activeSectionName" class="text-sm text-gray-600 truncate">
-            Dashboard
-          </div>
+          <div id="activeSectionName" class="text-sm text-gray-600 truncate">Dashboard</div>
 
-          <!-- Right: user & logout -->
           <div class="flex items-center gap-2">
             <div id="userEmail" class="text-sm text-gray-600 hidden sm:block">…</div>
-            <button id="logoutBtn"
-              class="px-3 py-1.5 text-sm rounded-lg bg-gray-900 text-white hover:opacity-90">
+            <button id="logoutBtn" class="px-3 py-1.5 text-sm rounded-lg bg-gray-900 text-white hover:opacity-90">
               Odhlásit
             </button>
           </div>
         </div>
       </header>
 
-      <!-- Content -->
       <main class="flex-1 overflow-y-auto p-4">
-        <!-- Sekce obsahu: zatím placeholdery, bez logiky a bez DB -->
-        <section data-section="dashboard" class="section">
-          <h1 class="text-xl font-semibold mb-3">Dashboard</h1>
-          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <!-- TODO v4: sem dosadíme tvoje dlaždice/karty z v4 -->
-            <div class="p-4 rounded-xl border bg-white">Vítej! Tohle je čistý layout v5.</div>
-            <div class="p-4 rounded-xl border bg-white">Bez routeru, jen show/hide sekcí.</div>
-            <div class="p-4 rounded-xl border bg-white">Žádné 404, žádné externí ikony.</div>
-          </div>
-        </section>
-
-        <section data-section="pronajimatel" class="section hidden">
-          <h1 class="text-xl font-semibold mb-3">Pronajímatel</h1>
-          <div class="p-4 rounded-xl border bg-white">
-            <!-- TODO v4: sem přijde struktura (seznam + dlaždice/formuláře) -->
-            Placeholder obsahu „Pronajímatel“.
-          </div>
-        </section>
-
-        <section data-section="najemnici" class="section hidden">
-          <h1 class="text-xl font-semibold mb-3">Nájemníci</h1>
-          <div class="p-4 rounded-xl border bg-white">
-            Placeholder obsahu „Nájemníci“.
-          </div>
-        </section>
-
-        <section data-section="sluzby" class="section hidden">
-          <h1 class="text-xl font-semibold mb-3">Služby</h1>
-          <div class="p-4 rounded-xl border bg-white">
-            Placeholder obsahu „Služby“.
-          </div>
-        </section>
-
-        <section data-section="finance" class="section hidden">
-          <h1 class="text-xl font-semibold mb-3">Finance</h1>
-          <div class="p-4 rounded-xl border bg-white">
-            Placeholder obsahu „Finance“.
-          </div>
-        </section>
-
-        <section data-section="nastaveni" class="section hidden">
-          <h1 class="text-xl font-semibold mb-3">Nastavení</h1>
-          <div class="p-4 rounded-xl border bg-white">
-            Placeholder obsahu „Nastavení“.
-          </div>
-        </section>
+        <!-- Dynamicky montovaný obsah -->
+        <div id="content" class="min-h-[60vh]">
+          <div class="p-4 rounded-xl border bg-white">Načítám…</div>
+        </div>
       </main>
     </div>
   </div>
 
-  <!-- Skripty: pořadí zachovej -->
+  <!-- Pořadí zachovej -->
   <script type="module" src="./src/supabase.js"></script>
   <script type="module" src="./src/auth.js"></script>
   <script type="module" src="./src/app.js"></script>
