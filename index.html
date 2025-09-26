@@ -6,21 +6,35 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <body class="min-h-screen bg-slate-50 text-slate-900">
-  <main class="max-w-md mx-auto p-6 space-y-4">
-    <h1 class="text-xl font-semibold">Přihlášení</h1>
+  <main class="max-w-md mx-auto p-6 space-y-6">
 
-    <div class="p-4 bg-white rounded-2xl shadow space-y-3">
-      <input id="email" type="email" class="w-full border rounded p-2" placeholder="email" />
-      <input id="pass"  type="password" class="w-full border rounded p-2" placeholder="heslo" />
-      <div class="flex gap-2">
-        <button id="btn-login"  class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
-        <button id="btn-signup" class="px-3 py-2 border rounded">Registrovat</button>
-        <button id="btn-forgot" class="px-3 py-2 border rounded">Zapomenuté heslo</button>
-        <button id="btn-logout" class="ml-auto px-3 py-2 border rounded hidden">Odhlásit</button>
+    <!-- ===== Přihlášení ===== -->
+    <section id="authBox" class="space-y-4">
+      <h1 class="text-xl font-semibold">Přihlášení</h1>
+      <div class="p-4 bg-white rounded-2xl shadow space-y-3">
+        <input id="email" type="email" class="w-full border rounded p-2" placeholder="email" />
+        <input id="pass"  type="password" class="w-full border rounded p-2" placeholder="heslo" />
+        <div class="flex gap-2">
+          <button id="btn-login"  class="px-3 py-2 bg-slate-900 text-white rounded">Přihlásit</button>
+          <button id="btn-signup" class="px-3 py-2 border rounded">Registrovat</button>
+          <button id="btn-forgot" class="px-3 py-2 border rounded">Zapomenuté heslo</button>
+        </div>
+        <p id="msg" class="text-sm text-slate-500"></p>
       </div>
-      <p id="msg" class="text-sm text-slate-500"></p>
-      <pre id="who" class="text-xs bg-slate-50 border p-2 rounded"></pre>
-    </div>
+    </section>
+
+    <!-- ===== “Domů” po přihlášení ===== -->
+    <section id="appBox" class="hidden space-y-4">
+      <h1 class="text-xl font-semibold">Domů</h1>
+      <div class="p-4 bg-white rounded-2xl shadow space-y-3">
+        <p class="text-sm">Jste přihlášen jako <b id="userEmail">—</b>.</p>
+        <div class="flex gap-2">
+          <a href="/" class="px-3 py-2 bg-slate-900 text-white rounded">Hlavní stránka</a>
+          <button id="btn-logout" class="px-3 py-2 border rounded">Odhlásit</button>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <script type="module" src="./src/supabase.js"></script>
