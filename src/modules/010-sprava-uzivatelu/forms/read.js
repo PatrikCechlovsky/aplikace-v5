@@ -1,5 +1,14 @@
-// src/modules/010-sprava-uzivatelu/forms/read.js
+// Detail uživatele – akce se zobrazí vpravo na řádku s breadcrumbs
+import { renderCommonActions } from '../../../ui/commonActions.js';
+
 export default async function renderReadForm(root, row){
+  // Přepiš akce vpravo: Upravit / Archiv / Zpět
+  renderCommonActions(document.getElementById('crumb-actions'), {
+    onAdd:    null, // nechceme "Přidat" v detailu
+    onEdit:   () => alert(`Upravit #${row.id}`),
+    onArchive:() => alert(`Archivovat #${row.id}`),
+  });
+
   root.innerHTML = `
     <div class="p-4 bg-white rounded-2xl border space-y-2">
       <h3 class="font-medium">Uživatel – detail</h3>
