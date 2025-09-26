@@ -1,12 +1,23 @@
-// Jednoduchý sidebar – bez závislostí; vezme MODULES a udělá menu
+// src/ui/sidebar.js
+// Robustní render s logy + explicitní barvou textu (kdyby ji něco přepisovalo).
+
 export function renderSidebar(root, modules = [], opts = {}) {
-  if (!root) return;
+  if (!root) { console.warn('[SIDEBAR] root je null'); return; }
+
   root.innerHTML = `
-    <nav class="space-y-1">
+    <nav class="space-y-1 text-slate-900">
       <ul id="sb-list" class="space-y-1"></ul>
     </nav>
   `;
+
   const ul = root.querySelector('#sb-list');
+  if (!ul) { console.warn('[SIDEBAR] chybí #sb-list'); return; }
+
+  if (!Array.isArray(modules) || modules.length === 0) {
+    ul.innerHTML = `<li class="px-3 py-2 text-sm opacity-60">Žádné moduly</li>`;
+    console.warn('[SIDEBAR] modules je prázdné');
+    return;
+  }
 
   modules.forEach(m => {
     const li = document.createElement('li');
@@ -40,4 +51,6 @@ export function renderSidebar(root, modules = [], opts = {}) {
 
   window.addEventListener('hashchange', markActive);
   markActive();
+
+  console.log('[SIDEBAR] rendered items:', ul.children.length);
 }
