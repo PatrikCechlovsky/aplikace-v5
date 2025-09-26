@@ -1,42 +1,66 @@
 import { supabase } from './supabase.js';
 
-// cíl pro e-mailové odkazy (MUSÍ být v Redirect URLs)
 const REDIRECT = location.origin + "/recover.html";
 
+// UI prvky
+const authBox  = document.getElementById('authBox');
+const appBox   = document.getElementById('appBox');
+const userEmail= document.getElementById('userEmail');
+
 const msg  = document.getElementById('msg');
-const who  = document.getElementById('who');
 const btnL = document.getElementById('btn-login');
 const btnS = document.getElementById('btn-signup');
 const btnF = document.getElementById('btn-forgot');
 const btnO = document.getElementById('btn-logout');
 
-function setWho(d){ who.textContent = JSON.stringify(d, null, 2); }
-async function refresh(){ const { data } = await supabase.auth.getSession(); setWho(data); btnO.classList.toggle('hidden', !data.session); }
-refresh();
+// Přepnutí obrazovek
+function render(session) {
+  const signedIn = !!session;
+  authBox.classList.toggle('hidden', signedIn);
+  appBox .classList.toggle('hidden', !signedIn);
+  userEmail && (userEmail.textContent = session?.user?.email || '—');
+}
 
+// Načtení aktuální session při startu
+async function refresh() {
+  const { data } = await supabase.auth.getSession();
+  render(data.session);
+}
+await refresh();
+
+// Reakce na změnu stavu (přihlášení, odhlášení, recovery…)
+supabase.auth.onAuthStateChange((_event, session) => render(session));
+
+// Přihlášení
 btnL.onclick = async () => {
   msg.textContent = 'Přihlašuji…';
-  const email = document.getElementById('email').value.trim();
-  const pass  = document.getElementById('pass').value.trim();
+  const email = (document.getElementById('email').value || '').trim();
+  const pass  = (document.getElementById('pass').value  || '').trim();
   const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-  msg.textContent = error ? 'Chyba: '+error.message : 'OK';
-  refresh();
+  msg.textContent = error ? ('Chyba: ' + error.message) : 'OK';
+  await refresh();
 };
 
+// Registrace
 btnS.onclick = async () => {
   msg.textContent = 'Zakládám účet…';
-  const email = document.getElementById('email').value.trim();
-  const pass  = document.getElementById('pass').value.trim();
+  const email = (document.getElementById('email').value || '').trim();
+  const pass  = (document.getElementById('pass').value  || '').trim();
   const { error } = await supabase.auth.signUp({ email, password: pass });
-  msg.textContent = error ? 'Chyba: '+error.message : 'OK – ověř e-mail, pokud vyžaduješ potvrzení.';
-  refresh();
+  msg.textContent = error ? ('Chyba: ' + error.message)
+                          : 'OK – zkontroluj e-mail, pokud je vyžadováno potvrzení.';
 };
 
+// Zapomenuté heslo
 btnF.onclick = async () => {
   msg.textContent = 'Posílám odkaz…';
-  const email = document.getElementById('email').value.trim();
+  const email = (document.getElementById('email').value || '').trim();
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: REDIRECT });
-  msg.textContent = error ? 'Chyba: '+error.message : 'Hotovo – zkontroluj e-mail.';
+  msg.textContent = error ? ('Chyba: ' + error.message) : 'Hotovo – zkontroluj e-mail.';
 };
 
-btnO.onclick = async () => { await supabase.auth.signOut(); msg.textContent = 'Odhlášeno.'; refresh(); };
+// Odhlášení
+btnO.onclick = async () => {
+  await supabase.auth.signOut();
+  await refresh();
+};
