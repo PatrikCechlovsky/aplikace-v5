@@ -1,9 +1,9 @@
+// Ikony vpravo v headeru (bez profilu – ten je samostatně)
 export function renderHeaderActions(root){
-  if (!root) return
+  if (!root) return;
   root.innerHTML = `
-    <button class="px-2 py-1 border rounded text-sm bg-white" title="Hledat">🔎</button>
-    <button class="px-2 py-1 border rounded text-sm bg-white" title="Notifikace">🔔</button>
-    <a href="#/m/020-muj-ucet" class="px-2 py-1 border rounded text-sm bg-white" title="Můj účet">👤</a>
-    <a href="#/m/990-help" class="px-2 py-1 border rounded text-sm bg-white" title="Nápověda">🆘</a>
-  `
+    <button class="px-2 py-1 border rounded bg-white text-sm" title="Hledat">🔎</button>
+    <button class="px-2 py-1 border rounded bg-white text-sm" title="Notifikace">🔔</button>
+    <button class="px-2 py-1 border rounded bg-white text-sm" title="Nápověda">🆘</button>
+  `;
 }
