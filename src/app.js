@@ -10,11 +10,9 @@ import { renderCommonActions } from './ui/commonActions.js';
 const $ = (id) => document.getElementById(id);
 let currentSession = null;
 
-// ---- Dirty state (pro neuloženou práci) -----------------------------------
 window.appDirty = false;
 window.setAppDirty = (v) => { window.appDirty = !!v; };
 
-// ---- Auth + logout ---------------------------------------------------------
 async function ensureSignedIn() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -33,7 +31,6 @@ async function hardLogout() {
   location.replace('./index.html?_' + Date.now());
 }
 
-// ---- Routing ---------------------------------------------------------------
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, q] = raw.split('?');
@@ -47,12 +44,14 @@ function parseHash() {
 }
 function findModule(id) { return MODULES.find(m => m.id === id); }
 
-// ---- Views -----------------------------------------------------------------
 function mountDashboard() {
-  $('#breadcrumbs').innerHTML =
-    `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
-  $('#crumb-actions').innerHTML = '';
-  $('#actions-bar').innerHTML = '';
+  $('#breadcrumbs')?.insertAdjacentHTML(
+    'afterbegin',
+    `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`
+  );
+  $('#breadcrumbs').innerHTML = `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
+  $('#crumb-actions') && ($('#crumb-actions').innerHTML = '');
+  $('#actions-bar') && ($('#actions-bar').innerHTML = '');
   $('#content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Dashboard – placeholder.</div>`;
 }
 
@@ -81,8 +80,8 @@ async function renderModuleSpecific(root, { mod, kind, id }) {
 
 async function mountModuleView({ mod, kind, id }) {
   renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
-  renderCommonActions($('#crumb-actions')); // modul si může přepsat
-  $('#actions-bar').innerHTML = '';
+  renderCommonActions($('#crumb-actions'));
+  $('#actions-bar') && ($('#actions-bar').innerHTML = '');
   const ok = await renderModuleSpecific($('#content'), { mod, kind, id });
   if (!ok) renderContent($('#content'), { mod, kind, id });
 }
@@ -98,12 +97,10 @@ async function route() {
   await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
 }
 
-// ---- Home (komponenta 1) ---------------------------------------------------
 function goHome() {
   if (window.appDirty) {
     const ok = confirm('Máš rozpracované změny. Pokračovat bez uložení a otevřít hlavní stránku?');
     if (!ok) return;
-    // když zruší, zůstaneme na místě
   }
   location.hash = '#/dashboard';
 }
@@ -115,16 +112,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // header UI
   renderHeaderActions($('#header-actions'));
 
-  // profil – tooltip s emailem, klik → Můj účet
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const email = user?.email || session.user?.email || '—';
-    const btn = $('#btnProfile');
-    btn.title = email; // tooltip jen při najetí
-    btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
-  } catch {
-    const btn = $('#btnProfile');
-    btn.title = session.user?.email || '—';
+  // profil – tooltip s emailem, klik → Můj účet (jen když tlačítko existuje)
+  const btn = $('#btnProfile');
+  if (btn) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email || session.user?.email || '—';
+      btn.title = email; // tooltip
+    } catch {
+      btn.title = session.user?.email || '—';
+    }
     btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
   }
 
@@ -137,7 +134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // sidebar
   renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
 
-  // první vykreslení
   await route();
 });
 
