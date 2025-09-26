@@ -1,4 +1,4 @@
-// v5 – header UX: Home s potvrzením, ikony vpravo, profil s tooltipem (email)
+// v5 – bezpečné mounty (guardy), header UX, lazy moduly
 import { supabase } from './supabase.js';
 import { MODULES } from './app/modules.index.js';
 import { renderSidebar } from './ui/sidebar.js';
@@ -8,11 +8,14 @@ import { renderHeaderActions } from './ui/headerActions.js';
 import { renderCommonActions } from './ui/commonActions.js';
 
 const $ = (id) => document.getElementById(id);
-let currentSession = null;
+const setHTML = (el, html) => { if (el) el.innerHTML = html; };
+const clear = (el) => { if (el) el.innerHTML = ''; };
 
+let currentSession = null;
 window.appDirty = false;
 window.setAppDirty = (v) => { window.appDirty = !!v; };
 
+// ---------- Auth ----------
 async function ensureSignedIn() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -20,7 +23,6 @@ async function ensureSignedIn() {
     return session;
   } catch { location.replace('./index.html'); return null; }
 }
-
 async function hardLogout() {
   try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
   try { await supabase.auth.signOut(); } catch {}
@@ -31,6 +33,7 @@ async function hardLogout() {
   location.replace('./index.html?_' + Date.now());
 }
 
+// ---------- Routing ----------
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, q] = raw.split('?');
@@ -44,15 +47,14 @@ function parseHash() {
 }
 function findModule(id) { return MODULES.find(m => m.id === id); }
 
+// ---------- Views ----------
 function mountDashboard() {
-  $('#breadcrumbs')?.insertAdjacentHTML(
-    'afterbegin',
+  setHTML($('#breadcrumbs'),
     `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`
   );
-  $('#breadcrumbs').innerHTML = `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
-  $('#crumb-actions') && ($('#crumb-actions').innerHTML = '');
-  $('#actions-bar') && ($('#actions-bar').innerHTML = '');
-  $('#content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Dashboard – placeholder.</div>`;
+  clear($('#crumb-actions'));
+  clear($('#actions-bar'));
+  setHTML($('#content'), `<div class="p-4 bg-white rounded-2xl border">Dashboard – placeholder.</div>`);
 }
 
 async function renderModuleSpecific(root, { mod, kind, id }) {
@@ -80,61 +82,4 @@ async function renderModuleSpecific(root, { mod, kind, id }) {
 
 async function mountModuleView({ mod, kind, id }) {
   renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
-  renderCommonActions($('#crumb-actions'));
-  $('#actions-bar') && ($('#actions-bar').innerHTML = '');
-  const ok = await renderModuleSpecific($('#content'), { mod, kind, id });
-  if (!ok) renderContent($('#content'), { mod, kind, id });
-}
-
-async function route() {
-  const h = parseHash();
-  if (h.view === 'dashboard') { mountDashboard(); return; }
-  const mod = findModule(h.mod);
-  if (!mod) { $('#content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Neznámý modul.</div>`; return; }
-  const activeTile = h.kind === 'tile'
-    ? (h.id || mod.defaultTile || mod.tiles?.[0]?.id || null)
-    : (mod.defaultTile || mod.tiles?.[0]?.id || null);
-  await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
-}
-
-function goHome() {
-  if (window.appDirty) {
-    const ok = confirm('Máš rozpracované změny. Pokračovat bez uložení a otevřít hlavní stránku?');
-    if (!ok) return;
-  }
-  location.hash = '#/dashboard';
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  const session = await ensureSignedIn(); if (!session) return;
-  currentSession = session;
-
-  // header UI
-  renderHeaderActions($('#header-actions'));
-
-  // profil – tooltip s emailem, klik → Můj účet (jen když tlačítko existuje)
-  const btn = $('#btnProfile');
-  if (btn) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const email = user?.email || session.user?.email || '—';
-      btn.title = email; // tooltip
-    } catch {
-      btn.title = session.user?.email || '—';
-    }
-    btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
-  }
-
-  // logout
-  $('#logoutBtn')?.addEventListener('click', hardLogout);
-
-  // Home
-  $('#homeBtn')?.addEventListener('click', goHome);
-
-  // sidebar
-  renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
-
-  await route();
-});
-
-window.addEventListener('hashchange', route);
+  renderCommonActions($('#crumb-ac
