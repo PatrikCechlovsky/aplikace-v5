@@ -1,15 +1,15 @@
-// v5 – sidebar, breadcrumbs, content, header actions + lazy modul „Můj účet“
+// v5 – sidebar, breadcrumbs, content, header actions + lazy moduly 010 a 020
 import { supabase } from './supabase.js';
 import { MODULES } from './app/modules.index.js';
 import { renderSidebar } from './ui/sidebar.js';
 import { renderBreadcrumbs } from './ui/breadcrumbs.js';
 import { renderContent } from './ui/content.js';
 import { renderHeaderActions } from './ui/headerActions.js';
+import { renderCommonActions } from './ui/commonActions.js';
 
 const $ = (id) => document.getElementById(id);
 let currentSession = null;
 
-// --- auth guard + logout ---
 async function ensureSignedIn() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -30,7 +30,6 @@ async function hardLogout() {
   location.replace('./index.html?_' + Date.now());
 }
 
-// --- routing z hash ---
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, q] = raw.split('?');
@@ -46,26 +45,6 @@ function parseHash() {
 
 function findModule(id) { return MODULES.find(m => m.id === id); }
 
-// --- modul-specifický renderer (lazy) ---
-async function renderModuleSpecific(root, { mod, kind, id }) {
-  // podle ID modulu zkusíme načíst specifický renderer
-  try {
-    switch (mod.id) {
-      case '020-muj-ucet': {
-        const m = await import('./modules/my-account.js');
-        await m.default(root, { mod, kind, id, session: currentSession });
-        return true;
-      }
-      default:
-        return false;
-    }
-  } catch (e) {
-    console.debug('Module renderer fallback:', e?.message || e);
-    return false;
-  }
-}
-
-// --- mounty ---
 function mountDashboard() {
   $('breadcrumbs').innerHTML =
     `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
@@ -74,12 +53,33 @@ function mountDashboard() {
   $('content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Dashboard – placeholder.</div>`;
 }
 
+async function renderModuleSpecific(root, { mod, kind, id }) {
+  try {
+    switch (mod.id) {
+      case '010-uzivatele': {
+        const m = await import('./modules/users-list.js');
+        await m.default(root);
+        return true;
+      }
+      case '020-muj-ucet': {
+        const m = await import('./modules/my-account.js');
+        await m.default(root);
+        return true;
+      }
+      default: return false;
+    }
+  } catch (e) {
+    console.debug('Module renderer error:', e?.message || e);
+    return false;
+  }
+}
+
 async function mountModuleView({ mod, kind, id }) {
   renderBreadcrumbs($('breadcrumbs'), { mod, kind, id });
-  $('crumb-actions').innerHTML = '';
-  $('actions-bar').innerHTML = '';
+  // konzistentní 3 tlačítka vpravo od breadcrumbs (může si je modul přepsat)
+  renderCommonActions($('crumb-actions'));
+  $('actions-bar').innerHTML = ''; // další drobné akce/chipy později
 
-  // pokus o modul-specifické vykreslení, jinak fallback
   const ok = await renderModuleSpecific($('content'), { mod, kind, id });
   if (!ok) renderContent($('content'), { mod, kind, id });
 }
@@ -101,12 +101,10 @@ async function route() {
   await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
 }
 
-// --- start ---
 document.addEventListener('DOMContentLoaded', async () => {
   currentSession = await ensureSignedIn();
   if (!currentSession) return;
 
-  // email do headeru
   try {
     const { data: { user } } = await supabase.auth.getUser();
     $('userName').textContent = (user && user.email) || (currentSession.user && currentSession.user.email) || '—';
@@ -114,19 +112,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     $('userName').textContent = (currentSession.user && currentSession.user.email) || '—';
   }
 
-  // globální akce
   renderHeaderActions($('header-actions'));
+  $('logoutBtn')?.addEventListener('click', hardLogout);
 
-  // logout
-  const logoutBtn = $('logoutBtn');
-  if (logoutBtn) logoutBtn.addEventListener('click', hardLogout);
-
-  // sidebar
-  renderSidebar($('sidebar'), MODULES, {
-    onSelect: () => setTimeout(route, 0) // po změně hash proveď route
-  });
-
-  // první vykreslení
+  renderSidebar($('sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
   await route();
 });
+
 window.addEventListener('hashchange', route);
