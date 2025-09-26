@@ -1,4 +1,4 @@
-// FÁZE 1: dočasný stub modulů, aby sidebar a breadcrumbs žily hned.
+// FÁZE 1 – jednoduchý přehled modulů (zatím bez reálných module.config.js)
 const mk = (id, title, icon, tiles = []) =>
   ({ id, title, icon, tiles, defaultTile: tiles[0]?.id });
 
@@ -9,5 +9,4 @@ export const MODULES = [
   mk('070-sluzby',       'Služby',       '🛠️', [{ id:'sprava',  label:'Správa',  icon:'🧰' }]),
   mk('090-finance',      'Finance',      '💶', [{ id:'reporty', label:'Reporty', icon:'📊' }]),
   mk('900-nastaveni',    'Nastavení',    '⚙️', [{ id:'aplikace',label:'Aplikace',icon:'🔧' }]),
-]
-// Později nahradíme reálnými importy module.config.js z v4.
+];
