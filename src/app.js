@@ -1,4 +1,4 @@
-// v5 – sidebar, breadcrumbs, content, header actions + lazy 010/020
+// v5 – header UX: Home s potvrzením, ikony vpravo, profil s tooltipem (email)
 import { supabase } from './supabase.js';
 import { MODULES } from './app/modules.index.js';
 import { renderSidebar } from './ui/sidebar.js';
@@ -10,6 +10,11 @@ import { renderCommonActions } from './ui/commonActions.js';
 const $ = (id) => document.getElementById(id);
 let currentSession = null;
 
+// ---- Dirty state (pro neuloženou práci) -----------------------------------
+window.appDirty = false;
+window.setAppDirty = (v) => { window.appDirty = !!v; };
+
+// ---- Auth + logout ---------------------------------------------------------
 async function ensureSignedIn() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -28,6 +33,7 @@ async function hardLogout() {
   location.replace('./index.html?_' + Date.now());
 }
 
+// ---- Routing ---------------------------------------------------------------
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, q] = raw.split('?');
@@ -41,19 +47,19 @@ function parseHash() {
 }
 function findModule(id) { return MODULES.find(m => m.id === id); }
 
+// ---- Views -----------------------------------------------------------------
 function mountDashboard() {
-  $('breadcrumbs').innerHTML =
+  $('#breadcrumbs').innerHTML =
     `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
-  $('crumb-actions').innerHTML = '';
-  $('actions-bar').innerHTML = '';
-  $('content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Dashboard – placeholder.</div>`;
+  $('#crumb-actions').innerHTML = '';
+  $('#actions-bar').innerHTML = '';
+  $('#content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Dashboard – placeholder.</div>`;
 }
 
 async function renderModuleSpecific(root, { mod, kind, id }) {
   try {
     switch (mod.id) {
       case '010-uzivatele': {
-        // načti tile renderer podle id, default 'seznam'
         const cfg = await import('./modules/010-sprava-uzivatelu/module.config.js');
         const tiles = await import('./modules/010-sprava-uzivatelu/tiles/index.js');
         const tileId = id || cfg.default.tiles?.[0]?.id || 'seznam';
@@ -74,33 +80,65 @@ async function renderModuleSpecific(root, { mod, kind, id }) {
 }
 
 async function mountModuleView({ mod, kind, id }) {
-  renderBreadcrumbs($('breadcrumbs'), { mod, kind, id });
-  renderCommonActions($('crumb-actions'));
-  $('actions-bar').innerHTML = '';
-  const ok = await renderModuleSpecific($('content'), { mod, kind, id });
-  if (!ok) renderContent($('content'), { mod, kind, id });
+  renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
+  renderCommonActions($('#crumb-actions')); // modul si může přepsat
+  $('#actions-bar').innerHTML = '';
+  const ok = await renderModuleSpecific($('#content'), { mod, kind, id });
+  if (!ok) renderContent($('#content'), { mod, kind, id });
 }
 
 async function route() {
   const h = parseHash();
   if (h.view === 'dashboard') { mountDashboard(); return; }
   const mod = findModule(h.mod);
-  if (!mod) { $('content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Neznámý modul.</div>`; return; }
+  if (!mod) { $('#content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Neznámý modul.</div>`; return; }
   const activeTile = h.kind === 'tile'
     ? (h.id || mod.defaultTile || mod.tiles?.[0]?.id || null)
     : (mod.defaultTile || mod.tiles?.[0]?.id || null);
   await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
 }
 
+// ---- Home (komponenta 1) ---------------------------------------------------
+function goHome() {
+  if (window.appDirty) {
+    const ok = confirm('Máš rozpracované změny. Pokračovat bez uložení a otevřít hlavní stránku?');
+    if (!ok) return;
+    // když zruší, zůstaneme na místě
+  }
+  location.hash = '#/dashboard';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const session = await ensureSignedIn(); if (!session) return;
+  currentSession = session;
+
+  // header UI
+  renderHeaderActions($('#header-actions'));
+
+  // profil – tooltip s emailem, klik → Můj účet
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    $('userName').textContent = user?.email || session.user?.email || '—';
-  } catch { $('userName').textContent = session.user?.email || '—'; }
-  renderHeaderActions($('header-actions'));
-  $('logoutBtn')?.addEventListener('click', hardLogout);
-  renderSidebar($('sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+    const email = user?.email || session.user?.email || '—';
+    const btn = $('#btnProfile');
+    btn.title = email; // tooltip jen při najetí
+    btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
+  } catch {
+    const btn = $('#btnProfile');
+    btn.title = session.user?.email || '—';
+    btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
+  }
+
+  // logout
+  $('#logoutBtn')?.addEventListener('click', hardLogout);
+
+  // Home
+  $('#homeBtn')?.addEventListener('click', goHome);
+
+  // sidebar
+  renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+
+  // první vykreslení
   await route();
 });
+
 window.addEventListener('hashchange', route);
