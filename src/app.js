@@ -1,4 +1,4 @@
-// DEBUG log – pokud ho v konzoli neuvidíš, app.js se nenačetl
+// DEBUG
 console.log('[APP] start');
 
 import { supabase } from './supabase.js';
@@ -17,6 +17,66 @@ let currentSession = null;
 window.appDirty = false;
 window.setAppDirty = (v) => { window.appDirty = !!v; };
 
+// --- 1) Auto-fix layout (vytvoří chybějící prvky, když v app.html nejsou) ---
+function ensureLayout() {
+  // hlavní <main>
+  let main = document.querySelector('main');
+  if (!main) {
+    main = document.createElement('main');
+    main.className = 'max-w-[1400px] mx-auto p-4';
+    document.body.appendChild(main);
+  }
+
+  // wrapper se dvěma sloupci
+  let grid = main.querySelector('.grid');
+  if (!grid) {
+    grid = document.createElement('div');
+    grid.className = 'grid grid-cols-[260px_1fr] gap-4';
+    main.appendChild(grid);
+  }
+
+  // SIDEBAR
+  if (!$('#sidebar')) {
+    const aside = document.createElement('aside');
+    aside.id = 'sidebar';
+    aside.className = 'p-2 bg-white rounded-2xl border';
+    // vlož na začátek gridu (levý sloupec)
+    if (grid.firstChild) grid.insertBefore(aside, grid.firstChild); else grid.appendChild(aside);
+  }
+
+  // SECTION a jeho vnitřek
+  let section = grid.querySelector('section');
+  if (!section) {
+    section = document.createElement('section');
+    grid.appendChild(section);
+  }
+
+  if (!$('#breadcrumbs') || !$('#crumb-actions')) {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between mb-2';
+    row.innerHTML = `
+      <div id="breadcrumbs" class="text-xs text-slate-500">Dashboard</div>
+      <div id="crumb-actions" class="flex items-center gap-2"></div>
+    `;
+    section.appendChild(row);
+  }
+
+  if (!$('#actions-bar')) {
+    const ab = document.createElement('div');
+    ab.id = 'actions-bar';
+    ab.className = 'mb-3 flex flex-wrap gap-2';
+    section.appendChild(ab);
+  }
+
+  if (!$('#content')) {
+    const c = document.createElement('div');
+    c.id = 'content';
+    c.className = 'min-h-[60vh]';
+    section.appendChild(c);
+  }
+}
+
+// ---------- Auth ----------
 async function ensureSignedIn() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -37,6 +97,7 @@ async function hardLogout() {
   location.replace('./index.html?_' + Date.now());
 }
 
+// ---------- Routing ----------
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, q] = raw.split('?');
@@ -50,6 +111,7 @@ function parseHash() {
 }
 function findModule(id) { return MODULES.find(m => m.id === id); }
 
+// ---------- Views ----------
 function mountDashboard() {
   console.log('[APP] mountDashboard');
   setHTML($('#breadcrumbs'),
@@ -105,6 +167,7 @@ async function route() {
   await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
 }
 
+// ---------- Home ----------
 function goHome() {
   if (window.appDirty) {
     const ok = confirm('Máš rozpracované změny. Pokračovat bez uložení a otevřít hlavní stránku?');
@@ -113,14 +176,18 @@ function goHome() {
   location.hash = '#/dashboard';
 }
 
+// ---------- Start ----------
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[APP] DOMContentLoaded');
+
+  // >>> DŮLEŽITÉ: vytvoř si chybějící layout prvky
+  ensureLayout();
+
   const session = await ensureSignedIn(); if (!session) return;
   currentSession = session;
 
   try { renderHeaderActions($('#header-actions')); } catch (e) { console.warn(e); }
 
-  // profil – tooltip s emailem + click → Můj účet (jen když tlačítko existuje)
   const btn = $('#btnProfile');
   if (btn) {
     try {
@@ -133,7 +200,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   $('#logoutBtn')?.addEventListener('click', () => hardLogout());
-
   $('#homeBtn')?.addEventListener('click', goHome);
 
   try {
@@ -142,12 +208,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[APP] sidebar innerHTML length:', sb ? sb.innerHTML.length : 'no-root');
   } catch (e) {
     console.error('[APP] sidebar render failed:', e);
-    const sb = $('#sidebar');
-    if (sb) {
-      sb.innerHTML = `<ul class="space-y-1 text-slate-900">${MODULES.map(m =>
-        `<li><a class="block px-3 py-2 rounded hover:bg-slate-100" href="#/m/${m.id}/t/${m.defaultTile || m.tiles?.[0]?.id || ''}">${m.icon||'📁'} ${m.title}</a></li>`
-      ).join('')}</ul>`;
-    }
   }
 
   await route();
