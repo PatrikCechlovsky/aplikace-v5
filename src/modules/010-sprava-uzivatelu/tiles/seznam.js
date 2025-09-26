@@ -1,24 +1,13 @@
-// Uživatelé – Seznam (řádková tabulka se sortem, filtrem, dblclick a role-based akcemi)
+// Uživatelé – Seznam (řazení, filtr, dblclick → detail; žádný sloupec Akce)
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { renderTable } from '../../../ui/table.js';
 
-// Mock data (zatím) – Fáze 3: napojíme na Supabase public.profiles
 const rows = [
   { id: 1, name: 'Alena Procházková', email: 'alena.proch@example.cz', role: 'guest', city: 'Plzeň'  },
   { id: 2, name: 'Jan Novák',         email: 'jan.novak@example.cz',   role: 'admin', city: 'Praha'  },
   { id: 3, name: 'Marie Svobodová',   email: 'marie.svobodova@example.cz', role: 'user', city: 'Brno' },
   { id: 4, name: 'Petr Dvořák',       email: 'petr.dvorak@example.cz', role: 'user',  city: 'Ostrava' },
 ];
-
-// jednoduché oprávnění (placeholder) – později vezmeme z profilu / RLS
-const currentRole = 'admin'; // 'admin' | 'user' | 'guest'
-const can = (action, row) => {
-  if (currentRole === 'admin') return true;
-  if (action === 'view') return true;
-  if (action === 'edit') return currentRole === 'user' && row.role !== 'admin';
-  if (action === 'archive') return false;
-  return false;
-};
 
 const roleBadge = (role) => {
   const map = {
@@ -31,7 +20,7 @@ const roleBadge = (role) => {
 };
 
 export default async function renderUsersList(root) {
-  // 3 konzistentní akce vedle breadcrumbs (globální)
+  // Tři tlačítka vpravo na řádku s breadcrumbs (jak chceš)
   renderCommonActions(document.getElementById('crumb-actions'), {
     onAdd:    () => alert('Přidat uživatele (form create)'),
     onEdit:   () => alert('Hromadná úprava'),
@@ -45,16 +34,9 @@ export default async function renderUsersList(root) {
     { key: 'city',  label: 'Město',  width: '12rem' },
   ];
 
-  const rowActions = [
-    { label: 'Zobrazit', icon: '👁️', onClick: async (r) => {
-        const { default: readForm } = await import('../forms/read.js');
-        readForm(root, r);
-      }, show: (r) => can('view', r) },
-    { label: 'Upravit',  icon: '✏️', onClick: (r) => alert(`Upravit #${r.id}`),  show: (r) => can('edit', r) },
-    { label: 'Archiv',   icon: '🗂️', onClick: (r) => alert(`Archivovat #${r.id}`), show: (r) => can('archive', r) },
-  ];
+  // ŽÁDNÉ per-row akce → prázdné pole
+  const rowActions = [];
 
-  // Později budeme columnsOrder tahat z profilu uživatele (nastavení)
   const columnsOrder = ['name','email','role','city'];
 
   renderTable(root, {
@@ -66,7 +48,7 @@ export default async function renderUsersList(root) {
       columnsOrder,
       onRowDblClick: async (r) => {
         const { default: readForm } = await import('../forms/read.js');
-        readForm(root, r); // dvojklik otevře čtecí formulář
+        readForm(root, r); // dvojklik → čtecí formulář
       }
     }
   });
