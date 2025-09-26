@@ -1,39 +1,20 @@
-// Fáze 1 – čisté přepínání sekcí + burger + zobrazení uživatele
-// Žádné routery ani DB
+// v5 – Fáze 1: dynamické načítání komponent (lazy import)
+// Žádné DB, žádné formuláře. Jen layout + mount jednotlivých modulů.
 
-// Aktivní sekce
 let current = "dashboard";
+const cache = new Map(); // cache načtených modulů
 
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const $ = (sel, root = document) => root.querySelector(sel);
 
-function setActiveSection(section) {
-  if (!section) return;
-  current = section;
-
-  // přepnout viditelnost sekcí
-  $$(".section").forEach(sec => {
-    sec.classList.toggle("hidden", sec.dataset.section !== section);
-  });
-
-  // aktivní vzhled v menu
-  $$(".menu-link").forEach(btn => {
-    const active = btn.dataset.section === section;
-    btn.classList.toggle("bg-gray-900", active);
-    btn.classList.toggle("text-white", active);
-    btn.classList.toggle("hover:bg-gray-100", !active);
-  });
-
-  // breadcrumb / title v headeru
-  const pretty = sectionName(section);
-  $("#activeSectionName").textContent = pretty;
-
-  // na mobilu po kliknutí sekce schovej sidebar
-  const sidebar = $("#sidebar");
-  if (sidebar && window.innerWidth < 768) {
-    sidebar.classList.add("hidden");
-  }
-}
+const routes = {
+  dashboard: () => import("./components/dashboard.js"),
+  pronajimatel: () => import("./components/pronajimatel.js"),
+  najemnici: () => import("./components/najemnici.js"),
+  sluzby: () => import("./components/sluzby.js"),
+  finance: () => import("./components/finance.js"),
+  nastaveni: () => import("./components/nastaveni.js"),
+};
 
 function sectionName(key) {
   switch (key) {
@@ -47,9 +28,59 @@ function sectionName(key) {
   }
 }
 
+async function mountSection(section) {
+  const container = $("#content");
+  if (!container) return;
+
+  // UI: aktivní položka menu
+  $$(".menu-link").forEach(btn => {
+    const active = btn.dataset.section === section;
+    btn.classList.toggle("bg-gray-900", active);
+    btn.classList.toggle("text-white", active);
+    btn.classList.toggle("hover:bg-gray-100", !active);
+  });
+  $("#activeSectionName").textContent = sectionName(section);
+
+  // Lazy import modulu
+  try {
+    container.innerHTML = `<div class="p-4 rounded-xl border bg-white">Načítám ${sectionName(section)}…</div>`;
+
+    let mod = cache.get(section);
+    if (!mod) {
+      const loader = routes[section];
+      if (!loader) throw new Error(`Neznámá sekce: ${section}`);
+      mod = await loader();
+      cache.set(section, mod);
+    }
+
+    // Každý modul exportuje default funkci mount(root)
+    if (typeof mod.default === "function") {
+      await mod.default(container);
+    } else {
+      container.innerHTML = `<div class="p-4 rounded-xl border bg-white">Modul „${section}“ nemá výchozí export funkce.</div>`;
+    }
+
+    // Na mobilu po volbě sekce schovej sidebar
+    const sidebar = $("#sidebar");
+    if (sidebar && window.innerWidth < 768) sidebar.classList.add("hidden");
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `
+      <div class="p-4 rounded-xl border bg-white text-red-600">
+        Chyba načítání sekce „${sectionName(section)}“. Zkuste to znovu.
+      </div>`;
+  }
+}
+
 function initMenu() {
   $$(".menu-link").forEach(btn => {
-    btn.addEventListener("click", () => setActiveSection(btn.dataset.section));
+    btn.addEventListener("click", () => {
+      const section = btn.dataset.section;
+      if (!section || section === current) return;
+      current = section;
+      mountSection(section);
+    });
   });
 }
 
@@ -63,17 +94,12 @@ function initBurger() {
 }
 
 async function initAuthUI() {
-  // auth.js už řeší ochranu app.html (redirect nepřihlášených)
-  // Tady jen vytáhneme e-mail do headeru (pokud je k dispozici).
   try {
-    // auth.js typicky exportuje getSession() / getUser();
-    // Pokud máš jinak, klidně změním – teď to řešíme obrácenou závislostí:
     const { supabase } = await import("./supabase.js");
     const { data: { user } } = await supabase.auth.getUser();
     const emailEl = $("#userEmail");
     if (emailEl) emailEl.textContent = user?.email ?? "Přihlášený uživatel";
   } catch (e) {
-    // Tiše ignorovat (nechceme blokovat layout)
     console.debug("Auth UI note:", e?.message || e);
   }
 
@@ -97,5 +123,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   initMenu();
   initBurger();
   await initAuthUI();
-  setActiveSection(current);
+  // První mount
+  mountSection(current);
 });
