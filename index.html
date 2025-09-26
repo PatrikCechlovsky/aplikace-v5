@@ -31,7 +31,7 @@
         <div class="p-4 bg-white rounded-2xl shadow space-y-3">
           <p class="text-sm">Jste přihlášen jako <b id="userEmail">—</b>.</p>
           <div class="flex gap-2">
-            <a href="/" class="px-3 py-2 bg-slate-900 text-white rounded">Hlavní stránka</a>
+            <a href="./app.html" class="px-3 py-2 bg-slate-900 text-white rounded">Hlavní stránka</a>
             <button id="btn-logout" class="px-3 py-2 border rounded">Odhlásit</button>
           </div>
         </div>
@@ -94,7 +94,20 @@
       });
 
       btnLogout?.addEventListener('click', async () => {
-        await supabase.auth.signOut();
+        try {
+          // 1) Lokální odhlášení – jistota
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch (_) {}
+
+        try {
+          // 2) Pokus o globální signOut (může selhat, nevadí)
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.debug('Server signOut skipped:', e?.message || e);
+        }
+
+        // 3) Přesměrování na login
+        window.location.replace('./index.html');
       });
     </script>
   </body>
