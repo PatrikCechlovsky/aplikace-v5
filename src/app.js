@@ -9,6 +9,9 @@ import { renderContent } from './ui/content.js';
 import { renderHeaderActions } from './ui/headerActions.js';
 import { renderCommonActions } from './ui/commonActions.js';
 
+console.log('[APP] MODULES import:', MODULES);
+console.log('[APP] typeof renderSidebar:', typeof renderSidebar);
+
 const $ = (id) => document.getElementById(id);
 const setHTML = (el, html) => { if (el) el.innerHTML = html; };
 const clear = (el) => { if (el) el.innerHTML = ''; };
