@@ -1,4 +1,6 @@
-// v5 – bezpečné mounty (guardy), header UX, lazy moduly
+// DEBUG log – pokud ho v konzoli neuvidíš, app.js se nenačetl
+console.log('[APP] start');
+
 import { supabase } from './supabase.js';
 import { MODULES } from './app/modules.index.js';
 import { renderSidebar } from './ui/sidebar.js';
@@ -15,13 +17,15 @@ let currentSession = null;
 window.appDirty = false;
 window.setAppDirty = (v) => { window.appDirty = !!v; };
 
-// ---------- Auth ----------
 async function ensureSignedIn() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { location.replace('./index.html'); return null; }
     return session;
-  } catch { location.replace('./index.html'); return null; }
+  } catch (e) {
+    console.error('[APP] getSession failed:', e);
+    location.replace('./index.html'); return null;
+  }
 }
 async function hardLogout() {
   try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
@@ -33,7 +37,6 @@ async function hardLogout() {
   location.replace('./index.html?_' + Date.now());
 }
 
-// ---------- Routing ----------
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, q] = raw.split('?');
@@ -47,8 +50,8 @@ function parseHash() {
 }
 function findModule(id) { return MODULES.find(m => m.id === id); }
 
-// ---------- Views ----------
 function mountDashboard() {
+  console.log('[APP] mountDashboard');
   setHTML($('#breadcrumbs'),
     `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`
   );
@@ -75,14 +78,17 @@ async function renderModuleSpecific(root, { mod, kind, id }) {
       default: return false;
     }
   } catch (e) {
-    console.debug('Module renderer error:', e?.message || e);
+    console.error('[APP] module render failed:', e);
     return false;
   }
 }
 
 async function mountModuleView({ mod, kind, id }) {
-  renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
-  renderCommonActions($('#crumb-actions')); // modul si může přepsat
+  console.log('[APP] mountModuleView', mod?.id, kind, id);
+  try {
+    renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
+  } catch (e) { console.warn('[APP] breadcrumbs error:', e); }
+  try { renderCommonActions($('#crumb-actions')); } catch {}
   clear($('#actions-bar'));
 
   const ok = await renderModuleSpecific($('#content'), { mod, kind, id });
@@ -90,6 +96,7 @@ async function mountModuleView({ mod, kind, id }) {
 }
 
 async function route() {
+  console.log('[APP] route', location.hash);
   const h = parseHash();
   if (h.view === 'dashboard') { mountDashboard(); return; }
   const mod = findModule(h.mod);
@@ -100,7 +107,6 @@ async function route() {
   await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
 }
 
-// ---------- Home ----------
 function goHome() {
   if (window.appDirty) {
     const ok = confirm('Máš rozpracované změny. Pokračovat bez uložení a otevřít hlavní stránku?');
@@ -109,14 +115,14 @@ function goHome() {
   location.hash = '#/dashboard';
 }
 
-// ---------- Start ----------
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[APP] DOMContentLoaded');
   const session = await ensureSignedIn(); if (!session) return;
   currentSession = session;
 
-  renderHeaderActions($('#header-actions'));
+  try { renderHeaderActions($('#header-actions')); } catch (e) { console.warn(e); }
 
-  // profil – tooltip s emailem, klik → Můj účet
+  // profil – tooltip s emailem + click → Můj účet (jen když tlačítko existuje)
   const btn = $('#btnProfile');
   if (btn) {
     try {
@@ -131,7 +137,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#logoutBtn')?.addEventListener('click', hardLogout);
   $('#homeBtn')?.addEventListener('click', goHome);
 
-  renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+  try {
+    renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+  } catch (e) {
+    console.error('[APP] sidebar render failed:', e);
+    // nouzové zobrazení sidebaru (jen pro debug)
+    const sb = $('#sidebar');
+    if (sb) {
+      sb.innerHTML = `<ul class="space-y-1">${MODULES.map(m =>
+        `<li><a class="block px-3 py-2 rounded hover:bg-slate-100" href="#/m/${m.id}/t/${m.defaultTile || m.tiles?.[0]?.id || ''}">${m.icon||'📁'} ${m.title}</a></li>`
+      ).join('')}</ul>`;
+    }
+  }
 
   await route();
 });
