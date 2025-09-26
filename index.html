@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Aplikace – Auth</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="color-scheme" content="light dark" />
   </head>
 
   <body class="min-h-screen bg-slate-50 text-slate-900">
     <main class="max-w-md mx-auto p-6 space-y-6">
 
-      <!-- JEDINÝ login blok -->
+      <!-- Login blok -->
       <section id="authBox" class="space-y-4">
         <h1 class="text-xl font-semibold">Přihlášení</h1>
         <div class="p-4 bg-white rounded-2xl shadow space-y-3">
@@ -39,7 +40,10 @@
 
     </main>
 
+    <!-- Supabase init -->
     <script type="module" src="./src/supabase.js"></script>
+
+    <!-- Logika stránky -->
     <script type="module">
       import { supabase } from './src/supabase.js';
 
@@ -60,13 +64,16 @@
         if (userEmail) userEmail.textContent = session?.user?.email ?? '—';
       }
 
+      // Inicializace UI dle session
       (async () => {
         const { data } = await supabase.auth.getSession();
         render(data.session);
       })();
 
+      // Reakce na změnu stavu
       supabase.auth.onAuthStateChange((_e, session) => render(session));
 
+      // Přihlášení
       btnLogin?.addEventListener('click', async () => {
         msg.textContent = 'Přihlašuji…';
         const email = (document.getElementById('email').value || '').trim();
@@ -75,6 +82,7 @@
         msg.textContent = error ? ('Chyba: ' + error.message) : 'OK';
       });
 
+      // Registrace
       btnSignup?.addEventListener('click', async () => {
         msg.textContent = 'Zakládám účet…';
         const email = (document.getElementById('email').value || '').trim();
@@ -84,6 +92,7 @@
                                 : 'OK – zkontroluj e-mail, pokud je vyžadováno potvrzení.';
       });
 
+      // Reset hesla
       btnForgot?.addEventListener('click', async () => {
         msg.textContent = 'Posílám odkaz…';
         const email = (document.getElementById('email').value || '').trim();
@@ -93,21 +102,38 @@
         msg.textContent = error ? ('Chyba: ' + error.message) : 'Hotovo – zkontroluj e-mail.';
       });
 
+      // ODHLÁŠENÍ – „nezničitelné“ + úplný purge tokenů
       btnLogout?.addEventListener('click', async () => {
         try {
-          // 1) Lokální odhlášení – jistota
+          // 1) Lokální signOut (odstraní session v prohlížeči)
           await supabase.auth.signOut({ scope: 'local' });
         } catch (_) {}
 
         try {
-          // 2) Pokus o globální signOut (může selhat, nevadí)
+          // 2) Best-effort globální signOut (může hodit 403 – ignorujeme)
           await supabase.auth.signOut();
         } catch (e) {
           console.debug('Server signOut skipped:', e?.message || e);
         }
 
-        // 3) Přesměrování na login
-        window.location.replace('./index.html');
+        try {
+          // 3) Extra jistota – vyčistit všechny možné Supabase klíče
+          const purge = (store) => {
+            const keys = [];
+            for (let i = 0; i < store.length; i++) {
+              const k = store.key(i);
+              if (k && k.startsWith('sb-')) keys.push(k);
+            }
+            keys.forEach(k => store.removeItem(k));
+          };
+          purge(localStorage);
+          purge(sessionStorage);
+        } catch (_) {}
+
+        // 4) Tvrdý reload na index s cache busterem
+        const url = new URL('./index.html', location.href);
+        url.searchParams.set('_', Date.now().toString());
+        window.location.replace(url.toString());
       });
     </script>
   </body>
