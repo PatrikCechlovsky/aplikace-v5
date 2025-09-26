@@ -1,4 +1,4 @@
-// v5 – čistá integrace: sidebar, breadcrumbs, content, header actions
+// v5 – sidebar, breadcrumbs, content, header actions + lazy modul „Můj účet“
 import { supabase } from './supabase.js';
 import { MODULES } from './app/modules.index.js';
 import { renderSidebar } from './ui/sidebar.js';
@@ -7,6 +7,7 @@ import { renderContent } from './ui/content.js';
 import { renderHeaderActions } from './ui/headerActions.js';
 
 const $ = (id) => document.getElementById(id);
+let currentSession = null;
 
 // --- auth guard + logout ---
 async function ensureSignedIn() {
@@ -45,6 +46,25 @@ function parseHash() {
 
 function findModule(id) { return MODULES.find(m => m.id === id); }
 
+// --- modul-specifický renderer (lazy) ---
+async function renderModuleSpecific(root, { mod, kind, id }) {
+  // podle ID modulu zkusíme načíst specifický renderer
+  try {
+    switch (mod.id) {
+      case '020-muj-ucet': {
+        const m = await import('./modules/my-account.js');
+        await m.default(root, { mod, kind, id, session: currentSession });
+        return true;
+      }
+      default:
+        return false;
+    }
+  } catch (e) {
+    console.debug('Module renderer fallback:', e?.message || e);
+    return false;
+  }
+}
+
 // --- mounty ---
 function mountDashboard() {
   $('breadcrumbs').innerHTML =
@@ -54,11 +74,14 @@ function mountDashboard() {
   $('content').innerHTML = `<div class="p-4 bg-white rounded-2xl border">Dashboard – placeholder.</div>`;
 }
 
-function mountModuleView({ mod, kind, id }) {
+async function mountModuleView({ mod, kind, id }) {
   renderBreadcrumbs($('breadcrumbs'), { mod, kind, id });
   $('crumb-actions').innerHTML = '';
   $('actions-bar').innerHTML = '';
-  renderContent($('content'), { mod, kind, id });
+
+  // pokus o modul-specifické vykreslení, jinak fallback
+  const ok = await renderModuleSpecific($('content'), { mod, kind, id });
+  if (!ok) renderContent($('content'), { mod, kind, id });
 }
 
 async function route() {
@@ -75,20 +98,20 @@ async function route() {
     ? (h.id || mod.defaultTile || (mod.tiles && mod.tiles[0] && mod.tiles[0].id) || null)
     : (mod.defaultTile || (mod.tiles && mod.tiles[0] && mod.tiles[0].id) || null);
 
-  mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
+  await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
 }
 
 // --- start ---
 document.addEventListener('DOMContentLoaded', async () => {
-  const session = await ensureSignedIn();
-  if (!session) return;
+  currentSession = await ensureSignedIn();
+  if (!currentSession) return;
 
   // email do headeru
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    $('userName').textContent = (user && user.email) || (session.user && session.user.email) || '—';
+    $('userName').textContent = (user && user.email) || (currentSession.user && currentSession.user.email) || '—';
   } catch {
-    $('userName').textContent = (session.user && session.user.email) || '—';
+    $('userName').textContent = (currentSession.user && currentSession.user.email) || '—';
   }
 
   // globální akce
@@ -106,5 +129,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   // první vykreslení
   await route();
 });
-
 window.addEventListener('hashchange', route);
