@@ -1,68 +1,87 @@
-<script type="module">
-import { supabase } from "./src/supabase.js";
+<!doctype html>
+<html lang="cs">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reset hesla</title>
+<script src="https://cdn.tailwindcss.com"></script>
 
-const root = document.getElementById("content");
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <main class="max-w-md mx-auto p-6 space-y-4">
+    <h1 class="text-xl font-semibold">Nastavit nové heslo</h1>
+    <div id="root" class="p-4 bg-white rounded-2xl shadow"><p>Načítám…</p></div>
+  </main>
 
-function ui(html){ root.innerHTML = html; }
-function msg(text){ const m=document.getElementById("msg"); if(m) m.textContent=text; }
+  <script type="module">
+    import { supabase } from './src/supabase.js';
 
-async function ensureSessionFromHash(){
-  const p = new URLSearchParams(location.hash.slice(1));
-  const ok = p.get("type")==="recovery" && p.get("access_token") && p.get("refresh_token");
-  if(!ok) return false;
-  const { data, error } = await supabase.auth.setSession({
-    access_token: p.get("access_token"),
-    refresh_token: p.get("refresh_token")
-  });
-  if (error || !data?.session) return false;
-  // tokeny skryj až PO úspěchu
-  history.replaceState({}, document.title, location.pathname);
-  return true;
-}
+    const root = document.getElementById('root');
+    const render = (html) => { root.innerHTML = html; };
+    const setMsg = (t) => { const m = document.getElementById('msg'); if (m) m.textContent = t; };
 
-function renderSetPassword(){
-  ui(`
-    <input id="a" type="password" class="w-full border rounded p-2" placeholder="Nové heslo" />
-    <input id="b" type="password" class="w-full border rounded p-2" placeholder="Potvrdit heslo" />
-    <div class="flex gap-2"><button id="ok" class="px-3 py-2 bg-slate-900 text-white rounded">Uložit</button></div>
-    <p id="msg" class="text-sm text-slate-500"></p>
-  `);
-  document.getElementById("ok").onclick = async () => {
-    const a = document.getElementById("a").value.trim();
-    const b = document.getElementById("b").value.trim();
-    if (!a || a!==b){ msg("Hesla se neshodují."); return; }
-    const { error } = await supabase.auth.updateUser({ password: a });
-    if (error){ msg("Chyba: " + error.message); return; }
-    msg("Hotovo, odhlašuji…");
-    await supabase.auth.signOut();
-    location.assign("/"); // po úspěchu domů
-  };
-}
+    async function ensureSessionFromHash(){
+      const p = new URLSearchParams(location.hash.slice(1));
+      if (p.get('type') !== 'recovery') return false;
+      const at = p.get('access_token'), rt = p.get('refresh_token');
+      if (!at || !rt) return false;
+      const { data, error } = await supabase.auth.setSession({ access_token: at, refresh_token: rt });
+      if (error || !data?.session) return false;
+      // tokeny schovej až PO úspěchu
+      history.replaceState({}, document.title, location.pathname);
+      return true;
+    }
 
-function renderResend(){
-  ui(`
-    <p class="text-sm">Odkaz je neplatný nebo stránka byla obnovena. Pošli si reset znovu:</p>
-    <input id="em" type="email" class="w-full border rounded p-2" placeholder="email" />
-    <div class="flex gap-2"><button id="re" class="px-3 py-2 border rounded">Poslat reset</button></div>
-    <p id="msg" class="text-sm text-slate-500"></p>
-  `);
-  document.getElementById("re").onclick = async () => {
-    const email = document.getElementById("em").value.trim();
-    msg("Posílám odkaz…");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: location.origin + "/recover.html"
-    });
-    msg(error ? "Chyba: " + error.message : "Hotovo – zkontroluj e-mail.");
-  };
-}
+    function showSetPassword(){
+      render(`
+        <div class="space-y-3">
+          <input id="a" type="password" class="w-full border rounded p-2" placeholder="Nové heslo" />
+          <input id="b" type="password" class="w-full border rounded p-2" placeholder="Potvrdit heslo" />
+          <div class="flex gap-2"><button id="ok" class="px-3 py-2 bg-slate-900 text-white rounded">Uložit</button></div>
+          <p id="msg" class="text-sm text-slate-500"></p>
+        </div>
+      `);
+      document.getElementById('ok').onclick = async () => {
+        const a = document.getElementById('a').value.trim();
+        const b = document.getElementById('b').value.trim();
+        if (!a || a !== b){ setMsg('Hesla se neshodují.'); return; }
+        setMsg('Ukládám…');
+        const { error } = await supabase.auth.updateUser({ password: a });
+        if (error){ setMsg('Chyba: ' + error.message); return; }
+        setMsg('Hotovo, odhlašuji…');
+        await supabase.auth.signOut();
+        location.assign('/'); // po úspěchu domů
+      };
+    }
 
-(async () => {
-  // 1) máš už session? (třeba po kliku z mailu, bez reloadu)
-  const { data } = await supabase.auth.getSession();
-  if (data?.session){ renderSetPassword(); return; }
-  // 2) zkus ji založit z tokenů v hash
-  if (await ensureSessionFromHash()){ renderSetPassword(); return; }
-  // 3) jinak nabídni znovu poslat reset
-  renderResend();
-})();
-</script>
+    function showResend(){
+      render(`
+        <div class="space-y-3">
+          <p class="text-sm">Odkaz není k dispozici (možná byl obnoven F5). Pošli si reset znovu:</p>
+          <input id="em" type="email" class="w-full border rounded p-2" placeholder="email" />
+          <div class="flex gap-2"><button id="re" class="px-3 py-2 border rounded">Poslat reset</button></div>
+          <p id="msg" class="text-sm text-slate-500"></p>
+        </div>
+      `);
+      document.getElementById('re').onclick = async () => {
+        const email = document.getElementById('em').value.trim();
+        setMsg('Posílám odkaz…');
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: location.origin + '/recover.html'
+        });
+        setMsg(error ? 'Chyba: ' + error.message : 'Hotovo – zkontroluj e-mail.');
+      };
+    }
+
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) { showSetPassword(); return; }
+        if (await ensureSessionFromHash()) { showSetPassword(); return; }
+        showResend(); // žádné tokeny / po F5
+      } catch (e) {
+        console.error(e);
+        render(`<p class="text-red-600">Chyba skriptu: ${e?.message || e}</p>`);
+      }
+    })();
+  </script>
+</body>
+</html>
