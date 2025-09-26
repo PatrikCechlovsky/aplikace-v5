@@ -4,8 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pronajímatel – App</title>
-
-  <link rel="icon" href="/favicon.ico" />
+  <link rel="icon" href="./favicon.ico" />
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="color-scheme" content="light dark" />
   <link rel="stylesheet" href="./styles.css" />
@@ -19,19 +18,9 @@
         <span>🏠</span><span>Pronajímatel</span>
       </button>
 
-      <!-- PRAVÁ STRANA -->
       <div class="ml-auto flex items-center gap-2">
-        <!-- Ikony vpravo -->
         <div id="header-actions" class="flex items-center gap-2"></div>
-
-        <!-- Můj účet (email jen v tooltipu) -->
-        <button id="btnProfile"
-                class="px-2 py-1 border rounded bg-white text-sm"
-                title="Můj účet">
-          👤
-        </button>
-
-        <!-- Odhlásit -->
+        <button id="btnProfile" class="px-2 py-1 border rounded bg-white text-sm" title="Můj účet">👤</button>
         <button id="logoutBtn" class="px-3 py-1 rounded bg-slate-900 text-white text-sm">Odhlásit</button>
       </div>
     </div>
@@ -40,7 +29,7 @@
   <!-- Layout -->
   <main class="max-w-[1400px] mx-auto p-4">
     <div class="grid grid-cols-[260px_1fr] gap-4">
-      <aside id="sidebar" class="card p-2 bg-white rounded-2xl border"></aside>
+      <aside id="sidebar" class="p-2 bg-white rounded-2xl border"></aside>
 
       <section>
         <!-- Breadcrumbs + akce vpravo -->
