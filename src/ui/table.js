@@ -1,9 +1,9 @@
 // src/ui/table.js
-// Jednoduchá tabulka s řazením klikem na header a fulltext filtrem.
+// Jednoduchá tabulka s řazením, filtrem, volitelným pořadím sloupců a dblclick akcí.
 // columns: [{ key, label, width?, render?(row), sortable?:true, className? }]
 // rows: array objektů
-// rowActions: [{ label, icon, onClick(row) }]
-// options: { filterPlaceholder }
+// rowActions: [{ label, icon, onClick(row), show?(row):boolean }]
+// options: { filterPlaceholder, columnsOrder?: string[], onRowDblClick?(row) }
 
 export function renderTable(root, { columns, rows, rowActions = [], options = {} }) {
   if (!root) return;
@@ -13,9 +13,18 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
     filter: '',
   };
 
+  // volitelné pořadí sloupců (např. z uživatelského nastavení)
+  const order = Array.isArray(options.columnsOrder) && options.columnsOrder.length
+    ? options.columnsOrder
+    : columns.map(c => c.key);
+
+  const cols = order
+    .map(k => columns.find(c => c.key === k))
+    .filter(Boolean);
+
+  root.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'bg-white rounded-2xl border';
-  root.innerHTML = '';
   root.appendChild(wrap);
 
   const head = document.createElement('div');
@@ -36,7 +45,7 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
 
   const thead = document.createElement('thead');
   thead.innerHTML = `<tr class="bg-slate-50">
-    ${columns.map(c => `
+    ${cols.map(c => `
       <th class="text-left px-3 py-2 whitespace-nowrap ${c.className||''}" style="${c.width ? `width:${c.width}`:''}">
         <button class="flex items-center gap-1 ${c.sortable===false?'pointer-events-none':''}" data-sort="${c.key}">
           <span>${c.label}</span>
@@ -62,7 +71,7 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
     let out = data;
     if (state.filter) {
       const f = state.filter.toLowerCase();
-      out = out.filter(r => columns.some(c => String(r[c.key] ?? '').toLowerCase().includes(f)));
+      out = out.filter(r => cols.some(c => String(r[c.key] ?? '').toLowerCase().includes(f)));
     }
     if (state.sortKey) {
       out = out.slice().sort((r1, r2) => {
@@ -80,19 +89,36 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
     data.forEach(row => {
       const tr = document.createElement('tr');
       tr.className = 'border-t hover:bg-slate-50';
-      tr.innerHTML = columns.map(c => {
+      tr.innerHTML = cols.map(c => {
         const val = c.render ? c.render(row) : escapeHtml(row[c.key]);
         return `<td class="px-3 py-2 align-top ${c.className||''}">${val}</td>`;
       }).join('') + (rowActions.length ? `
         <td class="px-3 py-2 text-right whitespace-nowrap">
-          ${rowActions.map((a,i) => `<button data-act="${i}" class="px-2 py-1 border rounded bg-white ml-1" title="${a.label}">${a.icon||'⋯'}</button>`).join('')}
+          ${rowActions
+            .filter(a => (typeof a.show === 'function' ? a.show(row) : true))
+            .map((a,i) => `
+              <button data-act="${i}" class="group inline-flex items-center gap-1 px-2 py-1 border rounded bg-white ml-1"
+                      title="${a.label}">
+                ${a.icon || '⋯'}
+                <span class="hidden sm:inline group-hover:inline">${a.label}</span>
+              </button>`).join('')}
         </td>` : '');
       tbody.appendChild(tr);
 
+      // dblclick řádek
+      if (typeof options.onRowDblClick === 'function') {
+        tr.addEventListener('dblclick', () => options.onRowDblClick(row));
+        tr.style.cursor = 'pointer';
+      }
+
+      // akce vpravo
       if (rowActions.length) {
         tr.querySelectorAll('button[data-act]').forEach(btn => {
           const i = Number(btn.dataset.act);
-          btn.addEventListener('click', () => rowActions[i].onClick?.(row));
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            rowActions[i].onClick?.(row);
+          });
         });
       }
     });
@@ -106,7 +132,7 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
   // events
   thead.querySelectorAll('button[data-sort]').forEach(btn => {
     const key = btn.dataset.sort;
-    const col = columns.find(c => c.key === key);
+    const col = cols.find(c => c.key === key);
     if (col && col.sortable !== false) {
       btn.addEventListener('click', () => {
         if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
