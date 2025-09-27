@@ -1,8 +1,61 @@
-// DIAG START – bez importů, jen statický render
+// DIAG v2 – vytvoří layout, když v HTML chybí
 console.log('[DIAG] app.js loaded');
 
 const $ = (id) => document.getElementById(id);
 const setHTML = (el, html) => { if (el) el.innerHTML = html; };
+
+function ensureLayout() {
+  // main
+  let main = document.querySelector('main');
+  if (!main) {
+    main = document.createElement('main');
+    main.className = 'max-w-[1400px] mx-auto p-4';
+    document.body.appendChild(main);
+  }
+  // grid
+  let grid = main.querySelector('.grid');
+  if (!grid) {
+    grid = document.createElement('div');
+    grid.className = 'grid grid-cols-[260px_1fr] gap-4';
+    main.appendChild(grid);
+  }
+  // sidebar
+  if (!$('#sidebar')) {
+    const aside = document.createElement('aside');
+    aside.id = 'sidebar';
+    aside.className = 'p-2 bg-white rounded-2xl border';
+    grid.insertAdjacentElement('afterbegin', aside);
+  }
+  // section
+  let section = grid.querySelector('section');
+  if (!section) {
+    section = document.createElement('section');
+    grid.appendChild(section);
+  }
+  // breadcrumbs + actions
+  if (!$('#breadcrumbs')) {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between mb-2';
+    row.innerHTML = `
+      <div id="breadcrumbs" class="text-xs text-slate-500">Dashboard</div>
+      <div id="crumb-actions" class="flex items-center gap-2"></div>`;
+    section.appendChild(row);
+  }
+  // actions bar
+  if (!$('#actions-bar')) {
+    const ab = document.createElement('div');
+    ab.id = 'actions-bar';
+    ab.className = 'mb-3 flex flex-wrap gap-2';
+    section.appendChild(ab);
+  }
+  // content
+  if (!$('#content')) {
+    const c = document.createElement('div');
+    c.id = 'content';
+    c.className = 'min-h-[60vh]';
+    section.appendChild(c);
+  }
+}
 
 const MODULES = [
   { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam'}],  defaultTile:'seznam' },
@@ -52,12 +105,10 @@ function breadcrumbsHome() {
     `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`
   );
 }
-
 function mountDashboard() {
   breadcrumbsHome();
   setHTML($('#content'), `<div class="p-4 bg-white rounded-2xl border">Dashboard – DIAG placeholder.</div>`);
 }
-
 function mountModule(modId, tileId) {
   const mod = MODULES.find(m => m.id === modId);
   breadcrumbsHome();
@@ -68,14 +119,12 @@ function mountModule(modId, tileId) {
     </div>
   `);
 }
-
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const p = raw.split('?')[0].split('/').filter(Boolean);
   if (p[0] !== 'm') return { view:'dashboard' };
   return { view:'module', mod:p[1], kind:p[2], id:p[3] };
 }
-
 function route() {
   const h = parseHash();
   if (h.view === 'dashboard') { mountDashboard(); return; }
@@ -86,6 +135,7 @@ function route() {
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[DIAG] DOM ready');
-  renderSidebar(MODULES);
+  ensureLayout();          // ← vytvoří chybějící #sidebar/#content/…
+  renderSidebar(MODULES);  // ← teď už určitě existuje
   route();
 });
