@@ -1,39 +1,29 @@
-// src/ui/sidebar.js
-// Robustní render s logy + explicitní barvou textu (kdyby ji něco přepisovalo).
-
+// Jednoduchý a odolný renderer sidebaru
 export function renderSidebar(root, modules = [], opts = {}) {
-  if (!root) { console.warn('[SIDEBAR] root je null'); return; }
+  if (!root) return;
 
   root.innerHTML = `
     <nav class="space-y-1 text-slate-900">
       <ul id="sb-list" class="space-y-1"></ul>
     </nav>
   `;
-
   const ul = root.querySelector('#sb-list');
-  if (!ul) { console.warn('[SIDEBAR] chybí #sb-list'); return; }
 
-  if (!Array.isArray(modules) || modules.length === 0) {
-    ul.innerHTML = `<li class="px-3 py-2 text-sm opacity-60">Žádné moduly</li>`;
-    console.warn('[SIDEBAR] modules je prázdné');
-    return;
-  }
+  const list = (Array.isArray(modules) ? modules : []).map(m => {
+    const first = m.defaultTile || m.tiles?.[0]?.id || '';
+    const href  = `#/m/${m.id}${first ? `/t/${first}` : ''}`;
+    return `<li>
+      <a class="block px-3 py-2 rounded hover:bg-slate-100" data-mod="${m.id}" href="${href}">
+        <span class="mr-2">${m.icon || '📁'}</span><span>${m.title}</span>
+      </a>
+    </li>`;
+  }).join('');
 
-  modules.forEach(m => {
-    const li = document.createElement('li');
-    const a  = document.createElement('a');
-    const firstTile = m.defaultTile || m.tiles?.[0]?.id;
-    a.href = `#/m/${m.id}${firstTile ? `/t/${firstTile}` : ''}`;
-    a.dataset.mod = m.id;
-    a.className = 'block px-3 py-2 rounded hover:bg-slate-100';
-    a.innerHTML = `<span class="mr-2">${m.icon || '📁'}</span><span>${m.title}</span>`;
-    li.appendChild(a);
-    ul.appendChild(li);
-  });
+  ul.innerHTML = list || `<li class="px-3 py-2 text-sm opacity-60">Žádné moduly</li>`;
 
   function markActive() {
     const hash = location.hash || '';
-    const m = (/#\/m\/([^\/]+)/.exec(hash) || [])[1] || modules[0]?.id || '';
+    const m = (/#\/m\/([^\/]+)/.exec(hash) || [])[1];
     ul.querySelectorAll('a[data-mod]').forEach(a => {
       const active = a.dataset.mod === m;
       a.classList.toggle('bg-slate-900', active);
@@ -42,15 +32,13 @@ export function renderSidebar(root, modules = [], opts = {}) {
     });
   }
 
-  ul.addEventListener('click', ev => {
+  ul.addEventListener('click', (ev) => {
     const a = ev.target.closest('a[data-mod]');
     if (!a) return;
-    const mod = modules.find(x => x.id === a.dataset.mod);
-    if (opts.onSelect && mod) setTimeout(() => opts.onSelect(mod), 0);
+    const modId = a.dataset.mod;
+    if (opts.onSelect) setTimeout(() => opts.onSelect(modId), 0);
   });
 
   window.addEventListener('hashchange', markActive);
   markActive();
-
-  console.log('[SIDEBAR] rendered items:', ul.children.length);
 }
