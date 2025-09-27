@@ -1,5 +1,5 @@
-// DIAG v5 — vlastní root + tvrdé přebarvení textu !important
-console.log('[DIAG5] app.js loaded');
+// DIAG v6 — tvrdé přebití stylů + velké debug texty
+console.log('[DIAG6] app.js loaded');
 
 const MODULES = [
   { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam'}],  defaultTile:'seznam' },
@@ -23,32 +23,46 @@ function make(tag, attrs={}, children=[]) {
 }
 
 function buildAppRoot() {
-  // schovat vše ostatní na stránce (aby nebyly duplikáty)
+  // 1) schovej vše ostatní na stránce
   Array.from(document.body.children).forEach(ch => { ch.style.display = 'none'; });
 
-  // náš root
-  const root = make('div', { id: '__diag_root__', style:{
+  // 2) náš root
+  const root = make('div', { id:'__diag_root__', style:{
     maxWidth:'1400px', margin:'0 auto', padding:'16px'
   }});
 
-  // tvrdé přebarvení textu v rootu (CSS s !important)
+  // 3) tvrdé přebití stylů (barva, opacity, blend, filter, font-size)
   const style = document.createElement('style');
   style.textContent = `
-    #__diag_root__, #__diag_root__ * { color: #0f172a !important; font-family: system-ui, sans-serif; }
-    #__diag_root__ a { text-decoration: none !important; }
+    #__diag_root__, #__diag_root__ * , #__diag_root__ *::before, #__diag_root__ *::after {
+      color: #0f172a !important;
+      opacity: 1 !important;
+      filter: none !important;
+      mix-blend-mode: normal !important;
+      text-decoration: none !important;
+      font-size: 16px !important;
+      line-height: 1.4 !important;
+    }
+    #__diag_root__ .dbg { font-weight: 800 !important; font-size: 22px !important; }
   `;
   document.head.appendChild(style);
 
-  // header
+  // Header
   const header = make('div', { style:{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px' }}, [
-    make('div', { style:{ fontWeight:'700', fontSize:'18px' }}, 'Pronajímatel'),
+    make('div', { class:'dbg' }, 'Pronajímatel'),
     make('span', { style:{
       marginLeft:'auto', padding:'2px 6px', border:'1px solid #f59e0b',
       borderRadius:'8px', background:'#fef3c7', color:'#92400e', fontSize:'12px',
     }}, 'DIAG ROOT')
   ]);
 
-  // grid
+  // Debug bar
+  const dbgBar = make('div', { id:'__dbg__', style:{
+    marginTop:'8px', marginBottom:'12px', padding:'8px',
+    background:'#fff3cd', border:'1px solid #f8d7da', borderRadius:'8px', color:'#1f2937'
+  }}, 'loading…');
+
+  // Grid
   const grid = make('div', { id:'__grid__', style:{ display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' }});
 
   const sidebar = make('aside', { id:'sidebar', style:{
@@ -57,7 +71,7 @@ function buildAppRoot() {
 
   const section = make('section');
   const crumbsRow = make('div', { style:{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}, [
-    make('div', { id:'breadcrumbs', style:{ fontSize:'12px' }}, 'Dashboard'),
+    make('div', { id:'breadcrumbs' }, 'Dashboard'),
     make('div', { id:'crumb-actions' })
   ]);
   const actions = make('div', { id:'actions-bar', style:{ marginBottom:'12px' }});
@@ -73,37 +87,41 @@ function buildAppRoot() {
   grid.appendChild(section);
 
   root.appendChild(header);
+  root.appendChild(dbgBar);
   root.appendChild(grid);
 
   document.body.appendChild(root);
-  return { root, sidebar, content };
+  return { root, sidebar, content, dbgBar };
 }
 
 function renderSidebar(mods) {
   const sb = document.getElementById('sidebar');
   sb.innerHTML = '';
-  const title = make('div', { style:{ fontWeight:'700', marginBottom:'8px', fontSize:'14px' }}, 'SIDEBAR');
+  const head = make('div', { class:'dbg', style:{ marginBottom:'8px', color:'#b91c1c' }}, 'SIDEBAR (DEBUG)');
   const ul = make('ul', { style:{ listStyle:'none', padding:'0', margin:'0' }});
-  mods.forEach(m => {
+  mods.forEach((m, i) => {
     const href = `#/m/${m.id}/t/${m.defaultTile || (m.tiles && m.tiles[0] && m.tiles[0].id) || ''}`;
     const a = make('a', { href, 'data-mod':m.id, style:{
-      display:'block', padding:'8px 10px', borderRadius:'8px', color:'#0f172a'
-    }}, `${m.icon || '📁'} ${m.title}`);
-    a.onmouseenter = () => a.style.background = '#eef2f7';
-    a.onmouseleave = () => a.style.background = 'transparent';
+      display:'block', padding:'10px 12px', borderRadius:'8px', color:'#0f172a', background: i%2? '#eef2f7':'transparent'
+    }}, `${i+1}. ${m.icon || '📁'} ${m.title}`);
+    a.onmouseenter = () => a.style.background = '#e2e8f0';
+    a.onmouseleave = () => a.style.background = (i%2? '#eef2f7':'transparent');
     ul.appendChild(make('li', { style:{ marginBottom:'6px' }}, a));
   });
-  sb.appendChild(title);
+  sb.appendChild(head);
   sb.appendChild(ul);
 
-  console.log('[DIAG5] sidebar items:', ul.children.length, 'color:', getComputedStyle(sb).color);
+  const cs = getComputedStyle(sb);
+  console.log('[DIAG6] sidebar items:', ul.children.length, 'color:', cs.color, 'opacity:', cs.opacity);
+  document.getElementById('__dbg__').textContent =
+    `Sidebar items: ${ul.children.length} | color: ${cs.color} | opacity: ${cs.opacity}`;
 
   function markActive() {
     const hash = location.hash || '';
     const m = (/#\/m\/([^\/]+)/.exec(hash) || [])[1];
     ul.querySelectorAll('a[data-mod]').forEach(a => {
       const active = a.dataset.mod === m;
-      a.style.background = active ? '#0f172a' : 'transparent';
+      a.style.background = active ? '#0f172a' : '#eef2f7';
       a.style.color = active ? '#fff' : '#0f172a';
     });
   }
@@ -114,21 +132,21 @@ function renderSidebar(mods) {
 
 function breadcrumbsHome() {
   const b = document.getElementById('breadcrumbs');
-  b.textContent = '🏠 Domů';
+  b.textContent = '🏠 Domů (DEBUG)';
 }
 
 function mountDashboard() {
   breadcrumbsHome();
   const c = document.getElementById('content');
   c.innerHTML = '';
-  c.appendChild(make('div', { style:{ fontSize:'16px', fontWeight:'600' }}, 'Dashboard – DIAG placeholder.'));
+  c.appendChild(make('div', { class:'dbg', style:{ color:'#065f46' }}, 'Dashboard – DIAG placeholder.'));
 }
 
 function mountModule(modId, tileId) {
   breadcrumbsHome();
   const c = document.getElementById('content');
   c.innerHTML = '';
-  c.appendChild(make('div', { style:{ fontSize:'16px', fontWeight:'600' }}, `Modul: ${modId}, dlaždice: ${tileId || '-'}`));
+  c.appendChild(make('div', { class:'dbg', style:{ color:'#1d4ed8' }}, `Modul: ${modId}, dlaždice: ${tileId || '-'}`));
 }
 
 function parseHash() {
@@ -149,7 +167,7 @@ function route() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('[DIAG5] DOM ready');
+  console.log('[DIAG6] DOM ready');
   buildAppRoot();
   renderSidebar(MODULES);
   route();
