@@ -15,14 +15,13 @@ const clear = (el) => { if (el) el.innerHTML = ''; };
 window.appDirty = false;
 window.setAppDirty = (v) => { window.appDirty = !!v; };
 
-// ---------- Auth ----------
+// -------- Auth --------
 async function ensureSignedIn() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { location.replace('./index.html'); return null; }
     return session;
-  } catch (e) {
-    console.error('[APP] getSession failed:', e);
+  } catch {
     location.replace('./index.html'); return null;
   }
 }
@@ -31,13 +30,13 @@ async function hardLogout() {
   try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
   try { await supabase.auth.signOut(); } catch {}
   try {
-    Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-')) localStorage.removeItem(k); });
-    Object.keys(sessionStorage).forEach(k => { if (k.startsWith('sb-')) sessionStorage.removeItem(k); });
+    Object.keys(localStorage).forEach(k => k.startsWith('sb-') && localStorage.removeItem(k));
+    Object.keys(sessionStorage).forEach(k => k.startsWith('sb-') && sessionStorage.removeItem(k));
   } catch {}
   location.replace('./index.html?_' + Date.now());
 }
 
-// ---------- Routing ----------
+// -------- Routing --------
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, q] = raw.split('?');
@@ -49,9 +48,9 @@ function parseHash() {
   if (p[2] === 'f' && p[3]) return { view: 'module', mod, kind: 'form', id: p[3], params };
   return { view: 'module', mod, kind: 'tile', id: null, params };
 }
-const findModule = (id) => MODULES.find(m => m.id === id);
+const findModule = (id) => (MODULES || []).find(m => m.id === id);
 
-// ---------- Views ----------
+// -------- Views --------
 function mountDashboard() {
   setHTML($('#breadcrumbs'),
     `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`
@@ -86,7 +85,7 @@ async function renderModuleSpecific(root, { mod, kind, id }) {
 
 async function mountModuleView({ mod, kind, id }) {
   renderBreadcrumbs($('#breadcrumbs'), { mod, kind, id });
-  renderCommonActions($('#crumb-actions')); // modul si může přepsat
+  renderCommonActions($('#crumb-actions'));
   clear($('#actions-bar'));
   const ok = await renderModuleSpecific($('#content'), { mod, kind, id });
   if (!ok) renderContent($('#content'), { mod, kind, id });
@@ -103,21 +102,12 @@ async function route() {
   await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
 }
 
-// ---------- Home ----------
-function goHome() {
-  if (window.appDirty) {
-    const ok = confirm('Máš rozpracované změny. Pokračovat bez uložení a otevřít hlavní stránku?');
-    if (!ok) return;
-  }
-  location.hash = '#/dashboard';
-}
-
-// ---------- Start ----------
+// -------- Start --------
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[APP] DOMContentLoaded');
   const session = await ensureSignedIn(); if (!session) return;
 
   try { renderHeaderActions($('#header-actions')); } catch {}
+
   const btn = $('#btnProfile');
   if (btn) {
     try {
@@ -126,10 +116,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch { btn.title = session.user?.email || '—'; }
     btn.addEventListener('click', () => { location.hash = '#/m/020-muj-ucet/t/profil'; });
   }
-  $('#logoutBtn')?.addEventListener('click', hardLogout);
-  $('#homeBtn')?.addEventListener('click', goHome);
 
-  renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+  $('#logoutBtn')?.addEventListener('click', hardLogout);
+  $('#homeBtn')?.addEventListener('click', () => { 
+    if (window.appDirty && !confirm('Máš rozpracované změny. Opravdu opustit bez uložení?')) return;
+    location.hash = '#/dashboard';
+  });
+
+  // — render sidebar (s fallbackem, kdyby helper selhal) —
+  try {
+    renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
+  } catch (e) {
+    console.warn('[APP] renderSidebar failed, using fallback:', e);
+    const sb = $('#sidebar');
+    if (sb) {
+      sb.innerHTML = `<ul class="space-y-1 text-slate-900">
+        ${(MODULES || []).map(m => {
+          const first = m.defaultTile || m.tiles?.[0]?.id || '';
+          const href  = `#/m/${m.id}${first ? `/t/${first}` : ''}`;
+          return `<li><a class="block px-3 py-2 rounded hover:bg-slate-100" href="${href}">
+            ${m.icon || '📁'} ${m.title}</a></li>`;
+        }).join('')}
+      </ul>`;
+    }
+  }
+
   await route();
 });
 
