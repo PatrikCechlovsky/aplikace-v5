@@ -272,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     buildRoot();
     renderSidebar(MODULES);
+    window.addEventListener('hashchange', route);
     route();
   } catch (err) {
     console.error('[APP] boot failed', err);
