@@ -253,7 +253,8 @@ async function mountModule(modId, tileId) {
   c.innerHTML = `<div class="text-slate-500 p-2">Načítám modul…</div>`;
 
   try {
-    if (modId === '010-uzivatele') {
+    // === 010: Správa uživatelů ===
+    if (modId === '010-sprava-uzivatelu') {
       const tiles = await import('./modules/010-sprava-uzivatelu/tiles/index.js');
       await tiles.renderTile(tileId || 'seznam', c);
       return;
@@ -304,4 +305,10 @@ document.addEventListener('DOMContentLoaded', () => {
     box.textContent = 'Aplikace se nepodařila spustit. Otevři konzoli pro více informací.';
     el.appendChild(box);
   }
+});
+document.addEventListener('DOMContentLoaded', () => {
+  buildRoot();
+  renderSidebar(MODULES);
+  window.addEventListener('hashchange', route);
+  route();
 });
