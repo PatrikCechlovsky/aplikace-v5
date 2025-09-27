@@ -1,5 +1,5 @@
-// DIAG v4 — vlastní root, všechno ostatní skryju
-console.log('[DIAG4] app.js loaded');
+// DIAG v5 — vlastní root + tvrdé přebarvení textu !important
+console.log('[DIAG5] app.js loaded');
 
 const MODULES = [
   { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam'}],  defaultTile:'seznam' },
@@ -23,38 +23,41 @@ function make(tag, attrs={}, children=[]) {
 }
 
 function buildAppRoot() {
-  // 1) skryj všechny existující elementy na stránce
+  // schovat vše ostatní na stránce (aby nebyly duplikáty)
   Array.from(document.body.children).forEach(ch => { ch.style.display = 'none'; });
 
-  // 2) vytvoř náš root
+  // náš root
   const root = make('div', { id: '__diag_root__', style:{
     maxWidth:'1400px', margin:'0 auto', padding:'16px'
   }});
 
-  // Header
-  const header = make('div', { style:{
-    display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px'
-  }}, [
+  // tvrdé přebarvení textu v rootu (CSS s !important)
+  const style = document.createElement('style');
+  style.textContent = `
+    #__diag_root__, #__diag_root__ * { color: #0f172a !important; font-family: system-ui, sans-serif; }
+    #__diag_root__ a { text-decoration: none !important; }
+  `;
+  document.head.appendChild(style);
+
+  // header
+  const header = make('div', { style:{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px' }}, [
     make('div', { style:{ fontWeight:'700', fontSize:'18px' }}, 'Pronajímatel'),
     make('span', { style:{
       marginLeft:'auto', padding:'2px 6px', border:'1px solid #f59e0b',
       borderRadius:'8px', background:'#fef3c7', color:'#92400e', fontSize:'12px',
-    }}, 'DIAG ROOT'),
+    }}, 'DIAG ROOT')
   ]);
 
-  // Grid
-  const grid = make('div', { id:'__grid__', style:{
-    display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px'
-  }});
+  // grid
+  const grid = make('div', { id:'__grid__', style:{ display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' }});
 
   const sidebar = make('aside', { id:'sidebar', style:{
-    background:'#fff', border:'1px solid #e5e7eb', borderRadius:'16px',
-    padding:'12px', minHeight:'120px'
+    background:'#fff', border:'1px solid #e5e7eb', borderRadius:'16px', padding:'12px', minHeight:'120px'
   }});
 
   const section = make('section');
   const crumbsRow = make('div', { style:{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}, [
-    make('div', { id:'breadcrumbs', style:{ fontSize:'12px', color:'#64748b' }}, 'Dashboard'),
+    make('div', { id:'breadcrumbs', style:{ fontSize:'12px' }}, 'Dashboard'),
     make('div', { id:'crumb-actions' })
   ]);
   const actions = make('div', { id:'actions-bar', style:{ marginBottom:'12px' }});
@@ -79,19 +82,21 @@ function buildAppRoot() {
 function renderSidebar(mods) {
   const sb = document.getElementById('sidebar');
   sb.innerHTML = '';
-  const title = make('div', { style:{ fontWeight:'600', marginBottom:'8px' }}, 'SIDEBAR');
+  const title = make('div', { style:{ fontWeight:'700', marginBottom:'8px', fontSize:'14px' }}, 'SIDEBAR');
   const ul = make('ul', { style:{ listStyle:'none', padding:'0', margin:'0' }});
   mods.forEach(m => {
     const href = `#/m/${m.id}/t/${m.defaultTile || (m.tiles && m.tiles[0] && m.tiles[0].id) || ''}`;
     const a = make('a', { href, 'data-mod':m.id, style:{
-      display:'block', padding:'6px 8px', borderRadius:'8px', color:'#0f172a', textDecoration:'none'
+      display:'block', padding:'8px 10px', borderRadius:'8px', color:'#0f172a'
     }}, `${m.icon || '📁'} ${m.title}`);
-    a.onmouseenter = () => a.style.background = '#f1f5f9';
+    a.onmouseenter = () => a.style.background = '#eef2f7';
     a.onmouseleave = () => a.style.background = 'transparent';
     ul.appendChild(make('li', { style:{ marginBottom:'6px' }}, a));
   });
   sb.appendChild(title);
   sb.appendChild(ul);
+
+  console.log('[DIAG5] sidebar items:', ul.children.length, 'color:', getComputedStyle(sb).color);
 
   function markActive() {
     const hash = location.hash || '';
@@ -116,14 +121,14 @@ function mountDashboard() {
   breadcrumbsHome();
   const c = document.getElementById('content');
   c.innerHTML = '';
-  c.appendChild(make('div', {}, 'Dashboard – DIAG placeholder.'));
+  c.appendChild(make('div', { style:{ fontSize:'16px', fontWeight:'600' }}, 'Dashboard – DIAG placeholder.'));
 }
 
 function mountModule(modId, tileId) {
   breadcrumbsHome();
   const c = document.getElementById('content');
   c.innerHTML = '';
-  c.appendChild(make('div', {}, `Modul: ${modId}, dlaždice: ${tileId || '-'}`));
+  c.appendChild(make('div', { style:{ fontSize:'16px', fontWeight:'600' }}, `Modul: ${modId}, dlaždice: ${tileId || '-'}`));
 }
 
 function parseHash() {
@@ -144,8 +149,8 @@ function route() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('[DIAG4] DOM ready');
-  buildAppRoot();            // ⬅ vytvoří svůj vlastní root a skryje zbytek
-  renderSidebar(MODULES);    // ⬅ sidebar vždy existuje
+  console.log('[DIAG5] DOM ready');
+  buildAppRoot();
+  renderSidebar(MODULES);
   route();
 });
