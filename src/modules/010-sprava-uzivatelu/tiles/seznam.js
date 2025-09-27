@@ -1,12 +1,16 @@
 import { icon } from '../../../ui/icons.js';
+import { renderActions, ACTIONS } from '../../../ui/actionButtons.js';
+import { listProfiles, isAdmin } from '../../../db.js';
 
 export default async function renderSeznam(root) {
   root.innerHTML = `
     <div class="p-4 bg-white rounded-2xl border">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">${icon('users')} Seznam uživatelů</h2>
-        <div class="text-sm text-slate-500">placeholder • bez DB</div>
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">${icon('users')} Uživatelé</h2>
+        <div id="tile-actions"></div>
       </div>
+
+      <div id="tile-notice" class="mt-2 text-sm text-slate-500"></div>
 
       <div class="mt-4 border rounded-lg overflow-hidden">
         <table class="w-full text-sm">
@@ -21,42 +25,106 @@ export default async function renderSeznam(root) {
           <tbody id="u-rows"></tbody>
         </table>
       </div>
+
+      <div id="empty" class="hidden mt-6 text-slate-500 text-sm">
+        Žádná data k zobrazení.
+      </div>
+
+      <div id="error" class="hidden mt-6 text-rose-600 text-sm"></div>
     </div>
   `;
 
-  const rows = root.querySelector('#u-rows');
+  const $ = (sel) => root.querySelector(sel);
+  const rowsEl   = $('#u-rows');
+  const noticeEl = $('#tile-notice');
+  const emptyEl  = $('#empty');
+  const errorEl  = $('#error');
+  const actionsEl = $('#tile-actions');
 
-  // zatím statický mock (ať máme UI), DB přidáme v další fázi
-  const data = [
-    { name: 'Alice Nováková', email: 'alice@example.com', role: 'admin' },
-    { name: 'Bob Svoboda',    email: 'bob@example.com',   role: 'user'  },
-  ];
+  // Akční lišta – konzistentní presety (zatím bez logiky CRUD)
+  renderActions(actionsEl, [
+    ACTIONS.add({ onClick(){ alert('Přidat – placeholder'); } }),
+    ACTIONS.edit({ disabled:true, reason:'Vyberte řádek' }),
+    ACTIONS.archive({ disabled:true, reason:'Vyberte řádek' }),
+    ACTIONS.refresh({ onClick(){ refresh(); } }),
+  ]);
 
-  rows.innerHTML = data.map(u => `
-    <tr class="border-t">
-      <td class="p-2">${u.name}</td>
-      <td class="p-2">${u.email}</td>
-      <td class="p-2">
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
-          ${u.role === 'admin' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">
-          ${u.role}
-        </span>
-      </td>
+  // Zobraz info, jestli jsi admin (co bys měl vidět)
+  const amIAdmin = await isAdmin();
+  noticeEl.textContent = amIAdmin
+    ? 'Máte roli admin – vidíte všechny profily.'
+    : 'Máte roli user – vidíte jen svůj profil.';
+
+  await refresh();
+
+  async function refresh() {
+    rowsEl.innerHTML = `<tr><td colspan="4" class="p-4 text-slate-500">Načítám…</td></tr>`;
+    emptyEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    const { data, error } = await listProfiles();
+
+    if (error) {
+      rowsEl.innerHTML = '';
+      errorEl.textContent = 'Chyba při načtení dat: ' + (error.message || error);
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    if (!data.length) {
+      rowsEl.innerHTML = '';
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+
+    rowsEl.innerHTML = data.map(u => rowHtml(u)).join('');
+
+    // výběr řádku → povolit „Upravit/Archivovat“
+    rowsEl.querySelectorAll('tr[data-id]').forEach(tr => {
+      tr.addEventListener('click', () => {
+        rowsEl.querySelectorAll('tr[data-id]').forEach(x => x.classList.remove('bg-slate-100'));
+        tr.classList.add('bg-slate-100');
+
+        // Povolit akce
+        renderActions(actionsEl, [
+          ACTIONS.add({ onClick(){ alert('Přidat – placeholder'); } }),
+          ACTIONS.edit({
+            onClick(){ alert('Upravit – placeholder ('+tr.dataset.id+')'); }
+          }),
+          ACTIONS.archive({
+            onClick(){ alert('Archivovat – placeholder ('+tr.dataset.id+')'); }
+          }),
+          ACTIONS.refresh({ onClick(){ refresh(); } }),
+        ]);
+      });
+    });
+  }
+}
+
+function rowHtml(u) {
+  const badge =
+    u.role === 'admin'
+      ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700 border border-emerald-200">${u.role}</span>`
+      : `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">${u.role}</span>`;
+
+  return `
+    <tr class="border-t hover:bg-slate-50 cursor-pointer" data-id="${u.id}">
+      <td class="p-2">${escapeHtml(u.display_name || '')}</td>
+      <td class="p-2">${escapeHtml(u.email || '')}</td>
+      <td class="p-2">${badge}</td>
       <td class="p-2 text-right">
-        <button class="px-2 py-1 text-sm border rounded hover:bg-slate-50" data-act="open">Otevřít</button>
+        <button class="px-2 py-1 text-sm border rounded hover:bg-slate-50">${icon('detail')} Zobrazit</button>
       </td>
     </tr>
-  `).join('');
+  `;
+}
 
-  // dvojklik otevře detail (zatím jen hláška), označíme rozdělanou práci při editaci
-  rows.addEventListener('dblclick', (e) => {
-    const tr = e.target.closest('tr');
-    if (!tr) return;
-    alert('Zobrazím čtecí formulář (placeholder).');
-  });
-  rows.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-act="open"]');
-    if (!btn) return;
-    alert('Zobrazím detail (placeholder).');
-  });
+// malá bezpečnost – ať nám do tabulky neleze HTML
+function escapeHtml(s='') {
+  return String(s)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
 }
