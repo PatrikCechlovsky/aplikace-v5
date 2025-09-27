@@ -1,4 +1,4 @@
-// src/app.js — layout + routing + jemnější UI aktivních prvků
+// src/app.js — sidebar s rozbalováním dlaždic, navigateTo s kontrolou "dirty"
 
 import { renderHeader } from './ui/header.js';
 import { renderHeaderActions } from './ui/headerActions.js';
@@ -7,13 +7,15 @@ console.log('[APP] start');
 window.addEventListener('error', (e) => console.error('[APP] window error', e.error || e));
 window.addEventListener('unhandledrejection', (e) => console.error('[APP] unhandled', e.reason || e));
 
+// ===== Definice modulů =======================================================
 const MODULES = [
-  { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam', title:'Seznam'}],  defaultTile:'seznam' },
-  { id:'020-muj-ucet',    title:'Můj účet',    icon:'👤', tiles:[{id:'profil', title:'Profil'}],  defaultTile:'profil' },
-  { id:'030-pronajimatel',title:'Pronajímatel',icon:'🏢', tiles:[{id:'prehled', title:'Přehled'}], defaultTile:'prehled' },
-  { id:'900-nastaveni',   title:'Nastavení',   icon:'⚙️', tiles:[{id:'aplikace', title:'Aplikace'}],defaultTile:'aplikace' },
+  { id:'010-uzivatele',   title:'Uživatelé',    icon:'👥', tiles:[{id:'seznam', title:'Seznam'}],  defaultTile:'seznam' },
+  { id:'020-muj-ucet',    title:'Můj účet',     icon:'👤', tiles:[{id:'profil', title:'Profil'}],  defaultTile:'profil' },
+  { id:'030-pronajimatel',title:'Pronajímatel', icon:'🏢', tiles:[{id:'prehled', title:'Přehled'}], defaultTile:'prehled' },
+  { id:'900-nastaveni',   title:'Nastavení',    icon:'⚙️', tiles:[{id:'aplikace', title:'Aplikace'}],defaultTile:'aplikace' },
 ];
 
+// ===== Pomocníci =============================================================
 const $id = (x) => document.getElementById(x);
 const E = (tag, attrs={}, children=[]) => {
   const el = document.createElement(tag);
@@ -29,12 +31,23 @@ const E = (tag, attrs={}, children=[]) => {
   return el;
 };
 
-// jednoduchý signal "dirty" pro budoucí formuláře
+// jednoduchý signal "dirty" pro formuláře
 const AppState = (() => {
   let dirty = false;
   return { isDirty: () => dirty, setDirty:(v)=>{dirty=!!v;}, clearDirty:()=>{dirty=false;} };
 })();
 window.AppState = AppState;
+
+// jednotná navigace s dotazem na rozdělanou práci
+function navigateTo(hash) {
+  if (window.AppState?.isDirty?.()) {
+    const ok = confirm('Máte rozdělanou neuloženou práci.\nChcete odejít bez uložení (OK) nebo zůstat (Zrušit)?');
+    if (!ok) return false;
+    window.AppState.clearDirty?.();
+  }
+  if (hash.startsWith('#')) location.hash = hash; else location.href = hash;
+  return true;
+}
 
 function injectOnce(id, css) {
   if (document.getElementById(id)) return;
@@ -44,6 +57,7 @@ function injectOnce(id, css) {
   document.head.appendChild(style);
 }
 
+// ===== Root / Layout =========================================================
 function buildRoot() {
   injectOnce('app-base-style', `
     #app_root, #app_root * , #app_root *::before, #app_root *::after {
@@ -55,31 +69,22 @@ function buildRoot() {
 
   const root = E('div', { id:'app_root', style:{ maxWidth:'1400px', margin:'0 auto', padding:'16px' } });
 
-  // --- HEADER
+  // Header
   const headerHost = E('div');
   const { actionsContainer } = renderHeader(headerHost, {
     appName: 'Pronajímatel',
-    onHome: () => {
-      if (window.AppState?.isDirty?.()) {
-        const ok = confirm('Máte rozdělanou neuloženou práci.\nChcete odejít bez uložení (OK) nebo zůstat (Zrušit)?');
-        if (!ok) return;
-        window.AppState.clearDirty?.();
-      }
-      location.hash = '#/dashboard';
-      route();
-    },
+    onHome: () => navigateTo('#/dashboard'),
   });
 
-  // base badge vpravo v headeru
+  // BASE badge vpravo
   const baseBadge = E('span', { class:'badge' }, 'BASE');
   const badgeWrap = E('div', { class:'ml-2 inline-flex' }, [baseBadge]);
 
-  // --- GRID
+  // Grid (sidebar + obsah)
   const grid = E('div', { style:{ display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' } });
   const sidebar = E('aside', { id:'sidebar', class:'p-3 bg-white rounded-2xl border' });
   const section = E('section');
 
-  // breadcrumbs + akce na JEDNOM řádku
   const crumbs = E('div', { class:'flex items-center justify-between mb-2 gap-3' }, [
     E('div', { id:'breadcrumbs', class:'text-sm text-slate-600 flex items-center gap-2' }, 'Domů'),
     E('div', { id:'crumb-actions', class:'flex items-center gap-2' })
@@ -97,7 +102,7 @@ function buildRoot() {
   root.appendChild(grid);
   document.body.appendChild(root);
 
-  // pravá akční lišta v headeru
+  // Pravá akční lišta v headeru
   try { renderHeaderActions(actionsContainer); }
   catch (e) {
     console.warn('[APP] headerActions failed', e);
@@ -107,52 +112,97 @@ function buildRoot() {
   }
 }
 
+// ===== Sidebar (rozbalování dlaždic jen u aktivního modulu) =================
 function renderSidebar(mods) {
   const sb = $id('sidebar');
   sb.innerHTML = '';
+
   const title = E('div', { class:'font-semibold mb-2' }, 'Menu');
-  const ul = E('ul', { class:'space-y-1' });
-
-  mods.forEach(m => {
-    const first = m.defaultTile || m.tiles?.[0]?.id || '';
-    const href  = `#/m/${m.id}/t/${first}`;
-    const a = E('a', {
-      href, 'data-mod':m.id,
-      class:'block px-3 py-2 rounded text-slate-700 hover:bg-slate-100'
-    }, `${m.icon || '📁'} ${m.title}`);
-    ul.appendChild(E('li', {}, a));
-  });
-
+  const list  = E('ul', { class:'space-y-1' });
   sb.appendChild(title);
-  sb.appendChild(ul);
+  sb.appendChild(list);
 
-  function markActive() {
-    const m = (/#\/m\/([^\/]+)/.exec(location.hash) || [])[1];
-    ul.querySelectorAll('a[data-mod]').forEach(a => {
-      const active = a.dataset.mod === m;
-      a.classList.toggle('bg-indigo-50', active);
-      a.classList.toggle('text-indigo-700', active);
-      a.classList.toggle('ring-1', active);
-      a.classList.toggle('ring-inset', active);
-      a.classList.toggle('ring-indigo-200', active);
-      a.classList.toggle('font-semibold', active);
-      a.classList.toggle('hover:bg-slate-100', !active);
-      a.classList.toggle('text-slate-700', !active);
+  function makeModuleItem(m) {
+    const li = E('li');
+
+    const btn = E('button', {
+      'data-mod': m.id,
+      class: 'w-full text-left px-3 py-2 rounded text-slate-700 hover:bg-slate-100 flex items-center justify-between'
+    }, [
+      E('span', {}, `${m.icon || '📁'} ${m.title}`),
+      E('span', { class:'text-slate-300' }, '›')
+    ]);
+    btn.onclick = (ev) => {
+      ev.preventDefault();
+      const first = m.defaultTile || m.tiles?.[0]?.id || '';
+      navigateTo(`#/m/${m.id}/t/${first}`);
+    };
+
+    const tilesWrap = E('ul', { class:'mt-1 ml-2 space-y-1', 'data-tiles-for': m.id });
+    li.appendChild(btn);
+    li.appendChild(tilesWrap);
+    return li;
+  }
+
+  mods.forEach(m => list.appendChild(makeModuleItem(m)));
+
+  function renderTilesForActive() {
+    const activeModId = (/#\/m\/([^\/]+)/.exec(location.hash) || [])[1];
+
+    // zvýraznění modulu
+    list.querySelectorAll('button[data-mod]').forEach(b => {
+      const active = b.dataset.mod === activeModId;
+      b.classList.toggle('bg-indigo-50', active);
+      b.classList.toggle('text-indigo-700', active);
+      b.classList.toggle('ring-1', active);
+      b.classList.toggle('ring-inset', active);
+      b.classList.toggle('ring-indigo-200', active);
+      b.classList.toggle('font-semibold', active);
+      b.classList.toggle('hover:bg-slate-100', !active);
+      b.classList.toggle('text-slate-700', !active);
+    });
+
+    // vyčisti sub-seznamy
+    list.querySelectorAll('ul[data-tiles-for]').forEach(ul => ul.innerHTML = '');
+
+    const mod = mods.find(m => m.id === activeModId);
+    if (!mod) return;
+
+    const host = list.querySelector(`ul[data-tiles-for="${mod.id}"]`);
+    if (!host) return;
+
+    (mod.tiles || []).forEach(t => {
+      const a = E('a', {
+        href: `#/m/${mod.id}/t/${t.id}`,
+        'data-tile': `${mod.id}:${t.id}`,
+        class: 'block px-3 py-1.5 rounded text-slate-600 hover:bg-slate-50'
+      }, `• ${t.title || t.id}`);
+      a.onclick = (ev) => { ev.preventDefault(); navigateTo(a.getAttribute('href')); };
+      host.appendChild(E('li', {}, a));
+    });
+
+    // zvýrazni aktivní dlaždici
+    const activeTile = (/#\/m\/[^\/]+\/t\/([^\/]+)/.exec(location.hash) || [])[1];
+    list.querySelectorAll('a[data-tile]').forEach(a => {
+      const mine = a.dataset.tile === `${mod.id}:${activeTile}`;
+      a.classList.toggle('bg-indigo-50', mine);
+      a.classList.toggle('text-indigo-700', mine);
+      a.classList.toggle('ring-1', mine);
+      a.classList.toggle('ring-indigo-200', mine);
+      a.classList.toggle('font-medium', mine);
     });
   }
-  ul.addEventListener('click', () => setTimeout(route, 0));
-  window.addEventListener('hashchange', markActive);
-  markActive();
+
+  window.addEventListener('hashchange', renderTilesForActive);
+  renderTilesForActive();
 }
 
+// ===== Breadcrumbs / routing =================================================
 function setBreadcrumbs(parts) {
-  // parts: [{label, href?}]
   const bc = $id('breadcrumbs');
   bc.innerHTML = parts.map((p,i) => {
     const sep = i ? '<span class="text-slate-300">/</span>' : '';
-    if (p.href) {
-      return `${sep}<a class="hover:underline" href="${p.href}">${p.label}</a>`;
-    }
+    if (p.href) return `${sep}<a class="hover:underline" href="${p.href}">${p.label}</a>`;
     return `${sep}<span>${p.label}</span>`;
   }).join(' ');
 }
@@ -216,6 +266,7 @@ function route() {
   return mountModule(h.mod, tile);
 }
 
+// ===== Boot ==================================================================
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[APP] DOM ready');
   try {
