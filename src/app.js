@@ -254,7 +254,7 @@ async function mountModule(modId, tileId) {
 
   try {
     // === 010: Správa uživatelů ===
-    if (modId === '010-sprava-uzivatelu') {
+    if (modId === '010-uzivatele') {
       const tiles = await import('./modules/010-sprava-uzivatelu/tiles/index.js');
       await tiles.renderTile(tileId || 'seznam', c);
       return;
