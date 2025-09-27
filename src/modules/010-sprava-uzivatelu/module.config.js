@@ -1,16 +1,10 @@
-// Konfigurace modulu 010 – Správa uživatelů (v4 styl)
+// Konfigurace modulu: id/název a veřejné „dlaždice“ (tiles)
 export default {
   id: '010-uzivatele',
   title: 'Uživatelé',
-  icon: '👥',
   tiles: [
-    { id: 'seznam',  label: 'Seznam',  icon: '📄' },
-    { id: 'prehled', label: 'Přehled', icon: '🗂️' },
-    { id: 'list',    label: 'List',    icon: '🧾' },
+    { id: 'seznam', label: 'Seznam', icon: 'list' },
+    // později přidáme další: { id: 'archiv', ... }, { id: 'role', ... }
   ],
-  forms: [
-    { id: 'create', label: 'Nový',    icon: '➕' },
-    { id: 'edit',   label: 'Upravit', icon: '✏️' },
-    { id: 'novy',   label: 'Nový (alt)', icon: '🆕' },
-  ],
+  defaultTile: 'seznam',
 };
