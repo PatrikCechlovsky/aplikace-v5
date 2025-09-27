@@ -4,6 +4,10 @@
 import { renderHeader } from './ui/header.js';
 import { renderHeaderActions, ACTION_PRESETS } from './ui/headerActions.js';
 
+console.log('[APP] start');
+window.addEventListener('error', (e) => console.error('[APP] window error', e.error || e));
+window.addEventListener('unhandledrejection', (e) => console.error('[APP] unhandled', e.reason || e));
+
 const MODULES = [
   { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam'}],  defaultTile:'seznam' },
   { id:'020-muj-ucet',    title:'Můj účet',    icon:'👤', tiles:[{id:'profil'}],  defaultTile:'profil' },
