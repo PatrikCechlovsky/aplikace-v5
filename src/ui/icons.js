@@ -39,7 +39,13 @@ const I = {
   tile: '🟦',
   form: '📝',
 };
+// … tvůj původní registr I = { … }
+
+I.refresh = I.refresh || '🔄'; // doplníme chybějící refresh
+// aliasy — ať je jedno, jestli někdo napíše plus/user/logout apod.
+const ALIASES = { plus: 'add', user: 'account', logout: 'exit' };
 
 export function icon(name, fallback = '•') {
-  return I[name] || fallback;
+  const key = ALIASES[name] || name;
+  return I[key] || fallback;
 }
