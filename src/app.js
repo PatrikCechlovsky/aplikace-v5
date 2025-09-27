@@ -1,15 +1,12 @@
 // --- SAFE BOOT ---
-// Když vidíš tenhle log a nic dalšího, importy selhaly (dřív byly statické).
 console.log('[APP] start (safe boot)');
 
 const $ = (id) => document.getElementById(id);
 const setHTML = (el, html) => { if (el) el.innerHTML = html; };
 const clear = (el) => { if (el) el.innerHTML = ''; };
 
-// Minimal fallback UI, kdyby selhaly importy
 function renderSidebarFallback(mods = []) {
-  const sb = $('#sidebar');
-  if (!sb) return;
+  const sb = $('#sidebar'); if (!sb) return;
   sb.innerHTML = `<ul class="space-y-1 text-slate-900">
     ${mods.map(m => {
       const first = m.defaultTile || (m.tiles && m.tiles[0] && m.tiles[0].id) || '';
@@ -20,7 +17,6 @@ function renderSidebarFallback(mods = []) {
   </ul>`;
 }
 
-// Malý helper pro chybovou hlášku do obsahu
 function renderFatalError(message) {
   setHTML($('#content'), `
     <div class="p-4 bg-white rounded-2xl border">
@@ -30,13 +26,11 @@ function renderFatalError(message) {
   `);
 }
 
-// Hlavní async init s dynamickými importy (všechno v try/catch)
 (async function init() {
   try {
-    // 1) Dynamicky načti supabase (ještě je i v <script> před app.js, ale chceme jistotu)
-    const { supabase } = await import('./src/supabase.js');
+    // 🔧 DŮLEŽITÉ: cesty jsou relativní k /src/app.js (NE ./src/…)
+    const { supabase } = await import('./supabase.js');
 
-    // 2) Načti ostatní moduly bezpečně
     const [
       modulesIndex,
       sidebarUi,
@@ -45,12 +39,12 @@ function renderFatalError(message) {
       headerUi,
       commonUi
     ] = await Promise.all([
-      import('./src/app/modules.index.js').catch(e => { throw new Error('Nepodařilo se načíst "src/app/modules.index.js"'); }),
-      import('./src/ui/sidebar.js').catch(e => { throw new Error('Nepodařilo se načíst "src/ui/sidebar.js"'); }),
-      import('./src/ui/breadcrumbs.js').catch(e => { throw new Error('Nepodařilo se načíst "src/ui/breadcrumbs.js"'); }),
-      import('./src/ui/content.js').catch(e => { throw new Error('Nepodařilo se načíst "src/ui/content.js"'); }),
-      import('./src/ui/headerActions.js').catch(e => { throw new Error('Nepodařilo se načíst "src/ui/headerActions.js"'); }),
-      import('./src/ui/commonActions.js').catch(e => { throw new Error('Nepodařilo se načíst "src/ui/commonActions.js"'); }),
+      import('./app/modules.index.js').catch(() => { throw new Error('Nepodařilo se načíst "src/app/modules.index.js"'); }),
+      import('./ui/sidebar.js').catch(() => { throw new Error('Nepodařilo se načíst "src/ui/sidebar.js"'); }),
+      import('./ui/breadcrumbs.js').catch(() => { throw new Error('Nepodařilo se načíst "src/ui/breadcrumbs.js"'); }),
+      import('./ui/content.js').catch(() => { throw new Error('Nepodařilo se načíst "src/ui/content.js"'); }),
+      import('./ui/headerActions.js').catch(() => { throw new Error('Nepodařilo se načíst "src/ui/headerActions.js"'); }),
+      import('./ui/commonActions.js').catch(() => { throw new Error('Nepodařilo se načíst "src/ui/commonActions.js"'); }),
     ]);
 
     const MODULES = modulesIndex?.MODULES || [];
@@ -61,7 +55,6 @@ function renderFatalError(message) {
     const renderCommonActions = commonUi?.renderCommonActions;
 
     if (!Array.isArray(MODULES) || MODULES.length === 0) {
-      console.error('[APP] MODULES je prázdné / nenačtené');
       renderSidebarFallback([
         { id:'010-uzivatele', title:'Uživatelé', icon:'👥', tiles:[{id:'seznam'}], defaultTile:'seznam' },
         { id:'020-muj-ucet',  title:'Můj účet',  icon:'👤', tiles:[{id:'profil'}], defaultTile:'profil' },
@@ -70,7 +63,7 @@ function renderFatalError(message) {
       return;
     }
 
-    // --- Stav + helpers ---
+    // --- helpers ---
     window.appDirty = false;
     window.setAppDirty = (v) => { window.appDirty = !!v; };
 
@@ -79,9 +72,7 @@ function renderFatalError(message) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) { location.replace('./index.html'); return null; }
         return session;
-      } catch (e) {
-        location.replace('./index.html'); return null;
-      }
+      } catch { location.replace('./index.html'); return null; }
     }
 
     async function hardLogout() {
@@ -120,14 +111,15 @@ function renderFatalError(message) {
       try {
         switch (mod.id) {
           case '010-uzivatele': {
-            const cfg = await import('./src/modules/010-sprava-uzivatelu/module.config.js');
-            const tiles = await import('./src/modules/010-sprava-uzivatelu/tiles/index.js');
+            // ⚠️ relativně k /src/app.js → ./modules/…
+            const cfg = await import('./modules/010-sprava-uzivatelu/module.config.js');
+            const tiles = await import('./modules/010-sprava-uzivatelu/tiles/index.js');
             const tileId = id || cfg.default.tiles?.[0]?.id || 'seznam';
             await tiles.renderTile(tileId, root);
             return true;
           }
           case '020-muj-ucet': {
-            const m = await import('./src/modules/my-account.js');
+            const m = await import('./modules/my-account.js');
             await m.default(root);
             return true;
           }
@@ -158,7 +150,6 @@ function renderFatalError(message) {
       await mountModuleView({ mod, kind: h.kind, id: h.kind === 'tile' ? activeTile : h.id });
     }
 
-    // --- Start po DOM ---
     document.addEventListener('DOMContentLoaded', async () => {
       console.log('[APP] DOM ready');
       const session = await ensureSignedIn(); if (!session) return;
@@ -180,7 +171,6 @@ function renderFatalError(message) {
         location.hash = '#/dashboard';
       });
 
-      // render sidebar (když helper selže, zobraz fallback)
       try {
         if (typeof renderSidebar === 'function') {
           renderSidebar($('#sidebar'), MODULES, { onSelect: () => setTimeout(route, 0) });
@@ -197,7 +187,6 @@ function renderFatalError(message) {
     });
   } catch (e) {
     console.error('[APP] safe boot error:', e);
-    // Nouzový boční panel s minimem položek, ať se má kam kliknout
     renderSidebarFallback([
       { id:'010-uzivatele', title:'Uživatelé', icon:'👥', tiles:[{id:'seznam'}], defaultTile:'seznam' },
       { id:'020-muj-ucet',  title:'Můj účet',  icon:'👤', tiles:[{id:'profil'}], defaultTile:'profil' },
