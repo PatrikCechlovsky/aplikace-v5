@@ -1,5 +1,7 @@
-// CLEAN BASE v3 — root, sidebar, routing + headerActions jako komponenta
+// app.js — čistý základ + hlavička (home) + pravá lišta akcí (včetně 🔔 notifikací)
+// + bezpečný návrat domů při rozdělané práci (dirty state API).
 
+import { renderHeader } from './ui/header.js';
 import { renderHeaderActions, ACTION_PRESETS } from './ui/headerActions.js';
 
 const MODULES = [
@@ -10,7 +12,7 @@ const MODULES = [
 ];
 
 const $id = (x) => document.getElementById(x);
-const el = (tag, attrs={}, children=[]) => {
+const E = (tag, attrs={}, children=[]) => {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k,v]) => {
     if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
@@ -24,54 +26,62 @@ const el = (tag, attrs={}, children=[]) => {
   return e;
 };
 
+/* ---------- Dirty state (globální jednoduché API) ---------- */
+const AppState = (() => {
+  let dirty = false;
+  return {
+    isDirty: () => dirty,
+    setDirty: (v) => { dirty = !!v; },
+    clearDirty: () => { dirty = false; },
+  };
+})();
+window.AppState = AppState; // pro použití v dalších modulech
+
+function confirmLeaveIfDirty(onConfirm) {
+  if (!AppState.isDirty()) return onConfirm();
+  const ok = confirm('Máte rozdělanou neuloženou práci.\nChcete pokračovat v práci (Zrušit), nebo odejít bez uložení (OK)?');
+  if (ok) { AppState.clearDirty(); onConfirm(); }
+  // pokud zvolí Zrušit → nic se neděje, zůstáváme
+}
+
+/* ---------- Build UI ---------- */
 function buildRoot() {
-  // skryj cokoli, co by mohlo zůstat v <body> (pojistka proti duplikátům)
+  // schovej případné zbytky v <body>
   Array.from(document.body.children).forEach(ch => ch.tagName !== 'SCRIPT' && (ch.style.display = 'none'));
 
   // pojistka proti globálním CSS (neviditelný text apod.)
-  const style = document.createElement('style');
-  style.textContent = `
+  injectOnce('app-base-style', `
     #app_root, #app_root * , #app_root *::before, #app_root *::after {
       color:#0f172a !important; opacity:1 !important; filter:none !important; mix-blend-mode:normal !important;
       text-decoration:none !important; font-size:16px; line-height:1.4;
     }
-    .btn {
-      display:inline-flex; align-items:center; gap:.5rem;
-      padding:.4rem .6rem; border:1px solid #e5e7eb; border-radius:.5rem; background:#fff;
-      transition:background .12s ease-in-out;
-    }
-    .btn:hover { background:#f8fafc; }
-    .iconbtn { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; }
-    .badge { padding:.15rem .45rem; border:1px solid #f59e0b; border-radius:.5rem; background:#fef3c7; color:#92400e; font-size:.75rem; font-weight:600; }
-  `;
-  document.head.appendChild(style);
+    .badge { padding:.15rem .45rem; border:1px solid #f59e0b; border-radius:.5rem; background:#fef3c7; color:#92400e; font-size:.75rem; font-weight:600 }
+  `);
 
-  const root = el('div', { id:'app_root', style:{ maxWidth:'1400px', margin:'0 auto', padding:'16px' } });
+  const root = E('div', { id:'app_root', style:{ maxWidth:'1400px', margin:'0 auto', padding:'16px' } });
 
-  // HEADER
-  const headerLeft = el('div', { class:'font-bold text-xl' }, 'Pronajímatel');
+  // HEADER (home + actions container)
+  const headerHost = E('div');
+  const { actionsContainer } = renderHeader(headerHost, {
+    appName: 'Pronajímatel',
+    onHome: () => confirmLeaveIfDirty(() => { location.hash = '#/dashboard'; route(); }),
+  });
 
-  // kontejner na akce vpravo (sem komponenta vyrenderuje tlačítka)
-  const actionsContainer = el('div', { id:'header_actions' });
+  // BASE badge (status)
+  const baseBadge = E('span', { class:'badge' }, 'BASE');
+  const badgeWrap = E('div', { class:'ml-2 inline-flex' }, [baseBadge]);
 
-  const baseBadge = el('span', { class:'badge' }, 'BASE');
+  // LAYOUT pod headerem
+  const grid = E('div', { style:{ display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' } });
+  const sidebar = E('aside', { id:'sidebar', class:'p-3 bg-white rounded-2xl border' });
+  const section = E('section');
 
-  const header = el('div', { class:'flex items-center gap-2 mb-3' }, [
-    headerLeft,
-    el('div', { class:'ml-auto flex items-center gap-2' }, [ actionsContainer, baseBadge ])
+  const crumbs = E('div', { class:'flex items-center justify-between mb-2' }, [
+    E('div', { id:'breadcrumbs', class:'text-xs text-slate-500' }, 'Dashboard'),
+    E('div', { id:'crumb-actions', class:'flex items-center gap-2' })
   ]);
-
-  // LAYOUT
-  const grid = el('div', { style:{ display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' } });
-  const sidebar = el('aside', { id:'sidebar', class:'p-3 bg-white rounded-2xl border' });
-  const section = el('section');
-
-  const crumbs = el('div', { class:'flex items-center justify-between mb-2' }, [
-    el('div', { id:'breadcrumbs', class:'text-xs text-slate-500' }, 'Dashboard'),
-    el('div', { id:'crumb-actions', class:'flex items-center gap-2' })
-  ]);
-  const actionsBar = el('div', { id:'actions-bar', class:'mb-3 flex flex-wrap gap-2' });
-  const content = el('div', { id:'content', class:'min-h-[60vh] bg-white rounded-2xl border p-4' });
+  const actionsBar = E('div', { id:'actions-bar', class:'mb-3 flex flex-wrap gap-2' });
+  const content = E('div', { id:'content', class:'min-h-[60vh] bg-white rounded-2xl border p-4' });
 
   section.appendChild(crumbs);
   section.appendChild(actionsBar);
@@ -80,15 +90,28 @@ function buildRoot() {
   grid.appendChild(sidebar);
   grid.appendChild(section);
 
-  root.appendChild(header);
+  root.appendChild(headerHost);
+  actionsContainer.parentElement.appendChild(badgeWrap);
   root.appendChild(grid);
   document.body.appendChild(root);
 
-  // ❱❱ tady zavoláme komponentu headerActions s konfigurací
-  const actions = [
+  // --- Akce vpravo: NOTIF + Search + Help + Account + Logout
+  const demoNotifications = [
+    { title: 'Nová žádost nájemníka', time: 'před 5 min', icon:'📩' },
+    { title: 'Platba připsána',        time: 'před 1 hod', icon:'✅' },
+  ];
+
+  renderHeaderActions(actionsContainer, [
+    ACTION_PRESETS.notifications(demoNotifications, (item) => {
+      $id('content').innerHTML =
+        `<div class="text-slate-700"><b>Notifikace:</b> ${item.title} <div class="text-xs text-slate-500">${item.time || ''}</div></div>`;
+    }),
     ACTION_PRESETS.search(() => {
       const q = prompt('Hledat:');
-      if (q) $id('content').innerHTML = `<div class="text-slate-700">Výsledek hledání pro: <b>${q}</b> (placeholder)</div>`;
+      if (q) {
+        $id('content').innerHTML =
+          `<div class="text-slate-700">Výsledek hledání pro: <b>${q}</b> (placeholder)</div>`;
+      }
     }),
     ACTION_PRESETS.help(() => {
       $id('content').innerHTML = `<div class="text-slate-700">Nápověda – zatím prázdné. Přidáme později.</div>`;
@@ -98,25 +121,23 @@ function buildRoot() {
       route();
     }),
     ACTION_PRESETS.logout(() => {
-      // Později napojíme supabase.auth.signOut(); zatím návrat na login
+      // Později: await supabase.auth.signOut();
       location.href = './index.html';
     }),
-  ];
-
-  renderHeaderActions(actionsContainer, actions);
+  ]);
 }
 
 function renderSidebar(mods) {
   const sb = $id('sidebar');
   sb.innerHTML = '';
-  const title = el('div', { class:'font-semibold mb-2' }, 'Menu');
-  const ul = el('ul', { class:'space-y-1' });
+  const title = E('div', { class:'font-semibold mb-2' }, 'Menu');
+  const ul = E('ul', { class:'space-y-1' });
 
   mods.forEach(m => {
     const first = m.defaultTile || m.tiles?.[0]?.id || '';
     const href  = `#/m/${m.id}/t/${first}`;
-    const a = el('a', { href, 'data-mod':m.id, class:'block px-3 py-2 rounded hover:bg-slate-100' }, `${m.icon || '📁'} ${m.title}`);
-    ul.appendChild(el('li', {}, a));
+    const a = E('a', { href, 'data-mod':m.id, class:'block px-3 py-2 rounded hover:bg-slate-100' }, `${m.icon || '📁'} ${m.title}`);
+    ul.appendChild(E('li', {}, a));
   });
 
   sb.appendChild(title);
@@ -136,15 +157,15 @@ function renderSidebar(mods) {
   markActive();
 }
 
+/* ---------- Routing + obsah ---------- */
 function breadcrumbsHome() {
-  $id('breadcrumbs').innerHTML = `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
+  $id('breadcrumbs').innerHTML =
+    `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
 }
-
 function mountDashboard() {
   breadcrumbsHome();
   $id('content').innerHTML = `<div class="text-slate-700">Dashboard – čistá základní verze.</div>`;
 }
-
 function mountModule(modId, tileId) {
   breadcrumbsHome();
   $id('content').innerHTML = `
@@ -153,7 +174,6 @@ function mountModule(modId, tileId) {
       <div>Obsah zatím bez dat (krok po kroku přidáme).</div>
     </div>`;
 }
-
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const p = raw.split('?')[0].split('/').filter(Boolean);
@@ -170,8 +190,18 @@ function route() {
   mountModule(h.mod, tile);
 }
 
+/* ---------- Boot ---------- */
 document.addEventListener('DOMContentLoaded', () => {
   buildRoot();
   renderSidebar(MODULES);
   route();
 });
+
+/* ---------- utils ---------- */
+function injectOnce(id, css) {
+  if (document.getElementById(id)) return;
+  const style = document.createElement('style');
+  style.id = id;
+  style.textContent = css;
+  document.head.appendChild(style);
+}
