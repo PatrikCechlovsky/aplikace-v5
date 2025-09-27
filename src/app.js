@@ -1,8 +1,4 @@
-// src/app.js — stabilní základ bez ACTION_PRESETS (oprava importu)
-// - bezpečné logování chyb
-// - render header (home + akční lišta z headerActions)
-// - sidebar + jednoduché routování
-// - žádné závislosti na neexistujících exportech
+// src/app.js — layout + routing + jemnější UI aktivních prvků
 
 import { renderHeader } from './ui/header.js';
 import { renderHeaderActions } from './ui/headerActions.js';
@@ -12,10 +8,10 @@ window.addEventListener('error', (e) => console.error('[APP] window error', e.er
 window.addEventListener('unhandledrejection', (e) => console.error('[APP] unhandled', e.reason || e));
 
 const MODULES = [
-  { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam'}],  defaultTile:'seznam' },
-  { id:'020-muj-ucet',    title:'Můj účet',    icon:'👤', tiles:[{id:'profil'}],  defaultTile:'profil' },
-  { id:'030-pronajimatel',title:'Pronajímatel',icon:'🏢', tiles:[{id:'prehled'}], defaultTile:'prehled' },
-  { id:'900-nastaveni',   title:'Nastavení',   icon:'⚙️', tiles:[{id:'aplikace'}],defaultTile:'aplikace' },
+  { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam', title:'Seznam'}],  defaultTile:'seznam' },
+  { id:'020-muj-ucet',    title:'Můj účet',    icon:'👤', tiles:[{id:'profil', title:'Profil'}],  defaultTile:'profil' },
+  { id:'030-pronajimatel',title:'Pronajímatel',icon:'🏢', tiles:[{id:'prehled', title:'Přehled'}], defaultTile:'prehled' },
+  { id:'900-nastaveni',   title:'Nastavení',   icon:'⚙️', tiles:[{id:'aplikace', title:'Aplikace'}],defaultTile:'aplikace' },
 ];
 
 const $id = (x) => document.getElementById(x);
@@ -33,14 +29,10 @@ const E = (tag, attrs={}, children=[]) => {
   return el;
 };
 
-// Jednoduchý "dirty" stav pro budoucí formuláře (home ho bude respektovat)
+// jednoduchý signal "dirty" pro budoucí formuláře
 const AppState = (() => {
   let dirty = false;
-  return {
-    isDirty: () => dirty,
-    setDirty: (v) => { dirty = !!v; },
-    clearDirty: () => { dirty = false; },
-  };
+  return { isDirty: () => dirty, setDirty:(v)=>{dirty=!!v;}, clearDirty:()=>{dirty=false;} };
 })();
 window.AppState = AppState;
 
@@ -53,21 +45,17 @@ function injectOnce(id, css) {
 }
 
 function buildRoot() {
-  // skryj případné zbytky v <body> (když by tam něco bylo)
-  Array.from(document.body.children).forEach(ch => ch.tagName !== 'SCRIPT' && (ch.style.display = 'none'));
-
-  // pojistka proti globálním stylům (neviditelný text apod.)
   injectOnce('app-base-style', `
     #app_root, #app_root * , #app_root *::before, #app_root *::after {
-      color:#0f172a !important; opacity:1 !important; filter:none !important; mix-blend-mode:normal !important;
-      text-decoration:none !important; font-size:16px; line-height:1.4;
+      color:#0f172a; opacity:1; filter:none; mix-blend-mode:normal;
+      text-decoration:none; font-size:16px; line-height:1.4;
     }
-    .badge { padding:.15rem .45rem; border:1px solid #f59e0b; border-radius:.5rem; background:#fef3c7; color:#92400e; font-size:.75rem; font-weight:600 }
+    .badge { padding:.15rem .45rem; border:1px solid #dbeafe; border-radius:.5rem; background:#eff6ff; color:#1e40af; font-size:.75rem; font-weight:600 }
   `);
 
   const root = E('div', { id:'app_root', style:{ maxWidth:'1400px', margin:'0 auto', padding:'16px' } });
 
-  // HEADER (komponenta vytvoří: Home + kontejner pro akce vpravo)
+  // --- HEADER
   const headerHost = E('div');
   const { actionsContainer } = renderHeader(headerHost, {
     appName: 'Pronajímatel',
@@ -82,44 +70,39 @@ function buildRoot() {
     },
   });
 
-  // BASE badge (stavový odznak vpravo u akcí)
+  // base badge vpravo v headeru
   const baseBadge = E('span', { class:'badge' }, 'BASE');
   const badgeWrap = E('div', { class:'ml-2 inline-flex' }, [baseBadge]);
 
-  // LAYOUT (sidebar + obsah)
+  // --- GRID
   const grid = E('div', { style:{ display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' } });
   const sidebar = E('aside', { id:'sidebar', class:'p-3 bg-white rounded-2xl border' });
   const section = E('section');
 
-  const crumbs = E('div', { class:'flex items-center justify-between mb-2' }, [
-    E('div', { id:'breadcrumbs', class:'text-xs text-slate-500' }, 'Dashboard'),
+  // breadcrumbs + akce na JEDNOM řádku
+  const crumbs = E('div', { class:'flex items-center justify-between mb-2 gap-3' }, [
+    E('div', { id:'breadcrumbs', class:'text-sm text-slate-600 flex items-center gap-2' }, 'Domů'),
     E('div', { id:'crumb-actions', class:'flex items-center gap-2' })
   ]);
-  const actionsBar = E('div', { id:'actions-bar', class:'mb-3 flex flex-wrap gap-2' });
   const content = E('div', { id:'content', class:'min-h-[60vh] bg-white rounded-2xl border p-4' });
 
   section.appendChild(crumbs);
-  section.appendChild(actionsBar);
   section.appendChild(content);
 
   grid.appendChild(sidebar);
   grid.appendChild(section);
 
-  // mount do DOM
   root.appendChild(headerHost);
-  // připnout BASE badge vedle akční lišty v headeru
   actionsContainer?.parentElement?.appendChild(badgeWrap);
   root.appendChild(grid);
   document.body.appendChild(root);
 
-  // Pravá akční lišta v headeru (bez presetů – vše řeší komponenta)
-  try {
-    renderHeaderActions(actionsContainer);
-  } catch (e) {
-    console.warn('[APP] headerActions failed, rendering minimal logout only', e);
-    // nouzové odhlášení
-    const btn = E('button', { class:'px-3 py-1 bg-slate-800 text-white rounded' }, 'Odhlásit');
-    btn.onclick = () => { location.href = './index.html'; };
+  // pravá akční lišta v headeru
+  try { renderHeaderActions(actionsContainer); }
+  catch (e) {
+    console.warn('[APP] headerActions failed', e);
+    const btn = E('button', { class:'px-3 py-1 border rounded' }, 'Odhlásit');
+    btn.onclick = () => location.href = './index.html';
     actionsContainer.appendChild(btn);
   }
 }
@@ -133,7 +116,10 @@ function renderSidebar(mods) {
   mods.forEach(m => {
     const first = m.defaultTile || m.tiles?.[0]?.id || '';
     const href  = `#/m/${m.id}/t/${first}`;
-    const a = E('a', { href, 'data-mod':m.id, class:'block px-3 py-2 rounded hover:bg-slate-100' }, `${m.icon || '📁'} ${m.title}`);
+    const a = E('a', {
+      href, 'data-mod':m.id,
+      class:'block px-3 py-2 rounded text-slate-700 hover:bg-slate-100'
+    }, `${m.icon || '📁'} ${m.title}`);
     ul.appendChild(E('li', {}, a));
   });
 
@@ -144,9 +130,14 @@ function renderSidebar(mods) {
     const m = (/#\/m\/([^\/]+)/.exec(location.hash) || [])[1];
     ul.querySelectorAll('a[data-mod]').forEach(a => {
       const active = a.dataset.mod === m;
-      a.classList.toggle('bg-slate-900', active);
-      a.classList.toggle('text-white', active);
+      a.classList.toggle('bg-indigo-50', active);
+      a.classList.toggle('text-indigo-700', active);
+      a.classList.toggle('ring-1', active);
+      a.classList.toggle('ring-inset', active);
+      a.classList.toggle('ring-indigo-200', active);
+      a.classList.toggle('font-semibold', active);
       a.classList.toggle('hover:bg-slate-100', !active);
+      a.classList.toggle('text-slate-700', !active);
     });
   }
   ul.addEventListener('click', () => setTimeout(route, 0));
@@ -154,33 +145,51 @@ function renderSidebar(mods) {
   markActive();
 }
 
-function breadcrumbsHome() {
-  $id('breadcrumbs').innerHTML =
-    `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
+function setBreadcrumbs(parts) {
+  // parts: [{label, href?}]
+  const bc = $id('breadcrumbs');
+  bc.innerHTML = parts.map((p,i) => {
+    const sep = i ? '<span class="text-slate-300">/</span>' : '';
+    if (p.href) {
+      return `${sep}<a class="hover:underline" href="${p.href}">${p.label}</a>`;
+    }
+    return `${sep}<span>${p.label}</span>`;
+  }).join(' ');
+}
+function clearCrumbActions() {
+  const ca = $id('crumb-actions');
+  if (ca) ca.innerHTML = '';
 }
 
 function mountDashboard() {
-  breadcrumbsHome();
+  setBreadcrumbs([{label:'Domů'}]);
+  clearCrumbActions();
   $id('content').innerHTML = `<div class="text-slate-700">Dashboard – čistá základní verze.</div>`;
 }
 
 async function mountModule(modId, tileId) {
-  breadcrumbsHome();
+  const mod = MODULES.find(m => m.id === modId);
+  const tileMeta = mod?.tiles?.find(t => t.id === tileId) || { id: tileId, title: tileId };
+  setBreadcrumbs([
+    {label:'Domů', href:'#/dashboard'},
+    {label: mod?.title || modId, href:`#/m/${modId}/t/${mod?.defaultTile || tileId}`},
+    {label: tileMeta.title || tileMeta.id}
+  ]);
+  clearCrumbActions();
+
   const c = $id('content');
   c.innerHTML = `<div class="text-slate-500 p-2">Načítám modul…</div>`;
 
   try {
-    // lazy import podle modulu
     if (modId === '010-uzivatele') {
       const tiles = await import('./modules/010-sprava-uzivatelu/tiles/index.js');
       await tiles.renderTile(tileId || 'seznam', c);
       return;
     }
-    // fallback
     c.innerHTML = `
       <div class="text-slate-700">
-        <div class="mb-2 text-sm text-slate-500">Modul: <b>${modId}</b>, dlaždice: <b>${tileId || '-'}</b></div>
-        <div>Obsah zatím bez dat.</div>
+        <div>Modul: <b>${modId}</b>, dlaždice: <b>${tileId || '-'}</b></div>
+        <div class="mt-2 text-slate-500">Obsah zatím bez dat.</div>
       </div>`;
   } catch (err) {
     console.error('[APP] mountModule error', err);
@@ -207,7 +216,6 @@ function route() {
   return mountModule(h.mod, tile);
 }
 
-// BOOT
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[APP] DOM ready');
   try {
