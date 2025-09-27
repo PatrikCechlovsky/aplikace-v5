@@ -1,4 +1,4 @@
-// Jednoduchý seznam modulů pro sidebar a breadcrumbs (Fáze 1)
+// Přehled modulů pro menu (sidebar) + výchozí dlaždice
 const mk = (id, title, icon, tiles = []) =>
   ({ id, title, icon, tiles, defaultTile: tiles[0]?.id });
 
