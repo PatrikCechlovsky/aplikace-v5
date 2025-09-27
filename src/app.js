@@ -8,6 +8,22 @@ console.log('[APP] start');
 window.addEventListener('error', (e) => console.error('[APP] window error', e.error || e));
 window.addEventListener('unhandledrejection', (e) => console.error('[APP] unhandled', e.reason || e));
 
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[APP] DOM ready');
+  try {
+    renderHeaderActions(document.getElementById('header-actions'));
+    renderSidebar(document.getElementById('sidebar'));
+    mountDashboard(document.getElementById('content'));
+  } catch (err) {
+    console.error('[APP] boot failed', err);
+    const el = document.getElementById('content') || document.body;
+    const box = document.createElement('div');
+    box.className = 'm-4 p-4 border rounded bg-amber-50';
+    box.textContent = 'Aplikace se nepodařila spustit. Otevři konzoli pro více informací.';
+    el.appendChild(box);
+  }
+});
+
 const MODULES = [
   { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam'}],  defaultTile:'seznam' },
   { id:'020-muj-ucet',    title:'Můj účet',    icon:'👤', tiles:[{id:'profil'}],  defaultTile:'profil' },
