@@ -3,16 +3,19 @@ import { renderActions, ACTIONS } from '../../../ui/actionButtons.js';
 import { listProfiles, isAdmin } from '../../../db.js';
 
 export default async function renderSeznam(root) {
+  // Akční ikonky do breadcrumb lišty (vpravo)
+  const actionsHost = document.getElementById('crumb-actions');
+  renderActions(actionsHost, [
+    ACTIONS.add({ onClick(){ alert('Přidat – placeholder'); } }),
+    ACTIONS.edit({ disabled:true, reason:'Vyberte řádek' }),
+    ACTIONS.archive({ disabled:true, reason:'Vyberte řádek' }),
+    ACTIONS.refresh({ onClick(){ refresh(); } }),
+  ], { iconOnly:true });
+
   root.innerHTML = `
-    <div class="p-4 bg-white rounded-2xl border">
-      <div class="flex items-center justify-between gap-2">
-        <h2 class="text-lg font-semibold">${icon('users')} Uživatelé</h2>
-        <div id="tile-actions"></div>
-      </div>
-
-      <div id="tile-notice" class="mt-2 text-sm text-slate-500"></div>
-
-      <div class="mt-4 border rounded-lg overflow-hidden">
+    <div class="p-0">
+      <div id="tile-notice" class="mb-3 text-sm text-slate-500"></div>
+      <div class="border rounded-lg overflow-hidden">
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-600">
             <tr>
@@ -25,11 +28,7 @@ export default async function renderSeznam(root) {
           <tbody id="u-rows"></tbody>
         </table>
       </div>
-
-      <div id="empty" class="hidden mt-6 text-slate-500 text-sm">
-        Žádná data k zobrazení.
-      </div>
-
+      <div id="empty" class="hidden mt-6 text-slate-500 text-sm">Žádná data k zobrazení.</div>
       <div id="error" class="hidden mt-6 text-rose-600 text-sm"></div>
     </div>
   `;
@@ -39,17 +38,7 @@ export default async function renderSeznam(root) {
   const noticeEl = $('#tile-notice');
   const emptyEl  = $('#empty');
   const errorEl  = $('#error');
-  const actionsEl = $('#tile-actions');
 
-  // Akční lišta – konzistentní presety (zatím bez logiky CRUD)
-  renderActions(actionsEl, [
-    ACTIONS.add({ onClick(){ alert('Přidat – placeholder'); } }),
-    ACTIONS.edit({ disabled:true, reason:'Vyberte řádek' }),
-    ACTIONS.archive({ disabled:true, reason:'Vyberte řádek' }),
-    ACTIONS.refresh({ onClick(){ refresh(); } }),
-  ]);
-
-  // Zobraz info, jestli jsi admin (co bys měl vidět)
   const amIAdmin = await isAdmin();
   noticeEl.textContent = amIAdmin
     ? 'Máte roli admin – vidíte všechny profily.'
@@ -58,19 +47,16 @@ export default async function renderSeznam(root) {
   await refresh();
 
   async function refresh() {
-    rowsEl.innerHTML = `<tr><td colspan="4" class="p-4 text-slate-500">Načítám…</td></tr>`;
-    emptyEl.classList.add('hidden');
-    errorEl.classList.add('hidden');
+    rowsEl.innerHTML = `<tr><td colspan="4" class="p-3 text-slate-500">Načítám…</td></tr>`;
+    emptyEl.classList.add('hidden'); errorEl.classList.add('hidden');
 
     const { data, error } = await listProfiles();
-
     if (error) {
       rowsEl.innerHTML = '';
       errorEl.textContent = 'Chyba při načtení dat: ' + (error.message || error);
       errorEl.classList.remove('hidden');
       return;
     }
-
     if (!data.length) {
       rowsEl.innerHTML = '';
       emptyEl.classList.remove('hidden');
@@ -78,24 +64,19 @@ export default async function renderSeznam(root) {
     }
 
     rowsEl.innerHTML = data.map(u => rowHtml(u)).join('');
-
-    // výběr řádku → povolit „Upravit/Archivovat“
+    // aktivace „Upravit/Archivovat“ po výběru
+    const actionsHost = document.getElementById('crumb-actions');
     rowsEl.querySelectorAll('tr[data-id]').forEach(tr => {
       tr.addEventListener('click', () => {
         rowsEl.querySelectorAll('tr[data-id]').forEach(x => x.classList.remove('bg-slate-100'));
         tr.classList.add('bg-slate-100');
 
-        // Povolit akce
-        renderActions(actionsEl, [
+        renderActions(actionsHost, [
           ACTIONS.add({ onClick(){ alert('Přidat – placeholder'); } }),
-          ACTIONS.edit({
-            onClick(){ alert('Upravit – placeholder ('+tr.dataset.id+')'); }
-          }),
-          ACTIONS.archive({
-            onClick(){ alert('Archivovat – placeholder ('+tr.dataset.id+')'); }
-          }),
+          ACTIONS.edit({ onClick(){ alert('Upravit – ' + tr.dataset.id); } }),
+          ACTIONS.archive({ onClick(){ alert('Archivovat – ' + tr.dataset.id); } }),
           ACTIONS.refresh({ onClick(){ refresh(); } }),
-        ]);
+        ], { iconOnly:true });
       });
     });
   }
@@ -119,12 +100,7 @@ function rowHtml(u) {
   `;
 }
 
-// malá bezpečnost – ať nám do tabulky neleze HTML
 function escapeHtml(s='') {
-  return String(s)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;');
+  return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
 }
