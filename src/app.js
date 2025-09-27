@@ -57,6 +57,28 @@ function injectOnce(id, css) {
   document.head.appendChild(style);
 }
 
+// --- stav rozdělané práce (dirty) ---
+const AppState = (() => {
+  let dirty = false;
+  return {
+    isDirty: () => dirty,
+    setDirty: (v) => { dirty = !!v; },
+    clearDirty: () => { dirty = false; }
+  };
+})();
+window.AppState = AppState;
+
+// --- jednotná navigace s kontrolou dirty ---
+function navigateTo(hash) {
+  if (window.AppState?.isDirty?.()) {
+    const ok = confirm('Máte rozdělanou neuloženou práci.\nChcete odejít bez uložení (OK) nebo zůstat (Zrušit)?');
+    if (!ok) return false;
+    window.AppState.clearDirty?.();
+  }
+  if (hash.startsWith('#')) location.hash = hash; else location.href = hash;
+  return true;
+}
+
 // ===== Root / Layout =========================================================
 function buildRoot() {
   injectOnce('app-base-style', `
