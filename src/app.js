@@ -1,28 +1,15 @@
-// app.js — čistý základ + hlavička (home) + pravá lišta akcí (včetně 🔔 notifikací)
-// + bezpečný návrat domů při rozdělané práci (dirty state API).
+// src/app.js — stabilní základ bez ACTION_PRESETS (oprava importu)
+// - bezpečné logování chyb
+// - render header (home + akční lišta z headerActions)
+// - sidebar + jednoduché routování
+// - žádné závislosti na neexistujících exportech
 
 import { renderHeader } from './ui/header.js';
-import { renderHeaderActions, ACTION_PRESETS } from './ui/headerActions.js';
+import { renderHeaderActions } from './ui/headerActions.js';
 
 console.log('[APP] start');
 window.addEventListener('error', (e) => console.error('[APP] window error', e.error || e));
 window.addEventListener('unhandledrejection', (e) => console.error('[APP] unhandled', e.reason || e));
-
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('[APP] DOM ready');
-  try {
-    renderHeaderActions(document.getElementById('header-actions'));
-    renderSidebar(document.getElementById('sidebar'));
-    mountDashboard(document.getElementById('content'));
-  } catch (err) {
-    console.error('[APP] boot failed', err);
-    const el = document.getElementById('content') || document.body;
-    const box = document.createElement('div');
-    box.className = 'm-4 p-4 border rounded bg-amber-50';
-    box.textContent = 'Aplikace se nepodařila spustit. Otevři konzoli pro více informací.';
-    el.appendChild(box);
-  }
-});
 
 const MODULES = [
   { id:'010-uzivatele',   title:'Uživatelé',   icon:'👥', tiles:[{id:'seznam'}],  defaultTile:'seznam' },
@@ -33,20 +20,20 @@ const MODULES = [
 
 const $id = (x) => document.getElementById(x);
 const E = (tag, attrs={}, children=[]) => {
-  const e = document.createElement(tag);
+  const el = document.createElement(tag);
   Object.entries(attrs).forEach(([k,v]) => {
-    if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
-    else if (k === 'class') e.className = v;
-    else e.setAttribute(k, v);
+    if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k === 'class') el.className = v;
+    else el.setAttribute(k, v);
   });
   (Array.isArray(children) ? children : [children]).forEach(ch => {
-    if (typeof ch === 'string') e.appendChild(document.createTextNode(ch));
-    else if (ch) e.appendChild(ch);
+    if (typeof ch === 'string') el.appendChild(document.createTextNode(ch));
+    else if (ch) el.appendChild(ch);
   });
-  return e;
+  return el;
 };
 
-/* ---------- Dirty state (globální jednoduché API) ---------- */
+// Jednoduchý "dirty" stav pro budoucí formuláře (home ho bude respektovat)
 const AppState = (() => {
   let dirty = false;
   return {
@@ -55,21 +42,21 @@ const AppState = (() => {
     clearDirty: () => { dirty = false; },
   };
 })();
-window.AppState = AppState; // pro použití v dalších modulech
+window.AppState = AppState;
 
-function confirmLeaveIfDirty(onConfirm) {
-  if (!AppState.isDirty()) return onConfirm();
-  const ok = confirm('Máte rozdělanou neuloženou práci.\nChcete pokračovat v práci (Zrušit), nebo odejít bez uložení (OK)?');
-  if (ok) { AppState.clearDirty(); onConfirm(); }
-  // pokud zvolí Zrušit → nic se neděje, zůstáváme
+function injectOnce(id, css) {
+  if (document.getElementById(id)) return;
+  const style = document.createElement('style');
+  style.id = id;
+  style.textContent = css;
+  document.head.appendChild(style);
 }
 
-/* ---------- Build UI ---------- */
 function buildRoot() {
-  // schovej případné zbytky v <body>
+  // skryj případné zbytky v <body> (když by tam něco bylo)
   Array.from(document.body.children).forEach(ch => ch.tagName !== 'SCRIPT' && (ch.style.display = 'none'));
 
-  // pojistka proti globálním CSS (neviditelný text apod.)
+  // pojistka proti globálním stylům (neviditelný text apod.)
   injectOnce('app-base-style', `
     #app_root, #app_root * , #app_root *::before, #app_root *::after {
       color:#0f172a !important; opacity:1 !important; filter:none !important; mix-blend-mode:normal !important;
@@ -80,18 +67,26 @@ function buildRoot() {
 
   const root = E('div', { id:'app_root', style:{ maxWidth:'1400px', margin:'0 auto', padding:'16px' } });
 
-  // HEADER (home + actions container)
+  // HEADER (komponenta vytvoří: Home + kontejner pro akce vpravo)
   const headerHost = E('div');
   const { actionsContainer } = renderHeader(headerHost, {
     appName: 'Pronajímatel',
-    onHome: () => confirmLeaveIfDirty(() => { location.hash = '#/dashboard'; route(); }),
+    onHome: () => {
+      if (window.AppState?.isDirty?.()) {
+        const ok = confirm('Máte rozdělanou neuloženou práci.\nChcete odejít bez uložení (OK) nebo zůstat (Zrušit)?');
+        if (!ok) return;
+        window.AppState.clearDirty?.();
+      }
+      location.hash = '#/dashboard';
+      route();
+    },
   });
 
-  // BASE badge (status)
+  // BASE badge (stavový odznak vpravo u akcí)
   const baseBadge = E('span', { class:'badge' }, 'BASE');
   const badgeWrap = E('div', { class:'ml-2 inline-flex' }, [baseBadge]);
 
-  // LAYOUT pod headerem
+  // LAYOUT (sidebar + obsah)
   const grid = E('div', { style:{ display:'grid', gridTemplateColumns:'260px 1fr', gap:'16px' } });
   const sidebar = E('aside', { id:'sidebar', class:'p-3 bg-white rounded-2xl border' });
   const section = E('section');
@@ -110,41 +105,23 @@ function buildRoot() {
   grid.appendChild(sidebar);
   grid.appendChild(section);
 
+  // mount do DOM
   root.appendChild(headerHost);
-  actionsContainer.parentElement.appendChild(badgeWrap);
+  // připnout BASE badge vedle akční lišty v headeru
+  actionsContainer?.parentElement?.appendChild(badgeWrap);
   root.appendChild(grid);
   document.body.appendChild(root);
 
-  // --- Akce vpravo: NOTIF + Search + Help + Account + Logout
-  const demoNotifications = [
-    { title: 'Nová žádost nájemníka', time: 'před 5 min', icon:'📩' },
-    { title: 'Platba připsána',        time: 'před 1 hod', icon:'✅' },
-  ];
-
-  renderHeaderActions(actionsContainer, [
-    ACTION_PRESETS.notifications(demoNotifications, (item) => {
-      $id('content').innerHTML =
-        `<div class="text-slate-700"><b>Notifikace:</b> ${item.title} <div class="text-xs text-slate-500">${item.time || ''}</div></div>`;
-    }),
-    ACTION_PRESETS.search(() => {
-      const q = prompt('Hledat:');
-      if (q) {
-        $id('content').innerHTML =
-          `<div class="text-slate-700">Výsledek hledání pro: <b>${q}</b> (placeholder)</div>`;
-      }
-    }),
-    ACTION_PRESETS.help(() => {
-      $id('content').innerHTML = `<div class="text-slate-700">Nápověda – zatím prázdné. Přidáme později.</div>`;
-    }),
-    ACTION_PRESETS.account(() => {
-      location.hash = '#/m/020-muj-ucet/t/profil';
-      route();
-    }),
-    ACTION_PRESETS.logout(() => {
-      // Později: await supabase.auth.signOut();
-      location.href = './index.html';
-    }),
-  ]);
+  // Pravá akční lišta v headeru (bez presetů – vše řeší komponenta)
+  try {
+    renderHeaderActions(actionsContainer);
+  } catch (e) {
+    console.warn('[APP] headerActions failed, rendering minimal logout only', e);
+    // nouzové odhlášení
+    const btn = E('button', { class:'px-3 py-1 bg-slate-800 text-white rounded' }, 'Odhlásit');
+    btn.onclick = () => { location.href = './index.html'; };
+    actionsContainer.appendChild(btn);
+  }
 }
 
 function renderSidebar(mods) {
@@ -177,29 +154,49 @@ function renderSidebar(mods) {
   markActive();
 }
 
-/* ---------- Routing + obsah ---------- */
 function breadcrumbsHome() {
   $id('breadcrumbs').innerHTML =
     `<a class="inline-flex items-center gap-1 px-2 py-1 rounded border bg-white text-sm" href="#/dashboard">🏠 Domů</a>`;
 }
+
 function mountDashboard() {
   breadcrumbsHome();
   $id('content').innerHTML = `<div class="text-slate-700">Dashboard – čistá základní verze.</div>`;
 }
-function mountModule(modId, tileId) {
+
+async function mountModule(modId, tileId) {
   breadcrumbsHome();
-  $id('content').innerHTML = `
-    <div class="text-slate-700">
-      <div class="mb-2 text-sm text-slate-500">Modul: <b>${modId}</b>, dlaždice: <b>${tileId || '-'}</b></div>
-      <div>Obsah zatím bez dat (krok po kroku přidáme).</div>
+  const c = $id('content');
+  c.innerHTML = `<div class="text-slate-500 p-2">Načítám modul…</div>`;
+
+  try {
+    // lazy import podle modulu
+    if (modId === '010-uzivatele') {
+      const tiles = await import('./modules/010-sprava-uzivatelu/tiles/index.js');
+      await tiles.renderTile(tileId || 'seznam', c);
+      return;
+    }
+    // fallback
+    c.innerHTML = `
+      <div class="text-slate-700">
+        <div class="mb-2 text-sm text-slate-500">Modul: <b>${modId}</b>, dlaždice: <b>${tileId || '-'}</b></div>
+        <div>Obsah zatím bez dat.</div>
+      </div>`;
+  } catch (err) {
+    console.error('[APP] mountModule error', err);
+    c.innerHTML = `<div class="p-3 bg-rose-50 border border-rose-200 rounded text-rose-700">
+      Nepodařilo se načíst modul: ${modId}. Otevři konzoli pro detail.
     </div>`;
+  }
 }
+
 function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const p = raw.split('?')[0].split('/').filter(Boolean);
   if (p[0] !== 'm') return { view:'dashboard' };
   return { view:'module', mod:p[1], kind:p[2], id:p[3] };
 }
+
 function route() {
   const h = parseHash();
   if (h.view === 'dashboard') return mountDashboard();
@@ -207,21 +204,22 @@ function route() {
   const tile = h.kind === 't'
     ? (h.id || mod?.defaultTile || mod?.tiles?.[0]?.id)
     : (mod?.defaultTile || mod?.tiles?.[0]?.id);
-  mountModule(h.mod, tile);
+  return mountModule(h.mod, tile);
 }
 
-/* ---------- Boot ---------- */
+// BOOT
 document.addEventListener('DOMContentLoaded', () => {
-  buildRoot();
-  renderSidebar(MODULES);
-  route();
+  console.log('[APP] DOM ready');
+  try {
+    buildRoot();
+    renderSidebar(MODULES);
+    route();
+  } catch (err) {
+    console.error('[APP] boot failed', err);
+    const el = document.body;
+    const box = document.createElement('div');
+    box.className = 'm-4 p-4 border rounded bg-amber-50';
+    box.textContent = 'Aplikace se nepodařila spustit. Otevři konzoli pro více informací.';
+    el.appendChild(box);
+  }
 });
-
-/* ---------- utils ---------- */
-function injectOnce(id, css) {
-  if (document.getElementById(id)) return;
-  const style = document.createElement('style');
-  style.id = id;
-  style.textContent = css;
-  document.head.appendChild(style);
-}
