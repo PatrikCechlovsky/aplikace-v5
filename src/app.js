@@ -1,42 +1,8 @@
-// src/app.js — základní layout appky + router + sidebar + 010 napojení
+// src/app.js — layout, router a „hloupý“ sidebar s outline dle manifestu
 
 import { renderHeader } from './ui/header.js';
 import { renderHeaderActions } from './ui/headerActions.js';
-
-// ===== Definice modulů =======================================================
-const MODULES = [
-  {
-    id: '010-sprava-uzivatelu',
-    title: 'Uživatelé',
-    icon: '👥',
-    defaultTile: 'seznam',
-    tiles: [
-      { id: 'prehled', title: 'Přehled' },
-      { id: 'seznam',  title: 'Seznam'  },
-    ],
-  },
-  {
-    id: '020-muj-ucet',
-    title: 'Můj účet',
-    icon: '👤',
-    defaultTile: 'profil',
-    tiles: [{ id: 'profil', title: 'Profil' }],
-  },
-  {
-    id: '030-pronajimatel',
-    title: 'Pronajímatel',
-    icon: '🏢',
-    defaultTile: 'prehled',
-    tiles: [{ id: 'prehled', title: 'Přehled' }],
-  },
-  {
-    id: '900-nastaveni',
-    title: 'Nastavení',
-    icon: '⚙️',
-    defaultTile: 'aplikace',
-    tiles: [{ id: 'aplikace', title: 'Aplikace' }],
-  },
-];
+import { MODULE_SOURCES } from './app/modules.index.js';
 
 // ===== Pomocníci =============================================================
 const $id = (x) => document.getElementById(x);
@@ -140,89 +106,128 @@ function buildRoot() {
   }
 }
 
-// ===== Sidebar (rozbalování dlaždic jen u aktivního modulu) =================
-function renderSidebar(mods) {
-  const sb = $id('sidebar');
-  sb.innerHTML = '';
+// ===== Manifest loader & cache ==============================================
+const _manifestCache = new Map();      // modId -> modul (exporty)
+const _lightManifests = new Map();     // modId -> { id, title, icon, defaultTile, tiles, forms }
 
+async function loadModuleById(modId) {
+  if (_manifestCache.has(modId)) return _manifestCache.get(modId);
+  for (const src of MODULE_SOURCES) {
+    const mod = await src();
+    const mf = await mod.getManifest?.();
+    if (mf?.id === modId) {
+      _manifestCache.set(modId, mod);
+      _lightManifests.set(modId, {
+        id: mf.id, title: mf.title, icon: mf.icon,
+        defaultTile: mf.defaultTile, tiles: mf.tiles || [], forms: mf.forms || []
+      });
+      return mod;
+    }
+  }
+  throw new Error(`Manifest pro modul '${modId}' nenalezen`);
+}
+
+// Načti lehké manifesty všech modulů (kvůli sidebaru)
+async function loadAllLightManifests() {
+  const promises = MODULE_SOURCES.map(async (src) => {
+    try {
+      const mod = await src();
+      const mf = await mod.getManifest?.();
+      if (mf && !_lightManifests.has(mf.id)) {
+        _lightManifests.set(mf.id, {
+          id: mf.id, title: mf.title, icon: mf.icon,
+          defaultTile: mf.defaultTile, tiles: mf.tiles || [], forms: mf.forms || []
+        });
+      }
+    } catch (_) {}
+  });
+  await Promise.all(promises);
+}
+
+// ===== Sidebar render (hloupý + outline jen u aktivního) ====================
+async function renderSidebarModules(activeModId, activeManifest) {
+  const sb = $id('sidebar');
+  if (!sb) return;
+
+  await loadAllLightManifests();
+
+  const items = Array.from(_lightManifests.values()).sort((a,b) => a.id.localeCompare(b.id));
+
+  sb.innerHTML = '';
   const title = E('div', { class:'font-semibold mb-2' }, 'Menu');
   const list  = E('ul', { class:'space-y-1' });
   sb.appendChild(title);
   sb.appendChild(list);
 
-  function makeModuleItem(m) {
+  items.forEach(mf => {
     const li = E('li');
 
+    // modul button
     const btn = E('button', {
-      'data-mod': m.id,
-      class: 'w-full text-left px-3 py-2 rounded text-slate-700 hover:bg-slate-100 flex items-center justify-between'
+      class: `w-full text-left px-3 py-2 rounded flex items-center justify-between ${
+        mf.id===activeModId ? 'bg-indigo-50 ring-1 ring-indigo-200 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+      }`
     }, [
-      E('span', {}, `${m.icon || '📁'} ${m.title}`),
+      E('span', {}, `${mf.icon || '📁'} ${mf.title}`),
       E('span', { class:'text-slate-300' }, '›')
     ]);
+
     btn.onclick = (ev) => {
       ev.preventDefault();
-      const first = m.defaultTile || m.tiles?.[0]?.id || '';
-      navigateTo(`#/m/${m.id}/t/${first}`);
+      if (window.AppState?.isDirty?.()) {
+        const ok = confirm('Máte rozdělanou práci. Odejít bez uložení?');
+        if (!ok) return;
+        window.AppState.clearDirty?.();
+      }
+      const first = mf.defaultTile || mf.tiles?.[0]?.id || '';
+      navigateTo(`#/m/${mf.id}/t/${first}`);
     };
 
-    const tilesWrap = E('ul', { class:'mt-1 ml-2 space-y-1', 'data-tiles-for': m.id });
     li.appendChild(btn);
-    li.appendChild(tilesWrap);
-    return li;
-  }
 
-  mods.forEach(m => list.appendChild(makeModuleItem(m)));
+    // outline (jen u aktivního)
+    if (mf.id === activeModId && activeManifest) {
+      const ol = E('ul', { class:'mt-1 ml-2 space-y-1' });
 
-  function renderTilesForActive() {
-    const activeModId = (/#\/m\/([^\/]+)/.exec(location.hash) || [])[1];
+      (activeManifest.tiles || []).forEach(t => {
+        const a = E('a', {
+          href: `#/m/${mf.id}/t/${t.id}`,
+          class: 'block px-3 py-1.5 rounded text-slate-600 hover:bg-slate-50'
+        }, `• ${t.title}`);
+        a.onclick = (e)=> {
+          e.preventDefault();
+          if (window.AppState?.isDirty?.()) {
+            const ok = confirm('Máte rozdělanou práci. Odejít bez uložení?');
+            if (!ok) return;
+            window.AppState.clearDirty?.();
+          }
+          navigateTo(a.getAttribute('href'));
+        };
+        ol.appendChild(E('li', {}, a));
+      });
 
-    // zvýraznění modulu
-    list.querySelectorAll('button[data-mod]').forEach(b => {
-      const active = b.dataset.mod === activeModId;
-      b.classList.toggle('bg-indigo-50', active);
-      b.classList.toggle('text-indigo-700', active);
-      b.classList.toggle('ring-1', active);
-      b.classList.toggle('ring-inset', active);
-      b.classList.toggle('ring-indigo-200', active);
-      b.classList.toggle('font-semibold', active);
-      b.classList.toggle('hover:bg-slate-100', !active);
-      b.classList.toggle('text-slate-700', !active);
-    });
+      (activeManifest.forms || []).forEach(f => {
+        const a = E('a', {
+          href: `#/m/${mf.id}/f/${f.id}`,
+          class: 'block px-3 py-1.5 rounded text-slate-600 hover:bg-slate-50'
+        }, `• ${f.title}`);
+        a.onclick = (e)=> {
+          e.preventDefault();
+          if (window.AppState?.isDirty?.()) {
+            const ok = confirm('Máte rozdělanou práci. Odejít bez uložení?');
+            if (!ok) return;
+            window.AppState.clearDirty?.();
+          }
+          navigateTo(a.getAttribute('href'));
+        };
+        ol.appendChild(E('li', {}, a));
+      });
 
-    // vyčisti sub-seznamy
-    list.querySelectorAll('ul[data-tiles-for]').forEach(ul => ul.innerHTML = '');
+      li.appendChild(ol);
+    }
 
-    const mod = mods.find(m => m.id === activeModId);
-    if (!mod) return;
-
-    const host = list.querySelector(`ul[data-tiles-for="${mod.id}"]`);
-    if (!host) return;
-
-    (mod.tiles || []).forEach(t => {
-      const a = E('a', {
-        href: `#/m/${mod.id}/t/${t.id}`,
-        'data-tile': `${mod.id}:${t.id}`,
-        class: 'block px-3 py-1.5 rounded text-slate-600 hover:bg-slate-50'
-      }, `• ${t.title || t.id}`);
-      a.onclick = (ev) => { ev.preventDefault(); navigateTo(a.getAttribute('href')); };
-      host.appendChild(E('li', {}, a));
-    });
-
-    // zvýrazni aktivní dlaždici
-    const activeTile = (/#\/m\/[^\/]+\/t\/([^\/]+)/.exec(location.hash) || [])[1];
-    list.querySelectorAll('a[data-tile]').forEach(a => {
-      const mine = a.dataset.tile === `${mod.id}:${activeTile}`;
-      a.classList.toggle('bg-indigo-50', mine);
-      a.classList.toggle('text-indigo-700', mine);
-      a.classList.toggle('ring-1', mine);
-      a.classList.toggle('ring-indigo-200', mine);
-      a.classList.toggle('font-medium', mine);
-    });
-  }
-
-  window.addEventListener('hashchange', renderTilesForActive);
-  renderTilesForActive();
+    list.appendChild(li);
+  });
 }
 
 // ===== Breadcrumbs / Actions / routing ======================================
@@ -257,67 +262,72 @@ function mountDashboard() {
   $id('content').innerHTML = `<div class="text-slate-700">Dashboard – čistá základní verze.</div>`;
 }
 
-async function mountModule(modId, tileOrFormId, kind = 'tile') {
-  const mod = MODULES.find(m => m.id === modId);
-  const tileMeta = mod?.tiles?.find(t => t.id === tileOrFormId) || { id: tileOrFormId, title: tileOrFormId };
-
-  setBreadcrumbs([
-    { label: 'Domů', href: '#/dashboard' },
-    { label: mod?.title || modId, href: `#/m/${modId}/t/${mod?.defaultTile || 'seznam'}` },
-    { label: tileMeta.title || tileMeta.id }
-  ]);
-  clearCrumbActions();
-
-  const c = $id('content');
-  c.innerHTML = `<div class="text-slate-500 p-2">Načítám…</div>`;
-
-  try {
-    // === 010: Správa uživatelů ===
-    if (modId === '010-sprava-uzivatelu') {
-      const tiles = await import('./modules/010-sprava-uzivatelu/tiles/index.js');
-      await tiles.renderTile(tileOrFormId || 'seznam', c);
-      // (volitelné) dynamické akce u breadcrumb:
-      if (tiles.getActions) {
-        const acts = await tiles.getActions({ kind, id: tileOrFormId });
-        renderCrumbActions(acts);
-      }
-      return;
-    }
-
-    // fallback pro ostatní moduly (zatím bez obsahu)
-    c.innerHTML = `
-      <div class="text-slate-700">
-        <div>Modul: <b>${modId}</b>, dlaždice: <b>${tileOrFormId || '-'}</b></div>
-        <div class="mt-2 text-slate-500">Obsah zatím bez dat.</div>
-      </div>`;
-  } catch (err) {
-    console.error('[APP] mountModule error', err);
-    c.innerHTML = `<div class="p-3 bg-rose-50 border border-rose-200 rounded text-rose-700">
-      Nepodařilo se načíst modul: ${modId}. Otevři konzoli pro detail.
-    </div>`;
-  }
-}
-
+// === HASH PARSER =============================================================
 function parseHash() {
   const h = location.hash || '';
-  const m = h.match(/^#\/m\/([^\/]+)\/([tf])\/([^\/?#]+)(?:\?(.*))?$/);
-  if (!m) return { view: 'dashboard' };
+  // #/m/<mod>               → pouze modul (rozbalí outline, přesměrujeme na defaultTile)
+  // #/m/<mod>/t/<tile>      → dlaždice
+  // #/m/<mod>/f/<form>      → formulář
+  const m = h.match(/^#\/m\/([^\/]+)(?:\/([tf])\/([^\/?#]+))?/);
+  if (!m) return { view:'dashboard' };
   return {
     view: 'module',
     mod:  m[1],
-    kind: m[2] === 'f' ? 'form' : 'tile',
+    kind: m[2] === 'f' ? 'form' : (m[2] === 't' ? 'tile' : undefined),
     id:   m[3],
-    qs:   new URLSearchParams(m[4] || '')
   };
 }
 
-function route() {
+// === ROUTER ==================================================================
+async function route() {
   const h = parseHash();
-  if (h.view === 'dashboard') return mountDashboard();
-  const mod = MODULES.find(m => m.id === h.mod);
-  const firstTile = mod?.defaultTile || mod?.tiles?.[0]?.id || 'seznam';
-  const id = h.id || (h.kind === 'tile' ? firstTile : '');
-  return mountModule(h.mod, id, h.kind);
+
+  if (h.view === 'dashboard') {
+    renderSidebarModules(null, null); // nic aktivního
+    return mountDashboard();
+  }
+
+  try {
+    const mod = await loadModuleById(h.mod);
+    const manifest = await mod.getManifest();
+
+    // Sidebar: zobraz moduly a outline aktivního
+    await renderSidebarModules(manifest.id, manifest);
+
+    // Sekce: když není v hash, vyber defaultTile
+    const kind = h.kind || 'tile';
+    const secId = h.id || manifest.defaultTile;
+
+    // Breadcrumbs
+    const tileTitle = manifest.tiles?.find(t=>t.id===secId)?.title;
+    const formTitle = manifest.forms?.find(f=>f.id===secId)?.title;
+    setBreadcrumbs([
+      { label:'Domů', href:'#/dashboard' },
+      { label: manifest.title, href:`#/m/${manifest.id}` },
+      { label: tileTitle || formTitle || secId }
+    ]);
+
+    // Vykresli obsah
+    const c = $id('content');
+    c.innerHTML = `<div class="text-slate-500 p-2">Načítám…</div>`;
+    await mod.render(kind, secId, c);
+
+    // Akce vpravo (volitelné)
+    const acts = await (mod.getActions?.({ kind, id: secId }) || []);
+    renderCrumbActions(acts);
+
+    // Pokud hash neměl sekci, doplň ji (bez smyčky)
+    if (!h.kind || !h.id) {
+      const frag = `#/m/${manifest.id}/${kind === 'form' ? 'f' : 't'}/${secId}`;
+      if (location.hash !== frag) location.replace(frag);
+    }
+  } catch (err) {
+    console.error('[APP] route error', err);
+    $id('content').innerHTML = `
+      <div class="p-3 bg-rose-50 border border-rose-200 rounded text-rose-700">
+        Nepodařilo se načíst modul/sekci. Otevři konzoli pro detail.
+      </div>`;
+  }
 }
 
 // ===== SAFE BOOT (nech na konci souboru) ====================================
@@ -339,7 +349,8 @@ function route() {
   document.addEventListener('DOMContentLoaded', () => {
     try {
       buildRoot();
-      renderSidebar(MODULES);
+      // prvotní render sidebaru bez aktivního modulu
+      renderSidebarModules(null, null);
       window.addEventListener('hashchange', route);
       route();
     } catch (err) {
