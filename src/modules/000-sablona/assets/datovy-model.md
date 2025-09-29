@@ -4,6 +4,5 @@
 - Vazby: (doplnit)
 - RLS: (doplnit)
 
-## Stavy UI
-- načítací, prázdný, chybový – každý tile/form musí umět všechny 3.
-
+## UI stavy
+- načítací, prázdný, chybový
