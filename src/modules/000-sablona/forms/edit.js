@@ -21,14 +21,10 @@ export default async function renderEdit(root) {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    // TODO: uložení… (zde jen simulace)
-    alert('Uloženo.');
+    alert('Uloženo (demo).');
     history.back();
   });
 
   cancel.addEventListener('click', () => history.back());
-
-  // signalizace „dirty“ při úpravě
   form.addEventListener('input', () => window.AppState?.setDirty?.(true));
 }
-
