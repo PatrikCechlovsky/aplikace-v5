@@ -1,15 +1,17 @@
 // src/modules/000-sablona/module.config.js
-// "Hloupý" modul: manifest definuje jen seznam částí a jejich pořadí.
-// Vlastní chování má každá tile/form ve svém souboru.
+// „Hloupý“ modul: manifest říká jen CO a v jakém pořadí. Chování má každá část ve svém souboru.
+
+// !!! PO ZKOPÍROVÁNÍ NAHRAĎ PLACEHOLDERY:
+// __MODULE_ID__     → např. '030-pronajimatel'
+// __MODULE_TITLE__  → např. 'Pronajímatel'
+// __ICON__          → např. '🏢' nebo klíč z registru ikon
 
 const MANIFEST = {
-  // !!! NAHRAĎ __MODULE_ID__ a __MODULE_TITLE__ a __ICON__ po zkopírování složky !!!
-  id: '__MODULE_ID__',            // např. '030-pronajimatel'
-  title: '__MODULE_TITLE__',      // např. 'Pronajímatel'
-  icon: '__ICON__',               // např. '🏢' nebo klíč do icons.js
+  id: '__MODULE_ID__',
+  title: '__MODULE_TITLE__',
+  icon: '__ICON__',
   defaultTile: 'seznam',
 
-  // pořadí v sidebaru = pořadí v těchto polích
   tiles: [
     { id: 'prehled', title: 'Přehled' },
     { id: 'seznam',  title: 'Seznam'  },
@@ -24,7 +26,7 @@ export function getManifest() {
   return MANIFEST;
 }
 
-// Jednotné vykreslení: dlaždice vs formuláře
+// Jednotné vykreslení: 'tile' (dlaždice) / 'form' (formuláře)
 export async function render(kind, id, mountEl) {
   mountEl.innerHTML = `<div class="text-slate-500 p-2">Načítám…</div>`;
   try {
@@ -44,10 +46,9 @@ export async function render(kind, id, mountEl) {
   }
 }
 
-// Volitelné: akce do pravé lišty u breadcrumbs (můžeš vracet prázdné)
+// Volitelné: akce vpravo u breadcrumbs (může vracet prázdné pole)
 export async function getActions(ctx) {
   // ctx: { kind: 'tile'|'form', id: '...' }
-  // Příklad: pro tile 'seznam' nabídnout Obnovit
   if (ctx.kind === 'tile' && ctx.id === 'seznam') {
     return [
       { label: 'Obnovit', icon: '🔄', onClick: () => location.reload() }
@@ -55,4 +56,3 @@ export async function getActions(ctx) {
   }
   return [];
 }
-
