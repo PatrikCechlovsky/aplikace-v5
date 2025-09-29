@@ -1,6 +1,5 @@
 // src/modules/000-sablona/tiles/seznam.js
 export default async function renderSeznam(root) {
-  // prázdný / načítací / naplněný stav – jen ukázka bez DB
   root.innerHTML = `
     <div class="space-y-3">
       <h2 class="text-lg font-semibold">Seznam</h2>
@@ -10,7 +9,6 @@ export default async function renderSeznam(root) {
 
   await new Promise(r => setTimeout(r, 300)); // simulace načítání
 
-  // ukázková „data“
   const rows = [
     { id: 1, name: 'Položka A' },
     { id: 2, name: 'Položka B' },
@@ -48,8 +46,8 @@ export default async function renderSeznam(root) {
     tr.addEventListener('dblclick', () => {
       const id = tr.getAttribute('data-id');
       // přepnutí na form detail (router si to zpracuje)
-      location.hash = `#/m/${location.hash.match(/^#\/m\/([^\/]+)/)?.[1]}/f/detail?id=${id}`;
+      const modId = location.hash.match(/^#\/m\/([^\/]+)/)?.[1];
+      location.hash = `#/m/${modId}/f/detail?id=${id}`;
     });
   });
 }
-
