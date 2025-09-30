@@ -1,7 +1,7 @@
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { getProfile, archiveProfile, listAttachments, uploadAttachment, removeAttachment } from '../../../db.js';
 
-export default async function renderReadForm(root){
+export async function render(root){
   const id = new URLSearchParams(location.hash.split('?')[1] || '').get('id');
   if (!id) { root.innerHTML = '<div class="p-4 text-red-600">Chybí id.</div>'; return; }
 
@@ -28,10 +28,10 @@ export default async function renderReadForm(root){
         <input id="file" type="file" class="hidden" />
       </div>
       <div class="grid sm:grid-cols-2 gap-3">
-        <div><div class="text-xs text-slate-500">Jméno</div><div>${'${rec.display_name || "—"}'}</div></div>
-        <div><div class="text-xs text-slate-500">E‑mail</div><div>${'${rec.email || "—"}'}</div></div>
-        <div><div class="text-xs text-slate-500">Role</div><div>${'${rec.role || "user"}'}</div></div>
-        <div><div class="text-xs text-slate-500">Archiv</div><div>${'${rec.archived ? "Ano" : "Ne"}'}</div></div>
+        <div><div class="text-xs text-slate-500">Jméno</div><div>${rec.display_name || '—'}</div></div>
+        <div><div class="text-xs text-slate-500">E‑mail</div><div>${rec.email || '—'}</div></div>
+        <div><div class="text-xs text-slate-500">Role</div><div>${rec.role || 'user'}</div></div>
+        <div><div class="text-xs text-slate-500">Archiv</div><div>${rec.archived ? 'Ano' : 'Ne'}</div></div>
       </div>
       <div>
         <div class="font-medium mb-1">Přílohy</div>
@@ -40,16 +40,17 @@ export default async function renderReadForm(root){
     </div>
   `;
 
-  const folder = `profiles/${'${id}'}`;
+  const folder = `profiles/${id}`;
   async function refreshAtt() {
     const { data, error } = await listAttachments(folder);
     const ul = root.querySelector('#att-list');
-    if (error) { ul.innerHTML = `<li class="text-red-600">${'${error.message}'}</li>`; return; }
+    if (error) { ul.innerHTML = `<li class="text-red-600">${error.message}</li>`; return; }
     ul.innerHTML = (data || []).map(f => `
       <li class="flex items-center justify-between">
-        <span>${'${f.name}'}</span>
-        <button data-del="${'${folder}'}'/'${'${f.name}'}" class="text-red-600 hover:underline">Smazat</button>
-      </li>`).join('') || '<li class="text-slate-500">Žádné přílohy</li>';
+        <span>${f.name}</span>
+        <button data-del="${folder}/${f.name}" class="text-red-600 hover:underline">Smazat</button>
+      </li>
+    `).join('') || '<li class="text-slate-500">Žádné přílohy</li>';
   }
   await refreshAtt();
 

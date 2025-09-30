@@ -7,7 +7,7 @@ const roleBadge = (role) => {
   return `<span class="inline-block text-xs px-2 py-0.5 rounded border ${cls}">${role || 'user'}</span>`;
 };
 
-export default async function renderUsersOverview(root) {
+export async function render(root) {
   const head = document.getElementById('crumb-actions');
   if (head) {
     head.innerHTML = '';
