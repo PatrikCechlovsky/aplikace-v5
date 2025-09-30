@@ -75,3 +75,4 @@ export async function render(root){
     await refreshAtt();
   });
 }
+export default { render };
