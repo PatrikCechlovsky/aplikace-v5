@@ -1,8 +1,14 @@
 import { getMyProfile, updateProfile } from '../../../db.js';
+import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 
 export async function render(root){
   const { data:me, error } = await getMyProfile();
   if (error) { root.innerHTML = `<div class="p-4 text-red-600">${error.message}</div>`; return; }
+  setBreadcrumb(document.getElementById('crumb'), [
+    { icon:'home', label:'Domů', href:'#/' },
+    { icon:'user', label:'Můj účet', href:'#/m/020-muj-ucet' },
+    { icon:'edit', label:'Upravit' },
+  ]);
 
   root.innerHTML = `
     <form class="p-4 bg-white rounded-2xl border space-y-3">

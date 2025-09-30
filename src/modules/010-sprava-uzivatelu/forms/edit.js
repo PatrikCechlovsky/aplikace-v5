@@ -1,8 +1,14 @@
+import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { getProfile, updateProfile } from '../../../db.js';
 
 export async function render(root){
   const id = new URLSearchParams(location.hash.split('?')[1] || '').get('id');
   if (!id) { root.innerHTML = '<div class="p-4 text-red-600">Chybí id.</div>'; return; }
+  setBreadcrumb(document.getElementById('crumb'), [
+    { icon:'home',  label:'Domů', href:'#/' },
+    { icon:'users', label:'Uživatelé', href:'#/m/010-uzivatele' },
+    { icon:'edit',  label:'Upravit' },
+  ]);
   const { data:rec, error } = await getProfile(id);
   if (error) { root.innerHTML = `<div class="p-4 text-red-600">${error.message}</div>`; return; }
 

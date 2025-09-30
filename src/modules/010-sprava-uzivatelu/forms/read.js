@@ -1,10 +1,16 @@
 import { renderCommonActions } from '../../../ui/commonActions.js';
+import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { getProfile, archiveProfile, listAttachments, uploadAttachment, removeAttachment } from '../../../db.js';
 
 export async function render(root){
   const id = new URLSearchParams(location.hash.split('?')[1] || '').get('id');
   if (!id) { root.innerHTML = '<div class="p-4 text-red-600">Chybí id.</div>'; return; }
 
+  setBreadcrumb(document.getElementById('crumb'), [
+    { icon:'home',  label:'Domů', href:'#/' },
+    { icon:'users', label:'Uživatelé', href:'#/m/010-uzivatele' },
+    { icon:'detail',label:'Detail' },
+  ]);
   renderCommonActions(document.getElementById('crumb-actions'), {
     onAdd:    () => navigateTo('#/m/010-uzivatele/f/create'),
     onEdit:   () => navigateTo(`#/m/010-uzivatele/f/edit?id=${id}`),
@@ -15,6 +21,7 @@ export async function render(root){
       if (error) alert(error.message);
       else navigateTo('#/m/010-uzivatele/t/prehled');
     },
+    onAttach: () => root.querySelector('#file')?.click(),
   });
 
   const { data:rec, error } = await getProfile(id);
@@ -22,11 +29,7 @@ export async function render(root){
 
   root.innerHTML = `
     <div class="p-4 bg-white rounded-2xl border space-y-4">
-      <div class="flex items-center justify-between">
-        <h3 class="font-medium">Uživatel – detail</h3>
-        <button id="btn-attach" class="px-2 py-1 border rounded text-sm" title="Přidat přílohu (📎)">📎 Příloha</button>
-        <input id="file" type="file" class="hidden" />
-      </div>
+      <input id="file" type="file" class="hidden" />
       <div class="grid sm:grid-cols-2 gap-3">
         <div><div class="text-xs text-slate-500">Jméno</div><div>${rec.display_name || '—'}</div></div>
         <div><div class="text-xs text-slate-500">E‑mail</div><div>${rec.email || '—'}</div></div>
@@ -54,7 +57,6 @@ export async function render(root){
   }
   await refreshAtt();
 
-  root.querySelector('#btn-attach')?.addEventListener('click', () => root.querySelector('#file').click());
   root.querySelector('#file')?.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;

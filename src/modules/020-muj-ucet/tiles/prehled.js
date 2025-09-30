@@ -1,13 +1,17 @@
 import { getMyProfile } from '../../../db.js';
+import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { icon } from '../../../ui/icons.js';
 
 export async function render(root){
   const { data, error } = await getMyProfile();
   if (error) { root.innerHTML = `<div class="p-4 text-red-600">${error.message}</div>`; return; }
   const me = data || {};
+  setBreadcrumb(document.getElementById('crumb'), [
+    { icon:'home', label:'Domů', href:'#/' },
+    { icon:'user', label:'Můj účet' },
+  ]);
   root.innerHTML = `
     <div class="p-4 bg-white rounded-2xl border space-y-3">
-      <div class="flex items-center gap-2 text-sm text-slate-500 mb-2">${icon('home')} Můj účet</div>
       <div><span class="text-xs text-slate-500">Jméno</span><div>${me.display_name || '—'}</div></div>
       <div><span class="text-xs text-slate-500">E‑mail</span><div>${me.email || '—'}</div></div>
       <div><span class="text-xs text-slate-500">Role</span><div>${me.role || 'user'}</div></div>

@@ -1,5 +1,6 @@
 import { icon } from '../../../ui/icons.js';
-import { renderActions, ACTIONS } from '../../../ui/actionButtons.js';
+import { renderCommonActions } from '../../../ui/commonActions.js';
+import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { listProfiles } from '../../../db.js';
 
 const roleBadge = (role) => {
@@ -8,33 +9,22 @@ const roleBadge = (role) => {
 };
 
 export async function render(root) {
-  const head = document.getElementById('crumb-actions');
-  if (head) {
-    head.innerHTML = '';
-    renderActions(head, [
-      ACTIONS.add({ onClick: () => navigateTo('#/m/010-uzivatele/f/create'), label:'Nový' }),
-      { key:'invite', label:'Pozvat e-mailem', icon:'mail', onClick: () => {
-        const email = prompt('E-mail pro pozvánku:'); if (!email) return;
-        navigateTo(`#/m/010-uzivatele/f/create?email=${encodeURIComponent(email)}`);
-      }},
-      ACTIONS.refresh({ onClick: () => route() }),
-    ]);
-  }
+  setBreadcrumb(document.getElementById('crumb'), [
+    { icon:'home',  label:'Domů', href:'#/' },
+    { icon:'users', label:'Uživatelé', href:'#/m/010-uzivatele' },
+    { icon:'list',  label:'Přehled' },
+  ]);
+  renderCommonActions(document.getElementById('crumb-actions'), {
+    onAdd:     () => navigateTo('#/m/010-uzivatele/f/create'),
+    onRefresh: () => route(),
+  });
 
   const { data, error } = await listProfiles();
-  if (error) {
-    root.innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`;
-    return;
-  }
+  if (error) { root.innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; return; }
   const rows = data || [];
 
   root.innerHTML = `
     <div class="p-4 bg-white rounded-2xl border">
-      <div class="flex items-center gap-2 mb-3 text-sm text-slate-500">
-        <span>${icon('home')} Uživatelé</span>
-        <span class="mx-1">›</span>
-        <span class="opacity-70">${icon('list')} Přehled</span>
-      </div>
       <div class="overflow-auto">
         <table class="min-w-full text-sm">
           <thead class="border-b bg-slate-50">
@@ -61,10 +51,10 @@ export async function render(root) {
       <td class="p-2">${r.email || '—'}</td>
       <td class="p-2">${roleBadge(r.role)}</td>
       <td class="p-2 text-right">
-        <button data-act="detail" class="inline-flex items-center gap-1 px-2 py-1 border rounded bg-white">${icon('detail')} Zobrazit</button>
-        <button data-act="edit"   class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white">${icon('edit')} Upravit</button>
-        <button data-act="archive"class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white">${icon('archive')} Archivovat</button>
-        <button data-act="attach" class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white">${icon('paperclip')} Přidat dokument</button>
+        <button data-act="detail" class="inline-flex items-center gap-1 px-2 py-1 border rounded bg-white" title="Zobrazit">${icon('detail')}</button>
+        <button data-act="edit"   class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Upravit">${icon('edit')}</button>
+        <button data-act="archive"class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Archivovat">${icon('archive')}</button>
+        <button data-act="attach" class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Příloha">${icon('paperclip')}</button>
       </td>
     </tr>
   `).join('');

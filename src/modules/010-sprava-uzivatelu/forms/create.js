@@ -1,6 +1,13 @@
+import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { inviteUserByEmail } from '../../../db.js';
 
 export async function render(root){
+  setBreadcrumb(document.getElementById('crumb'), [
+    { icon:'home',  label:'Domů', href:'#/' },
+    { icon:'users', label:'Uživatelé', href:'#/m/010-uzivatele' },
+    { icon:'add',   label:'Nový / Pozvat' },
+  ]);
+
   const url = new URL(location.href);
   const preEmail = url.hash.includes('?') ? new URLSearchParams(url.hash.split('?')[1]).get('email') : '';
 
