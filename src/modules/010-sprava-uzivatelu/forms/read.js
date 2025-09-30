@@ -1,24 +1,84 @@
-// Detail uživatele – akce se zobrazí vpravo na řádku s breadcrumbs
 import { renderCommonActions } from '../../../ui/commonActions.js';
+import { getProfile, archiveProfile, listAttachments, uploadAttachment, removeAttachment } from '../../../db.js';
 
-export default async function renderReadForm(root, row){
-  // Přepiš akce vpravo: Upravit / Archiv / Zpět
+export default async function renderReadForm(root, params){
+  const id = new URLSearchParams(location.hash.split('?')[1] || '').get('id') || params?.id;
+  if (!id) {
+    root.innerHTML = '<div class="p-4 text-red-600">Chybí id.</div>';
+    return;
+  }
+
+  // Akce vpravo
   renderCommonActions(document.getElementById('crumb-actions'), {
-    onAdd:    null, // nechceme "Přidat" v detailu
-    onEdit:   () => alert(`Upravit #${row.id}`),
-    onArchive:() => alert(`Archivovat #${row.id}`),
+    onAdd:    () => navigateTo('#/m/010-uzivatele/f/create'),
+    onEdit:   () => navigateTo(`#/m/010-uzivatele/f/edit?id=${id}`),
+    onArchive: async () => {
+      const ok = confirm('Opravdu archivovat tohoto uživatele?');
+      if (!ok) return;
+      const { error } = await archiveProfile(id);
+      if (error) alert(error.message);
+      else navigateTo('#/m/010-uzivatele/t/seznam');
+    },
   });
 
+  const { data:rec, error } = await getProfile(id);
+  if (error) {
+    root.innerHTML = `<div class="p-4 text-red-600">Chyba načítání: ${error.message}</div>`;
+    return;
+  }
+
   root.innerHTML = `
-    <div class="p-4 bg-white rounded-2xl border space-y-2">
-      <h3 class="font-medium">Uživatel – detail</h3>
-      <div class="text-sm"><b>Jméno:</b> ${row.name}</div>
-      <div class="text-sm"><b>Email:</b> ${row.email}</div>
-      <div class="text-sm"><b>Role:</b> ${row.role}</div>
-      <div class="text-sm"><b>Město:</b> ${row.city}</div>
-      <div class="pt-2">
-        <a href="#/m/010-uzivatele/t/seznam" class="px-3 py-1 border rounded bg-white text-sm">← Zpět na seznam</a>
+    <div class="p-4 bg-white rounded-2xl border space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-medium">Uživatel – detail</h3>
+        <button id="btn-attach" class="px-2 py-1 border rounded text-sm" title="Přidat přílohu (📎)">
+          📎 Příloha
+        </button>
+        <input id="file" type="file" class="hidden" />
+      </div>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div><div class="text-xs text-slate-500">Jméno</div><div>${rec.display_name || '—'}</div></div>
+        <div><div class="text-xs text-slate-500">E‑mail</div><div>${rec.email || '—'}</div></div>
+        <div><div class="text-xs text-slate-500">Role</div><div>${rec.role || 'user'}</div></div>
+        <div><div class="text-xs text-slate-500">Archiv</div><div>${rec.archived ? 'Ano' : 'Ne'}</div></div>
+      </div>
+      <div>
+        <div class="font-medium mb-1">Přílohy</div>
+        <ul id="att-list" class="list-disc pl-5 text-sm"></ul>
       </div>
     </div>
   `;
+
+  const folder = `profiles/${id}`;
+  async function refreshAtt() {
+    const { data, error } = await listAttachments(folder);
+    const ul = root.querySelector('#att-list');
+    if (error) { ul.innerHTML = `<li class="text-red-600">${error.message}</li>`; return; }
+    ul.innerHTML = (data || []).map(f => `
+      <li class="flex items-center justify-between">
+        <span>${f.name} <span class="text-xs text-slate-400">(${f.metadata?.size || ''} B)</span></span>
+        <button data-del="${folder}/${f.name}" class="text-red-600 hover:underline">Smazat</button>
+      </li>
+    `).join('') || '<li class="text-slate-500">Žádné přílohy</li>';
+  }
+  await refreshAtt();
+
+  root.querySelector('#btn-attach')?.addEventListener('click', () => root.querySelector('#file').click());
+  root.querySelector('#file')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const { error } = await uploadAttachment(folder, file);
+    if (error) alert(error.message);
+    await refreshAtt();
+    e.target.value = '';
+  });
+  root.querySelector('#att-list')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-del]');
+    if (!btn) return;
+    const ok = confirm('Smazat přílohu?');
+    if (!ok) return;
+    const { error } = await removeAttachment(btn.dataset.del);
+    if (error) alert(error.message);
+    await refreshAtt();
+  });
 }
