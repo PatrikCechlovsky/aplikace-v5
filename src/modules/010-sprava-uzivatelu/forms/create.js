@@ -49,3 +49,4 @@ export async function render(root){
     navigateTo('#/m/010-uzivatele/t/prehled');
   });
 }
+export default { render };
