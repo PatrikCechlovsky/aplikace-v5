@@ -110,11 +110,21 @@ function buildRoot() {
 const _manifestCache = new Map();      // modId -> modul (exporty)
 const _lightManifests = new Map();     // modId -> { id, title, icon, defaultTile, tiles, forms }
 
+// Kompatibilita: moduly mohou exportovat buď getManifest(), nebo přímo objekt default/manifest
+function extractManifest(mod) {
+  try {
+    if (typeof mod?.getManifest === 'function') return mod.getManifest();
+    if (mod && typeof mod.manifest === 'object') return mod.manifest;
+    if (mod && typeof mod.default === 'object') return mod.default;
+  } catch (_) {}
+  return null;
+}
+
 async function loadModuleById(modId) {
   if (_manifestCache.has(modId)) return _manifestCache.get(modId);
   for (const src of MODULE_SOURCES) {
     const mod = await src();
-    const mf = await mod.getManifest?.();
+    const mf = await extractManifest(mod);
     if (mf?.id === modId) {
       _manifestCache.set(modId, mod);
       _lightManifests.set(modId, {
@@ -132,7 +142,7 @@ async function loadAllLightManifests() {
   const promises = MODULE_SOURCES.map(async (src) => {
     try {
       const mod = await src();
-      const mf = await mod.getManifest?.();
+      const mf = await extractManifest(mod);
       if (mf && !_lightManifests.has(mf.id)) {
         _lightManifests.set(mf.id, {
           id: mf.id, title: mf.title, icon: mf.icon,
