@@ -21,3 +21,4 @@ export async function render(root){
     </div>
   `;
 }
+export default { render };
