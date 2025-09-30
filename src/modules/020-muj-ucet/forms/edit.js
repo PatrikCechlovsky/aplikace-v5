@@ -37,3 +37,4 @@ export async function render(root){
     else navigateTo('#/m/020-muj-ucet/t/prehled');
   });
 }
+export default { render };
