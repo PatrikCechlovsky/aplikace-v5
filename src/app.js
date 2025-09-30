@@ -287,7 +287,35 @@ function parseHash() {
     id:   m[3],
   };
 }
+// ===== Renderer shim ("airbag") =============================================
+async function runRenderer(modPromise, root, params, debugTag) {
+  try {
+    const mod = await modPromise;
 
+    // Najdeme render funkci v několika variantách
+    const r =
+      mod?.render ||
+      mod?.default?.render ||
+      (typeof mod?.default === 'function' ? mod.default : null) ||
+      (typeof mod === 'function' ? mod : null);
+
+    console.log('[ROUTE]', debugTag, Object.keys(mod || {}), mod);
+
+    if (typeof r !== 'function') {
+      throw new Error(`Renderer missing in ${debugTag}`);
+    }
+
+    await r(root, params);
+  } catch (err) {
+    console.error('[ROUTE ERROR]', debugTag, err);
+    root.innerHTML = `
+      <div class="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">
+        Nepodařilo se načíst modul/sekci.<br>
+        <code>${debugTag}</code><br>
+        ${err?.message || err}
+      </div>`;
+  }
+}
 // === ROUTER ==================================================================
 async function route() {
   const h = parseHash();
@@ -317,10 +345,11 @@ async function route() {
       { label: tileTitle || formTitle || secId }
     ]);
 
-    // Vykresli obsah
+    // Vykresli obsah pomocí runRenderer
     const c = $id('content');
     c.innerHTML = `<div class="text-slate-500 p-2">Načítám…</div>`;
-    await mod.render(kind, secId, c);
+    const path = `/src/modules/${manifest.id}/${kind === 'form' ? 'forms' : 'tiles'}/${secId}.js`;
+    await runRenderer(import(path + '?v=' + Date.now()), c, {}, `mod:${manifest.id}/${kind}/${secId}`);
 
     // Akce vpravo (volitelné)
     const acts = await (mod.getActions?.({ kind, id: secId }) || []);
