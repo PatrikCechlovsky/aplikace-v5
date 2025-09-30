@@ -174,12 +174,12 @@ async function renderSidebarModules(activeModId, activeManifest) {
 
     // modul button
     const btn = E('button', {
-      class: `w-full text-left px-3 py-2 rounded flex items-center justify-between ${
-        mf.id===activeModId ? 'bg-indigo-50 ring-1 ring-indigo-200 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
-      }`
+      class: `w-full text-left px-3 py-2 rounded flex items-center justify-between ${mf.id===activeModId ? 'bg-indigo-50 ring-1 ring-indigo-200 text-indigo-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`,
+      'data-open': mf.id===activeModId ? '1' : '0',
+      'aria-expanded': mf.id===activeModId ? 'true' : 'false',
     }, [
       E('span', {}, `${mf.icon || '📁'} ${mf.title}`),
-      E('span', { class:'text-slate-300' }, '›')
+      E('span', { class:`transition-transform text-slate-300 ${mf.id===activeModId?'rotate-90':''}` }, '›')
     ]);
 
     btn.onclick = (ev) => {
