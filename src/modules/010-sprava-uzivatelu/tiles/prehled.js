@@ -72,3 +72,4 @@ export async function render(root) {
     if (btn.dataset.act==='attach')  navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
   });
 }
+export default { render };
