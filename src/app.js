@@ -331,14 +331,14 @@ async function route() {
       const frag = `#/m/${manifest.id}/${kind === 'form' ? 'f' : 't'}/${secId}`;
       if (location.hash !== frag) location.replace(frag);
     }
-  } catch (err) {
-    console.error('[APP] route error', err);
-    $id('content').innerHTML = `
-      <div class="p-3 bg-rose-50 border border-rose-200 rounded text-rose-700">
-        Nepodařilo se načíst modul/sekci. Otevři konzoli pro detail.
-      </div>`;
+    } catch (err) {
+      console.error('[APP] route error', err);
+      $id('content').innerHTML = `
+        <div class="p-3 bg-rose-50 border border-rose-200 rounded text-rose-700">
+          Nepodařilo se načíst modul/sekci. Otevři konzoli pro detail.
+        </div>`;
+    }
   }
-}
 
 // ===== SAFE BOOT (nech na konci souboru) ====================================
 (() => {
