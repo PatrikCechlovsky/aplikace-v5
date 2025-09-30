@@ -49,3 +49,4 @@ export async function render(root){
     else navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
   });
 }
+export default { render };
