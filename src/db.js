@@ -1,7 +1,6 @@
-// src/db.js – tenká vrstva nad Supabase (Profiles + přílohy)
+// src/db.js – tenká vrstva nad Supabase (profiles + storage + invite)
 import { supabase } from './supabase.js';
 
-// ===== Auth / Session =======================================================
 export async function getSessionUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) return { user: null, error };
@@ -14,7 +13,7 @@ export async function getMyProfile() {
   if (!user) return { data: null, error: new Error('Nenalezen přihlášený uživatel') };
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, role')
+    .select('id, email, display_name, role, archived')
     .eq('id', user.id)
     .single();
   return { data, error };
@@ -26,16 +25,12 @@ export async function isAdmin() {
   return data?.role === 'admin';
 }
 
-// ===== Profiles CRUD ========================================================
 export async function listProfiles({ q = '' } = {}) {
   let query = supabase
     .from('profiles')
     .select('id, email, display_name, role, archived')
     .order('display_name', { ascending: true });
-  if (q) {
-    // jednoduché full-text OR
-    query = query.ilike('display_name', `%${q}%`);
-  }
+  if (q) query = query.ilike('display_name', `%${q}%`);
   const { data, error } = await query;
   return { data: data || [], error };
 }
@@ -60,7 +55,6 @@ export async function updateProfile(id, payload) {
 }
 
 export async function createProfile(payload) {
-  // Pouze pro doplnění – skutečný uživatel vzniká registrací/invitem.
   const { data, error } = await supabase
     .from('profiles')
     .insert(payload)
@@ -79,9 +73,6 @@ export async function archiveProfile(id) {
   return { data, error };
 }
 
-// ===== Invite (vyžaduje Edge Function server-side) ==========================
-// Očekává se Supabase Edge Function 'invite-user' která pošle pozvánku emailem
-// a vytvoří auth usera. Na klientovi ji voláme:
 export async function inviteUserByEmail({ email, display_name = '', role = 'user' }) {
   try {
     const { data, error } = await supabase.functions.invoke('invite-user', {
@@ -93,11 +84,9 @@ export async function inviteUserByEmail({ email, display_name = '', role = 'user
   }
 }
 
-// ===== Storage – přílohy (paperclip) =======================================
 const ATTACH_BUCKET = 'attachments';
 
 export async function listAttachments(folder) {
-  // folder např. `profiles/<id>`
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).list(folder, { limit: 100 });
   return { data: data || [], error };
 }

@@ -1,14 +1,10 @@
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { getProfile, archiveProfile, listAttachments, uploadAttachment, removeAttachment } from '../../../db.js';
 
-export default async function renderReadForm(root, params){
-  const id = new URLSearchParams(location.hash.split('?')[1] || '').get('id') || params?.id;
-  if (!id) {
-    root.innerHTML = '<div class="p-4 text-red-600">Chybí id.</div>';
-    return;
-  }
+export default async function renderReadForm(root){
+  const id = new URLSearchParams(location.hash.split('?')[1] || '').get('id');
+  if (!id) { root.innerHTML = '<div class="p-4 text-red-600">Chybí id.</div>'; return; }
 
-  // Akce vpravo
   renderCommonActions(document.getElementById('crumb-actions'), {
     onAdd:    () => navigateTo('#/m/010-uzivatele/f/create'),
     onEdit:   () => navigateTo(`#/m/010-uzivatele/f/edit?id=${id}`),
@@ -17,30 +13,25 @@ export default async function renderReadForm(root, params){
       if (!ok) return;
       const { error } = await archiveProfile(id);
       if (error) alert(error.message);
-      else navigateTo('#/m/010-uzivatele/t/seznam');
+      else navigateTo('#/m/010-uzivatele/t/prehled');
     },
   });
 
   const { data:rec, error } = await getProfile(id);
-  if (error) {
-    root.innerHTML = `<div class="p-4 text-red-600">Chyba načítání: ${error.message}</div>`;
-    return;
-  }
+  if (error) { root.innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; return; }
 
   root.innerHTML = `
     <div class="p-4 bg-white rounded-2xl border space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-medium">Uživatel – detail</h3>
-        <button id="btn-attach" class="px-2 py-1 border rounded text-sm" title="Přidat přílohu (📎)">
-          📎 Příloha
-        </button>
+        <button id="btn-attach" class="px-2 py-1 border rounded text-sm" title="Přidat přílohu (📎)">📎 Příloha</button>
         <input id="file" type="file" class="hidden" />
       </div>
       <div class="grid sm:grid-cols-2 gap-3">
-        <div><div class="text-xs text-slate-500">Jméno</div><div>${rec.display_name || '—'}</div></div>
-        <div><div class="text-xs text-slate-500">E‑mail</div><div>${rec.email || '—'}</div></div>
-        <div><div class="text-xs text-slate-500">Role</div><div>${rec.role || 'user'}</div></div>
-        <div><div class="text-xs text-slate-500">Archiv</div><div>${rec.archived ? 'Ano' : 'Ne'}</div></div>
+        <div><div class="text-xs text-slate-500">Jméno</div><div>${'${rec.display_name || "—"}'}</div></div>
+        <div><div class="text-xs text-slate-500">E‑mail</div><div>${'${rec.email || "—"}'}</div></div>
+        <div><div class="text-xs text-slate-500">Role</div><div>${'${rec.role || "user"}'}</div></div>
+        <div><div class="text-xs text-slate-500">Archiv</div><div>${'${rec.archived ? "Ano" : "Ne"}'}</div></div>
       </div>
       <div>
         <div class="font-medium mb-1">Přílohy</div>
@@ -49,17 +40,16 @@ export default async function renderReadForm(root, params){
     </div>
   `;
 
-  const folder = `profiles/${id}`;
+  const folder = `profiles/${'${id}'}`;
   async function refreshAtt() {
     const { data, error } = await listAttachments(folder);
     const ul = root.querySelector('#att-list');
-    if (error) { ul.innerHTML = `<li class="text-red-600">${error.message}</li>`; return; }
+    if (error) { ul.innerHTML = `<li class="text-red-600">${'${error.message}'}</li>`; return; }
     ul.innerHTML = (data || []).map(f => `
       <li class="flex items-center justify-between">
-        <span>${f.name} <span class="text-xs text-slate-400">(${f.metadata?.size || ''} B)</span></span>
-        <button data-del="${folder}/${f.name}" class="text-red-600 hover:underline">Smazat</button>
-      </li>
-    `).join('') || '<li class="text-slate-500">Žádné přílohy</li>';
+        <span>${'${f.name}'}</span>
+        <button data-del="${'${folder}'}'/'${'${f.name}'}" class="text-red-600 hover:underline">Smazat</button>
+      </li>`).join('') || '<li class="text-slate-500">Žádné přílohy</li>';
   }
   await refreshAtt();
 
