@@ -151,30 +151,68 @@ function parseHash() {
     };
   }
   return { type: 'home' };
-}
-
-async function route() {
-  const c = $id('content');
-  if (!c) return;
-  const info = parseHash();
-
-  $id('crumb-actions') && ($id('crumb-actions').innerHTML = '');
-
-  if (info.type === 'home') {
-    setBreadcrumb([{ icon: 'home', label: 'Domů' }]);
-    c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
-    return;
   }
-
-  const mod = registry.get(info.modId);
-  if (!mod) {
-    c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-      Modul <b>${info.modId}</b> nenalezen.</div>`;
-    return;
+  
+  async function route() {
+    const c = document.getElementById('content');
+    if (!c) return;
+  
+    try {
+      const h = location.hash || '#/';
+      const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
+  
+      if (!m) {
+        // Home
+        c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
+        return;
+      }
+  
+      const modId = decodeURIComponent(m[1]);
+      const kind = m[2] === 'f' ? 'form' : 'tile';
+      const secId = m[3] ? decodeURIComponent(m[3]) : null;
+  
+      const mod = registry.get(modId);
+      if (!mod) {
+        c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
+          Modul <b>${modId}</b> nenalezen.
+        </div>`;
+        return;
+      }
+  
+      const tileId = secId || mod.defaultTile || (mod.tiles?.[0]?.id || null);
+      if (!tileId) {
+        c.innerHTML = `<div class="p-3">Modul nemá žádné sekce.</div>`;
+        return;
+      }
+  
+      const rel = kind === 'form' ? `forms/${tileId}.js` : `tiles/${tileId}.js`;
+      const path = `${mod.baseDir}/${rel}`;
+      const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
+  
+      console.log('[ROUTE try import]', pathWithCb);
+  
+      c.innerHTML = `<div class="p-2 text-slate-500">Načítám ${pathWithCb}…</div>`;
+  
+      try {
+        const imported = await import(pathWithCb);
+        console.log('[ROUTE loaded]', pathWithCb, Object.keys(imported));
+  
+        await runRenderer(Promise.resolve(imported), c, {}, `path=${pathWithCb}`);
+      } catch (err) {
+        console.error('[IMPORT ERROR]', pathWithCb, err);
+        c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
+          Import selhal: ${err?.message || err}
+        </div>`;
+      }
+  
+    } catch (err) {
+      console.error('[ROUTE ERROR]', err);
+      c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
+        Chyba v routeru: ${err?.message || err}
+      </div>`;
+    }
   }
-
-  const tileId = info.secId || mod.defaultTile || (mod.tiles?.[0]?.id || null);
-  const kind = info.kind || 'tile';
+  
 
   // Breadcrumb
   setBreadcrumb([
