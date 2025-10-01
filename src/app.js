@@ -196,8 +196,16 @@ async function route() {
     c.innerHTML = `<div class="text-slate-500 p-2">Načítám…</div>`;
     const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
 
-    // Pozn.: import bere cestu relativně k tomuto souboru, takže "../modules/..." je správně.
-    await runRenderer(import(pathWithCb), c, {}, `path=${pathWithCb}`);
+    try {
+      const mod = await import(pathWithCb);
+      // použij helper přímo na už načtený modul (Promise.resolve zajistí správné chování)
+      await runRenderer(Promise.resolve(mod), c, {}, `path=${pathWithCb}`);
+    } catch (err) {
+  console.error('[IMPORT ERROR]', pathWithCb, err);
+  c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
+    Import selhal: ${err?.message || err}
+  </div>`;
+}
   } catch (err) {
     console.error('[ROUTE FAIL]', err);
     c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
