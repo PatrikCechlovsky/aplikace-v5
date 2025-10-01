@@ -56,6 +56,7 @@ async function runRenderer(modPromise, root, params, debugTag) {
 const registry = new Map(); // modId -> { id, title, icon, tiles, forms, defaultTile, baseDir }
 
 function extractImportPath(fn) {
+  // vytáhne z textu funkce cestu z import('...')
   try {
     const s = fn.toString();
     const m = s.match(/import\(['"`]([^'"`]+)['"`]\)/);
@@ -67,16 +68,20 @@ function extractImportPath(fn) {
 
 async function initModules() {
   for (const src of MODULE_SOURCES) {
-    const path = extractImportPath(src); // např. ../modules/010-sprava-uzivatelu/module.config.js
-    const baseDir = path ? path.replace(/\/module\.config\.js$/, '') : null;
+    const rel = extractImportPath(src); // např. "../modules/010-sprava-uzivatelu/module.config.js"
+    // Převeď relativní cestu (z pohledu /src/app/) na absolutní:
+    const abs = '/src/app/' + rel;                          // "/src/app/../modules/010-.../module.config.js"
+    const norm = abs.replace('/src/app/../', '/src/');      // "/src/modules/010-.../module.config.js"
+    const baseDir = norm.replace(/\/module\.config\.js$/, '');
 
-    const mod = await src(); // načti module.config.js
+    // načti manifest
+    const mod = await src();
     const manifest = (await mod.getManifest?.()) || {};
     if (!manifest?.id) continue;
 
     registry.set(manifest.id, {
       ...manifest,
-      baseDir, // důležité pro import tiles/forms
+      baseDir, // => "/src/modules/010-sprava-uzivatelu" (absolutně)
     });
   }
 }
