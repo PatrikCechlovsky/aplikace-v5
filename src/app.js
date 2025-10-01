@@ -10,17 +10,14 @@ const $id = (id) => document.getElementById(id);
 export function navigateTo(hash) {
   if (!hash.startsWith('#')) hash = '#' + hash;
   if (location.hash === hash) {
-    // vynutit rerender
-    route();
+    route(); // vynutit rerender
   } else {
     location.hash = hash;
   }
 }
 
 // ===== Renderer shim ("airbag") =============================================
-// Bezpečně spustí renderer z dynamicky importovaného modulu.
-// Podporuje: render, default.render, default (funkce).
-// Při chybě zaloguje a zobrazí hezkou hlášku do UI.
+// Podporuje: render, default.render, default (funkce) a hezky chybuje do UI.
 async function runRenderer(modPromise, root, params, debugTag) {
   try {
     const mod = await modPromise;
@@ -61,7 +58,7 @@ const registry = new Map(); // modId -> { id, title, icon, tiles, forms, default
 function extractImportPath(fn) {
   try {
     const s = fn.toString();
-    const m = s.match(/import\\(['"`]([^'"`]+)['"`]\\)/);
+    const m = s.match(/import\(['"`]([^'"`]+)['"`]\)/);
     return m ? m[1] : null;
   } catch {
     return null;
@@ -71,7 +68,7 @@ function extractImportPath(fn) {
 async function initModules() {
   for (const src of MODULE_SOURCES) {
     const path = extractImportPath(src); // např. ../modules/010-sprava-uzivatelu/module.config.js
-    const baseDir = path ? path.replace(/\\/module\\.config\\.js$/, '') : null;
+    const baseDir = path ? path.replace(/\/module\.config\.js$/, '') : null;
 
     const mod = await src(); // načti module.config.js
     const manifest = (await mod.getManifest?.()) || {};
@@ -138,116 +135,75 @@ function setBreadcrumb(items = []) {
 }
 
 // ========== Router ==========
-function parseHash() {
-  const h = location.hash || '#/';
-  // #/m/:modId
-  let m = h.match(/^#\\/m\\/([^\\/]+)(?:\\/([tf])\\/([^\\/]+))?/);
-  if (m) {
-    return {
-      type: 'module',
-      modId: decodeURIComponent(m[1]),
-      kind: m[2] === 'f' ? 'form' : 'tile',
-      secId: m[3] ? decodeURIComponent(m[3]) : null,
-    };
-  }
-  return { type: 'home' };
-  }
-  
-  async function route() {
-    const c = document.getElementById('content');
-    if (!c) return;
-  
-    try {
-      const h = location.hash || '#/';
-      const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
-  
-      if (!m) {
-        // Home
-        c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
-        return;
-      }
-  
-      const modId = decodeURIComponent(m[1]);
-      const kind = m[2] === 'f' ? 'form' : 'tile';
-      const secId = m[3] ? decodeURIComponent(m[3]) : null;
-  
-      const mod = registry.get(modId);
-      if (!mod) {
-        c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-          Modul <b>${modId}</b> nenalezen.
-        </div>`;
-        return;
-      }
-  
-      const tileId = secId || mod.defaultTile || (mod.tiles?.[0]?.id || null);
-      if (!tileId) {
-        c.innerHTML = `<div class="p-3">Modul nemá žádné sekce.</div>`;
-        return;
-      }
-  
-      const rel = kind === 'form' ? `forms/${tileId}.js` : `tiles/${tileId}.js`;
-      const path = `${mod.baseDir}/${rel}`;
-      const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
-  
-      console.log('[ROUTE try import]', pathWithCb);
-  
-      c.innerHTML = `<div class="p-2 text-slate-500">Načítám ${pathWithCb}…</div>`;
-  
-      try {
-        const imported = await import(pathWithCb);
-        console.log('[ROUTE loaded]', pathWithCb, Object.keys(imported));
-  
-        await runRenderer(Promise.resolve(imported), c, {}, `path=${pathWithCb}`);
-      } catch (err) {
-        console.error('[IMPORT ERROR]', pathWithCb, err);
-        c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-          Import selhal: ${err?.message || err}
-        </div>`;
-      }
-  
-    } catch (err) {
-      console.error('[ROUTE ERROR]', err);
-      c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-        Chyba v routeru: ${err?.message || err}
-      </div>`;
-    }
-  }
-  
+async function route() {
+  const c = $id('content');
+  if (!c) return;
 
-  // Breadcrumb
-  setBreadcrumb([
-    { icon: 'home', label: 'Domů', href: '#/' },
-    { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` },
-    tileId ? { icon: kind === 'tile' ? 'list' : 'form', label: (kind === 'tile'
-              ? (mod.tiles?.find(t => t.id === tileId)?.title || tileId)
-              : (mod.forms?.find(f => f.id === tileId)?.title || tileId)) } : null,
-  ].filter(Boolean));
-
-  // Načti renderer
   try {
-    const baseDir = mod.baseDir; // např. ../modules/010-sprava-uzivatelu
-    if (!baseDir) throw new Error('Chybí baseDir pro modul (z MODULE_SOURCES).');
+    const h = location.hash || '#/';
+    const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
 
+    if (!m) {
+      // Home
+      setBreadcrumb([{ icon: 'home', label: 'Domů' }]);
+      c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
+      return;
+    }
+
+    const modId = decodeURIComponent(m[1]);
+    const kind = m[2] === 'f' ? 'form' : 'tile';
+    const secId = m[3] ? decodeURIComponent(m[3]) : null;
+
+    const mod = registry.get(modId);
+    if (!mod) {
+      c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
+        Modul <b>${modId}</b> nenalezen.
+      </div>`;
+      return;
+    }
+
+    const tileId = secId || mod.defaultTile || (mod.tiles?.[0]?.id || null);
+    if (!tileId) {
+      c.innerHTML = `<div class="p-3">Modul nemá žádné sekce.</div>`;
+      return;
+    }
+
+    // Breadcrumb aktuální stránky
+    setBreadcrumb([
+      { icon: 'home', label: 'Domů', href: '#/' },
+      { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` },
+      {
+        icon: kind === 'tile' ? 'list' : 'form',
+        label: (kind === 'tile'
+          ? (mod.tiles?.find(t => t.id === tileId)?.title || tileId)
+          : (mod.forms?.find(f => f.id === tileId)?.title || tileId))
+      },
+    ]);
+
+    // Import a vykreslení
     const rel = kind === 'form' ? `forms/${tileId}.js` : `tiles/${tileId}.js`;
-    const path = `${baseDir}/${rel}`; // relativně k tomuto souboru
-
-    c.innerHTML = `<div class="text-slate-500 p-2">Načítám…</div>`;
+    const path = `${mod.baseDir}/${rel}`;
     const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
 
+    console.log('[ROUTE try import]', pathWithCb);
+    c.innerHTML = `<div class="p-2 text-slate-500">Načítám ${pathWithCb}…</div>`;
+
     try {
-      const mod = await import(pathWithCb);
-      // použij helper přímo na už načtený modul (Promise.resolve zajistí správné chování)
-      await runRenderer(Promise.resolve(mod), c, {}, `path=${pathWithCb}`);
+      const imported = await import(pathWithCb);
+      console.log('[ROUTE loaded]', pathWithCb, Object.keys(imported));
+      await runRenderer(Promise.resolve(imported), c, {}, `path=${pathWithCb}`);
     } catch (err) {
-  console.error('[IMPORT ERROR]', pathWithCb, err);
-  c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-    Import selhal: ${err?.message || err}
-  </div>`;
-}
+      console.error('[IMPORT ERROR]', pathWithCb, err);
+      c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
+        Import selhal: ${err?.message || err}
+      </div>`;
+    }
+
   } catch (err) {
-    console.error('[ROUTE FAIL]', err);
+    console.error('[ROUTE ERROR]', err);
     c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-      Chyba při routingu: ${err?.message || err}</div>`;
+      Chyba v routeru: ${err?.message || err}
+    </div>`;
   }
 }
 
@@ -257,6 +213,7 @@ function parseHash() {
     await initModules();
     renderSidebar();
     window.addEventListener('hashchange', route);
+
     if (!location.hash || location.hash === '#') {
       // přesměruj na první modul na jeho výchozí tile
       const first = registry.values().next().value;
@@ -269,6 +226,7 @@ function parseHash() {
     console.error('[INIT ERROR]', err);
     const c = $id('content');
     if (c) c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-      Inicializace selhala: ${err?.message || err}</div>`;
+      Inicializace selhala: ${err?.message || err}
+    </div>`;
   }
 })();
