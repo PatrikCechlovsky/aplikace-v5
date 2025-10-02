@@ -1,6 +1,6 @@
 export async function getManifest() {
   return {
-    id: '010-uzivatele',
+    id: '010-sprava-uzivatelu',
     title: 'Uživatelé',
     icon: 'users',
     tiles: [{ id: 'prehled', title: 'Přehled', icon: 'list' }],
