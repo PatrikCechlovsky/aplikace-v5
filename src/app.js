@@ -1,7 +1,7 @@
 // src/app/app.js
 
 // ========== Imports ==========
-import { MODULE_SOURCES } from './modules.index.js';
+import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
 
 // ========== Mini utils ==========
