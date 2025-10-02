@@ -4,19 +4,9 @@ export function renderSidebar(root, modules = [], opts = {}) {
   if (!root) return;
 
   root.innerHTML = `
-    <div class="pl-4 pt-4 w-64">
-      <div class="mb-4">
-        <button 
-          class="flex items-center gap-2 w-full px-4 py-2 rounded-xl bg-white border font-bold text-lg shadow-sm hover:bg-slate-50 transition"
-          id="homebtn"
-          title="Domů"
-        >
-          <span class="text-2xl">🏠</span>
-          <span>Pronajímatel</span>
-        </button>
-      </div>
+    <div class="panel-box mx-auto">
       <nav>
-        <ul id="sb-list" class="space-y-1">
+        <ul id="sb-list" class="space-y-1 py-2">
           ${modules.map(m => `
             <li>
               <a
