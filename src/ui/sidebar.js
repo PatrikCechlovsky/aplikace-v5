@@ -4,7 +4,7 @@ export function renderSidebar(root, modules = [], opts = {}) {
   if (!root) return;
 
   root.innerHTML = `
-    <div class="panel-box w-64 rounded-xl shadow-sm border bg-white">
+    <div class="rounded-xl bg-white border shadow-sm w-full">
       <nav>
         <ul id="sb-list" class="space-y-1 py-2">
           ${modules.map(m => `
