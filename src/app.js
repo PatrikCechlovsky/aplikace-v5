@@ -2,7 +2,7 @@
 import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
 import { renderHeader } from './ui/header.js';
-import { renderHeaderActions } from './ui/headerActions.js'; // pokud máš akce
+import { renderHeaderActions } from './ui/headerActions.js';
 import { renderHomeButton } from './ui/homebutton.js';
 import { renderSidebar } from './ui/sidebar.js';
 
@@ -49,7 +49,7 @@ async function runRenderer(modPromise, root, params, debugTag) {
 }
 
 // ========== Registr modulů ==========
-const registry = new Map(); // modId -> { id, title, icon, tiles, forms, defaultTile, baseDir }
+const registry = new Map();
 
 function extractImportPath(fn) {
   try {
@@ -80,46 +80,7 @@ async function initModules() {
 }
 window.registry = registry;
 
-// ========== Sidebar ==========
-function renderSidebar() {
-  const sb = $id('sidebar');
-  if (!sb) return;
-  const mods = Array.from(registry.values());
-
-  sb.innerHTML = mods.map(m => `
-    <div class="mb-3">
-      <button class="w-full flex items-center justify-between px-3 py-2 rounded border bg-white"
-              data-mod="${m.id}">
-        <span class="flex items-center gap-2">${icon(m.icon || 'folder')} ${m.title}</span>
-        <span class="text-slate-400">▸</span>
-      </button>
-      <div class="pl-4 mt-2 hidden" id="sect-${m.id}">
-        ${m.tiles?.length ? `<div class="text-xs uppercase text-slate-400 mb-1">Dlaždice</div>` : ''}
-        ${(m.tiles || []).map(t => `
-          <a class="block py-1 hover:underline" href="#/m/${m.id}/t/${t.id}">
-            ${icon(t.icon || 'list')} ${t.title}
-          </a>`).join('')}
-        ${m.forms?.length ? `<div class="text-xs uppercase text-slate-400 mt-2 mb-1">Formuláře</div>` : ''}
-        ${(m.forms || []).map(f => `
-          <a class="block py-1 hover:underline" href="#/m/${m.id}/f/${f.id}">
-            ${icon(f.icon || 'form')} ${f.title}
-          </a>`).join('')}
-      </div>
-    </div>
-  `).join('');
-
-  sb.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-mod]');
-    if (!btn) return;
-    const modId = btn.dataset.mod;
-    const box = $id(`sect-${modId}`);
-    if (!box) return;
-    box.classList.toggle('hidden');
-    // otočení šipky
-    const caret = btn.querySelector('span:last-child');
-    if (caret) caret.style.transform = box.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
-  });
-}
+// ========== Sidebar (už NEpoužívej tuto funkci, ale importuj renderSidebar z ui/sidebar.js) ==========
 
 // ========== Breadcrumb ==========
 function setBreadcrumb(items = []) {
@@ -233,11 +194,10 @@ window.addEventListener('hashchange', function (e) {
 // ========== Init ==========
 (async function start() {
   try {
-    // Vykresli header a akce do #header
+    // Header a akce (pokud máš)
     const headerRoot = $id('header');
     let actionsContainer = null;
     if (headerRoot) {
-      // renderHeader vrací { actionsContainer }
       const out = renderHeader(headerRoot, { appName: 'Pronajímatel' });
       actionsContainer = out && out.actionsContainer;
     }
@@ -245,11 +205,14 @@ window.addEventListener('hashchange', function (e) {
       renderHeaderActions(actionsContainer);
     }
 
+    // Home button a sidebar – volat do správných kontejnerů
+    renderHomeButton($id('homebtnbox'), { appName: 'Pronajímatel', onHome: () => location.hash = "#/" });
+
     await initModules();
-    renderSidebar();
+    renderSidebar($id('sidebarbox'), Array.from(registry.values()));
     window.addEventListener('hashchange', route);
 
-    route(); // žádné automatické přesměrování!
+    route();
   } catch (err) {
     console.error('[INIT ERROR]', err);
     const c = $id('content');
