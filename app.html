@@ -9,20 +9,16 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <header id="header"></header>
-  <div class="flex flex-col w-72 pl-4 pt-4">
-  <!-- Home button -->
-    <div class="mb-4">
-      <button class="panel-box w-full flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-lg hover:bg-slate-50 transition" id="homebtn">
-        <span class="text-2xl">🏠</span>
-        <span>Pronajímatel</span>
-      </button>
-    </div>
-    <!-- Sidebar panel -->
-    <div class="panel-box w-full rounded-xl shadow-sm border bg-white">
-      ... sidebar položky ...
-    </div>
+  <div class="flex min-h-screen">
+    <aside class="flex flex-col items-start pl-6 pt-6 w-72">
+      <div id="homebtnbox" class="w-full"></div>
+      <div id="sidebarbox" class="w-full mt-4"></div>
+    </aside>
+    <main class="flex-1 pl-6 pt-6 pr-6">
+      <div id="crumb" class="mb-6"></div>
+      <div id="content"></div>
+    </main>
   </div>
-  <script type="module" src="./src/app.js?v=base1"></script>
+  <script type="module" src="./src/app.js"></script>
 </body>
 </html>
