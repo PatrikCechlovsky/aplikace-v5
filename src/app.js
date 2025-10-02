@@ -211,7 +211,37 @@ async function route() {
     </div>`;
   }
 }
+// ... (ostatní importy a kód)
 
+let hasUnsavedChanges = false;
+
+// Použij tuto proměnnou v komponentách při editaci/formulářích:
+export function setUnsaved(flag) {
+  hasUnsavedChanges = !!flag;
+}
+
+// Ochrana při odchodu ze stránky (reload, zavření tabu)
+window.addEventListener('beforeunload', function (e) {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
+
+// Ochrana i při navigaci v rámci SPA (hashchange)
+window.addEventListener('hashchange', function (e) {
+  if (hasUnsavedChanges) {
+    if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) {
+      // Vrátí hash zpět (ne vždy spolehlivě, záleží na browseru)
+      history.back();
+      setTimeout(() => { setUnsaved(true); }, 10);
+      // Pozor: pro robustní řešení budeš muset lépe spravovat historii hashů
+    } else {
+      hasUnsavedChanges = false;
+    }
+  }
+});
 // ========== Init ==========
 (async function start() {
   try {
