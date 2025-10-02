@@ -9,7 +9,13 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <!-- Root si vytvoří app.js, nic dalšího tu být nemusí -->
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="w-64 bg-white border-r"></aside>
+    <main class="flex-1">
+      <div id="crumb" class="p-4"></div>
+      <div id="content" class="p-4"></div>
+    </main>
+  </div>
   <script type="module" src="./src/app.js?v=base1"></script>
 </body>
 </html>
