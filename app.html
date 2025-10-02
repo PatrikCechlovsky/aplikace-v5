@@ -10,15 +10,18 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header id="header"></header>
-  <div class="flex min-h-screen bg-slate-50 text-slate-900">
-    <aside class="flex flex-col w-72 pl-4 pt-4">
-      <div id="homebtnbox"></div>
-      <div id="sidebar"></div>
-    </aside>
-    <main class="flex-1 ml-4 pt-4 pr-4">
-      <div id="crumb"></div>
-      <div id="content"></div>
-    </main>
+  <div class="flex flex-col w-72 pl-4 pt-4">
+  <!-- Home button -->
+    <div class="mb-4">
+      <button class="panel-box w-full flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-lg hover:bg-slate-50 transition" id="homebtn">
+        <span class="text-2xl">🏠</span>
+        <span>Pronajímatel</span>
+      </button>
+    </div>
+    <!-- Sidebar panel -->
+    <div class="panel-box w-full rounded-xl shadow-sm border bg-white">
+      ... sidebar položky ...
+    </div>
   </div>
   <script type="module" src="./src/app.js?v=base1"></script>
 </body>
