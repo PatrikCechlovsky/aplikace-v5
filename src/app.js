@@ -1,8 +1,8 @@
 // src/app/app.js
 
 // ========== Imports ==========
-import { MODULE_SOURCES } from './src/app/modules.index.js';
-import { icon } from './src/ui/icons.js';
+import { MODULE_SOURCES } from './modules.index.js';
+import { icon } from './ui/icons.js';
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
