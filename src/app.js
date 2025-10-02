@@ -85,7 +85,7 @@ async function initModules() {
     });
   }
 }
-
+window.registry = registry;
 // ========== Sidebar ==========
 function renderSidebar() {
   const sb = $id('sidebar');
