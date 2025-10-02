@@ -1,26 +1,34 @@
 // ui/header.js
 // Hlavička: Home button (s ikonou aplikace) a kontejner pro pravou akční lištu.
-
 export function renderHeader(container, options = {}) {
   const { appName = 'Pronajímatel', onHome } = options;
 
-  injectOnce('header-base-style', `
-    .hdr-btn { display:inline-flex; align-items:center; gap:.5rem; padding:.40rem .60rem; border:1px solid #e5e7eb; border-radius:.5rem; background:#fff; transition:background .12s }
-    .hdr-btn:hover { background:#f8fafc }
-    .hdr-icon { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center }
-  `);
+  // sidebar width = w-64, home box tedy také w-64 a zarovnáno vlevo s mezerou
+  container.innerHTML = `
+    <div class="flex items-start pt-2 pl-2 pr-2 bg-transparent">
+      <div class="w-64">
+        <button 
+          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border font-bold text-lg shadow-sm hover:bg-slate-50 transition w-full"
+          id="homebtn"
+          title="Domů"
+        >
+          <span class="text-2xl">🏠</span>
+          <span>${appName}</span>
+        </button>
+      </div>
+      <div class="flex-1 flex items-center justify-end gap-3 pr-2" id="header_actions"></div>
+    </div>
+  `;
 
-  container.innerHTML = '';
-
-  // Home (ikonka + název aplikace)
-  const homeBtn = h('button', { class: 'hdr-btn', title: 'Domů' }, [
-    h('span', { class: 'hdr-icon' }, '🏠'),
-    h('span', { class: 'font-semibold' }, appName),
-  ]);
-  homeBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    onHome && onHome();
-  });
+  // Home click
+  const btn = container.querySelector('#homebtn');
+  if (btn && typeof onHome === 'function') {
+    btn.addEventListener('click', onHome);
+  }
+  return {
+    actionsContainer: container.querySelector('#header_actions')
+  };
+}
 
   // Pravá akční zóna (renderuje se mimo tuto komponentu)
   const actionsContainer = h('div', { id: 'header_actions', class: 'ml-auto flex items-center gap-2' });
