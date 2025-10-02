@@ -3,6 +3,8 @@ import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
 import { renderHeader } from './ui/header.js';
 import { renderHeaderActions } from './ui/headerActions.js'; // pokud máš akce
+import { renderHomeButton } from './ui/homebutton.js';
+import { renderSidebar } from './ui/sidebar.js';
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
