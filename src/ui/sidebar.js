@@ -1,23 +1,29 @@
 // Jednoduchý a odolný renderer sidebaru
+import { icon } from './icons.js';
+
 export function renderSidebar(root, modules = [], opts = {}) {
   if (!root) return;
 
   root.innerHTML = `
-    <nav class="space-y-1 text-slate-900">
-      <ul id="sb-list" class="space-y-1"></ul>
+    <nav class="pt-2 pl-2">
+      <ul id="sb-list" class="space-y-1">
+        ${modules.map(m => `
+          <li>
+            <a
+              class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 transition font-medium text-base sidebar-link"
+              data-mod="${m.id}"
+              href="#/m/${m.id}/t/${m.defaultTile || m.tiles?.[0]?.id || ''}"
+            >
+              <span class="text-xl">${icon(m.icon || 'folder')}</span>
+              <span>${m.title}</span>
+            </a>
+          </li>
+        `).join('')}
+      </ul>
     </nav>
   `;
-  const ul = root.querySelector('#sb-list');
-
-  const list = (Array.isArray(modules) ? modules : []).map(m => {
-    const first = m.defaultTile || m.tiles?.[0]?.id || '';
-    const href  = `#/m/${m.id}${first ? `/t/${first}` : ''}`;
-    return `<li>
-      <a class="block px-3 py-2 rounded hover:bg-slate-100" data-mod="${m.id}" href="${href}">
-        <span class="mr-2">${m.icon || '📁'}</span><span>${m.title}</span>
-      </a>
-    </li>`;
-  }).join('');
+  // zbytek beze změny
+}
 
   ul.innerHTML = list || `<li class="px-3 py-2 text-sm opacity-60">Žádné moduly</li>`;
 
