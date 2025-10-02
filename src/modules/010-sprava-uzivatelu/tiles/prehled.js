@@ -11,7 +11,7 @@ const roleBadge = (role) => {
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
     { icon:'home',  label:'Domů', href:'#/' },
-    { icon:'users', label:'Uživatelé', href:'#/m/010-uzivatele' },
+    { icon:'users', label:'Uživatelé', href:'#/m/010-sprava-uzivatelu' },
     { icon:'list',  label:'Přehled' },
   ]);
   renderCommonActions(document.getElementById('crumb-actions'), {
