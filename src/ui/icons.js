@@ -47,5 +47,6 @@ const ALIASES = { plus: 'add', user: 'account', logout: 'exit' };
 
 export function icon(name, fallback = '•') {
   const key = ALIASES[name] || name;
+  if (!I[key]) console.warn("Neznámá ikona:", name);
   return I[key] || fallback;
 }
