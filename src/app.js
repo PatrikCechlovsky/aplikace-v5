@@ -248,15 +248,7 @@ window.addEventListener('hashchange', function (e) {
     await initModules();
     renderSidebar();
     window.addEventListener('hashchange', route);
-
-    if (!location.hash || location.hash === '#') {
-      // přesměruj na první modul na jeho výchozí tile
-      const first = registry.values().next().value;
-      if (first) navigateTo(`#/m/${first.id}/t/${first.defaultTile || (first.tiles?.[0]?.id || '')}`);
-      else route();
-    } else {
-      route();
-    }
+    route(); // žádné automatické přesměrování!
   } catch (err) {
     console.error('[INIT ERROR]', err);
     const c = $id('content');
