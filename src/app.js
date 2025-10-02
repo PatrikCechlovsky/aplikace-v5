@@ -1,10 +1,8 @@
-// src/app/app.js
-
 // ========== Imports ==========
 import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
-import { renderHeader } from '../ui/header.js';
-import { renderHeaderActions } from '../ui/headerActions.js'; // pokud máš akce
+import { renderHeader } from './ui/header.js';
+import { renderHeaderActions } from './ui/headerActions.js'; // pokud máš akce
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -19,7 +17,6 @@ export function navigateTo(hash) {
 }
 
 // ===== Renderer shim ("airbag") =============================================
-// Podporuje: render, default.render, default (funkce) a hezky chybuje do UI.
 async function runRenderer(modPromise, root, params, debugTag) {
   try {
     const mod = await modPromise;
@@ -50,15 +47,9 @@ async function runRenderer(modPromise, root, params, debugTag) {
 }
 
 // ========== Registr modulů ==========
-/**
- * Z MODULE_SOURCES dostaneme:
- *  - manifest (getManifest)
- *  - baseDir (vytažený z textu funkce: "() => import('.../module.config.js')" )
- */
 const registry = new Map(); // modId -> { id, title, icon, tiles, forms, defaultTile, baseDir }
 
 function extractImportPath(fn) {
-  // vytáhne z textu funkce cestu z import('...')
   try {
     const s = fn.toString();
     const m = s.match(/import\(['"`]([^'"`]+)['"`]\)/);
@@ -70,24 +61,23 @@ function extractImportPath(fn) {
 
 async function initModules() {
   for (const src of MODULE_SOURCES) {
-    const rel = extractImportPath(src); // např. "../modules/010-sprava-uzivatelu/module.config.js"
-    // Převeď relativní cestu (z pohledu /src/app/) na absolutní:
-    const abs = '/src/app/' + rel;                          // "/src/app/../modules/010-.../module.config.js"
-    const norm = abs.replace('/src/app/../', '/src/');      // "/src/modules/010-.../module.config.js"
+    const rel = extractImportPath(src);
+    const abs = '/src/app/' + rel;
+    const norm = abs.replace('/src/app/../', '/src/');
     const baseDir = norm.replace(/\/module\.config\.js$/, '');
 
-    // načti manifest
     const mod = await src();
     const manifest = (await mod.getManifest?.()) || {};
     if (!manifest?.id) continue;
 
     registry.set(manifest.id, {
       ...manifest,
-      baseDir, // => "/src/modules/010-sprava-uzivatelu" (absolutně)
+      baseDir,
     });
   }
 }
 window.registry = registry;
+
 // ========== Sidebar ==========
 function renderSidebar() {
   const sb = $id('sidebar');
@@ -151,7 +141,6 @@ async function route() {
     const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
 
     if (!m) {
-      // Home
       setBreadcrumb([{ icon: 'home', label: 'Domů' }]);
       c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
       return;
@@ -175,7 +164,6 @@ async function route() {
       return;
     }
 
-    // Breadcrumb aktuální stránky
     setBreadcrumb([
       { icon: 'home', label: 'Domů', href: '#/' },
       { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` },
@@ -213,16 +201,14 @@ async function route() {
     </div>`;
   }
 }
-// ... (ostatní importy a kód)
 
+// ========== Ochrana rozdělané práce ==========
 let hasUnsavedChanges = false;
 
-// Použij tuto proměnnou v komponentách při editaci/formulářích:
 export function setUnsaved(flag) {
   hasUnsavedChanges = !!flag;
 }
 
-// Ochrana při odchodu ze stránky (reload, zavření tabu)
 window.addEventListener('beforeunload', function (e) {
   if (hasUnsavedChanges) {
     e.preventDefault();
@@ -231,25 +217,36 @@ window.addEventListener('beforeunload', function (e) {
   }
 });
 
-// Ochrana i při navigaci v rámci SPA (hashchange)
 window.addEventListener('hashchange', function (e) {
   if (hasUnsavedChanges) {
     if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) {
-      // Vrátí hash zpět (ne vždy spolehlivě, záleží na browseru)
       history.back();
       setTimeout(() => { setUnsaved(true); }, 10);
-      // Pozor: pro robustní řešení budeš muset lépe spravovat historii hashů
     } else {
       hasUnsavedChanges = false;
     }
   }
 });
+
 // ========== Init ==========
 (async function start() {
   try {
+    // Vykresli header a akce do #header
+    const headerRoot = $id('header');
+    let actionsContainer = null;
+    if (headerRoot) {
+      // renderHeader vrací { actionsContainer }
+      const out = renderHeader(headerRoot, { appName: 'Pronajímatel' });
+      actionsContainer = out && out.actionsContainer;
+    }
+    if (actionsContainer) {
+      renderHeaderActions(actionsContainer);
+    }
+
     await initModules();
     renderSidebar();
     window.addEventListener('hashchange', route);
+
     route(); // žádné automatické přesměrování!
   } catch (err) {
     console.error('[INIT ERROR]', err);
