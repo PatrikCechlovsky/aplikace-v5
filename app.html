@@ -9,12 +9,17 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-50 text-slate-900">
+    <div class="flex min-h-screen">
+      <div class="flex items-center w-full px-6 pt-6">
+    <div id="homebtnbox" class="w-72"></div>
+    <div class="flex-1"></div>
+    <div id="headeractions" class="flex items-center gap-3 pr-6"></div>
+  </div>
   <div class="flex min-h-screen">
-    <aside class="flex flex-col items-start pl-6 pt-6 w-72">
-      <div id="homebtnbox" class="w-full"></div>
-      <div id="sidebarbox" class="w-full mt-4"></div>
+    <aside class="flex flex-col items-start pl-6 pt-4 w-72">
+      <div id="sidebarbox" class="w-full"></div>
     </aside>
-    <main class="flex-1 pl-6 pt-6 pr-6">
+    <main class="flex-1 pl-6 pt-4 pr-6">
       <div id="crumb" class="mb-6"></div>
       <div id="content"></div>
     </main>
