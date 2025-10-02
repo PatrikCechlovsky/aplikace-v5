@@ -1,38 +1,50 @@
-// Jednoduchý a odolný renderer sidebaru – dynamický, vzdušný, s ikonami a mezerou od okraje
 import { icon } from './icons.js';
 
 export function renderSidebar(root, modules = [], opts = {}) {
   if (!root) return;
 
   root.innerHTML = `
-    <nav class="pt-2 pl-2">
-      <ul id="sb-list" class="space-y-1">
-        ${modules.map(m => `
-          <li>
-            <a
-              class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 transition font-medium text-base sidebar-link"
-              data-mod="${m.id}"
-              href="#/m/${m.id}/t/${m.defaultTile || m.tiles?.[0]?.id || ''}"
-            >
-              <span class="text-xl">${icon(m.icon || 'folder')}</span>
-              <span>${m.title}</span>
-            </a>
-            ${m.tiles?.length ? `
-              <div class="ml-8 mt-1 mb-2">
-                ${m.tiles.map(t => `<a href="#/m/${m.id}/t/${t.id}" class="block text-sm text-slate-600 hover:underline">${icon(t.icon || 'list')} ${t.title}</a>`).join('')}
-              </div>
-            ` : ''}
-            ${m.forms?.length ? `
-              <div class="ml-8 mb-2">
-                ${m.forms.map(f => `<a href="#/m/${m.id}/f/${f.id}" class="block text-sm text-slate-600 hover:underline">${icon(f.icon || 'form')} ${f.title}</a>`).join('')}
-              </div>
-            ` : ''}
-          </li>
-        `).join('')}
-      </ul>
-    </nav>
+    <div class="pl-4 pt-4 w-64">
+      <div class="mb-4">
+        <button 
+          class="flex items-center gap-2 w-full px-4 py-2 rounded-xl bg-white border font-bold text-lg shadow-sm hover:bg-slate-50 transition"
+          id="homebtn"
+          title="Domů"
+        >
+          <span class="text-2xl">🏠</span>
+          <span>Pronajímatel</span>
+        </button>
+      </div>
+      <nav>
+        <ul id="sb-list" class="space-y-1">
+          ${modules.map(m => `
+            <li>
+              <a
+                class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 transition font-medium text-base sidebar-link"
+                data-mod="${m.id}"
+                href="#/m/${m.id}/t/${m.defaultTile || m.tiles?.[0]?.id || ''}"
+              >
+                <span class="text-xl">${icon(m.icon || 'folder')}</span>
+                <span>${m.title}</span>
+              </a>
+              ${m.tiles?.length ? `
+                <div class="ml-8 mt-1 mb-2">
+                  ${m.tiles.map(t => `<a href="#/m/${m.id}/t/${t.id}" class="block text-sm text-slate-600 hover:underline">${icon(t.icon || 'list')} ${t.title}</a>`).join('')}
+                </div>
+              ` : ''}
+              ${m.forms?.length ? `
+                <div class="ml-8 mb-2">
+                  ${m.forms.map(f => `<a href="#/m/${m.id}/f/${f.id}" class="block text-sm text-slate-600 hover:underline">${icon(f.icon || 'form')} ${f.title}</a>`).join('')}
+                </div>
+              ` : ''}
+            </li>
+          `).join('')}
+        </ul>
+      </nav>
+    </div>
   `;
 
+  // Zvýraznění aktivního modulu
   const ul = root.querySelector('#sb-list');
   function markActive() {
     const hash = location.hash || '';
