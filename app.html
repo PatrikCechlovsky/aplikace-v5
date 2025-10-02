@@ -10,11 +10,14 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
   <header id="header"></header>
-  <div class="flex min-h-screen">
-    <aside id="sidebar" class="w-64 bg-white border-r"></aside>
-    <main class="flex-1">
-      <div id="crumb" class="p-4"></div>
-      <div id="content" class="p-4"></div>
+  <div class="flex min-h-screen bg-slate-50 text-slate-900">
+    <aside class="flex flex-col w-72 pl-4 pt-4">
+      <div id="homebtnbox"></div>
+      <div id="sidebar"></div>
+    </aside>
+    <main class="flex-1 ml-4 pt-4 pr-4">
+      <div id="crumb"></div>
+      <div id="content"></div>
     </main>
   </div>
   <script type="module" src="./src/app.js?v=base1"></script>
