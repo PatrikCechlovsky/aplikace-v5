@@ -49,3 +49,10 @@ export function renderSidebar(root, modules = [], opts = {}) {
   window.addEventListener('hashchange', markActive);
   markActive();
 }
+
+/*
+// Původní/legacy/nepotřebné části – nyní zakomentováno
+function renderSidebarOld() {
+  // ...
+}
+*/
