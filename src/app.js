@@ -7,7 +7,8 @@ import { renderSidebar } from './ui/sidebar.js';
 import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
-
+import Sortable from 'sortablejs';
+window.Sortable = Sortable;
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
