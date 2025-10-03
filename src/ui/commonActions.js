@@ -1,5 +1,13 @@
 import { icon } from './icons.js';
-export function renderCommonActions(root, { onAdd, onEdit, onArchive, onRefresh, onAttach } = {}) {
+
+/**
+ * Vykreslí common actions (akční tlačítka) do zadaného root elementu.
+ * Každé tlačítko je volitelné dle předaných handlerů.
+ */
+export function renderCommonActions(
+  root,
+  { onAdd, onEdit, onArchive, onRefresh, onAttach } = {}
+) {
   if (!root) return;
   root.innerHTML = `
     <div class="flex items-center gap-2">
@@ -9,6 +17,7 @@ export function renderCommonActions(root, { onAdd, onEdit, onArchive, onRefresh,
       ${onAttach  ? `<button id="ca-attach"  class="px-2 py-1 border rounded bg-white"  title="Příloha">${icon('paperclip')}</button>` : ''}
       ${onRefresh ? `<button id="ca-refresh" class="px-2 py-1 border rounded bg-white"  title="Obnovit">${icon('refresh')}</button>` : ''}
     </div>`;
+  // Handlery
   root.querySelector('#ca-add')    ?.addEventListener('click', () => onAdd?.());
   root.querySelector('#ca-edit')   ?.addEventListener('click', () => onEdit?.());
   root.querySelector('#ca-arch')   ?.addEventListener('click', () => onArchive?.());
