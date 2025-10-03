@@ -9,21 +9,34 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-50 text-slate-900">
-    <div class="flex min-h-screen">
-      <div class="flex items-center w-full px-6 pt-6">
+
+  <!-- ČERVENÁ: Horní pruh (header) -->
+  <header class="flex items-center w-full px-6 pt-6 pb-2">
+    <!-- Home button vlevo -->
     <div id="homebtnbox" class="w-72"></div>
     <div class="flex-1"></div>
+    <!-- Header actions vpravo -->
     <div id="headeractions" class="flex items-center gap-3 pr-6"></div>
-  </div>
-  <div class="flex min-h-screen">
-    <aside class="flex flex-col items-start pl-6 pt-4 w-72">
+  </header>
+
+  <div class="flex min-h-[calc(100vh-72px)] px-6 pb-6">
+    <!-- ZELENÁ: Sidebar -->
+    <aside class="flex flex-col items-start pt-2 w-72">
       <div id="sidebarbox" class="w-full"></div>
     </aside>
-    <main class="flex-1 pl-6 pt-4 pr-6">
-      <div id="crumb" class="mb-6"></div>
+
+    <!-- MODRÁ + HNĚDÁ: Main panel -->
+    <main class="flex-1 pl-6">
+      <!-- MODRÁ: Breadcrumb + common actions -->
+      <div class="flex items-start gap-4 mb-4">
+        <div id="crumb" class="flex-1"></div>
+        <div id="commonactions" class=""></div>
+      </div>
+      <!-- HNĚDÁ: Content panel -->
       <div id="content"></div>
     </main>
   </div>
+
   <script type="module" src="./src/app.js"></script>
 </body>
 </html>
