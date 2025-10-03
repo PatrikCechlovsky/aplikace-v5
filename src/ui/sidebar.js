@@ -1,34 +1,28 @@
 import { icon } from './icons.js';
 
-// Uložení otevřeného modulu globálně (kvůli homebutton)
-let openModId = null;
-
+/**
+ * Renderuje sidebar, kde jsou moduly ve sbaleném stavu. Kliknutím na modul se rozbalí a otevře se jeho výchozí sekce.
+ * @param {HTMLElement} root
+ * @param {Array} modules - pole modulů (z registry)
+ * @param {Object} opts - { theme }
+ */
 export function renderSidebar(root, modules = [], opts = {}) {
   if (!root) return;
 
-  // Theme a barvy
   const panelClass = opts.theme === 'dark'
     ? 'rounded-xl bg-slate-900 border border-slate-700 shadow w-full text-white'
     : 'rounded-xl bg-white border border-slate-200 shadow w-full';
 
-  // Zjisti aktuální modul a sekci z hash
-  function getCurrent() {
-    const hash = location.hash || '';
-    const m = (/#\/m\/([^\/]+)/.exec(hash) || [])[1];
-    const t = (/#\/m\/([^\/]+)\/[tf]\/([^\/]+)/.exec(hash) || [])[2];
-    return { mod: m, tile: t };
-  }
+  // Uchovávej otevřený modul v paměti
+  let openModId = null;
 
   function render() {
-    const { mod: activeMod, tile: activeTile } = getCurrent();
-
     root.innerHTML = `
       <div class="${panelClass} transition-colors duration-300">
         <nav>
           <ul id="sb-list" class="space-y-1 py-2">
             ${modules.map(m => {
               const isOpen = openModId === m.id;
-              // Aktivní modul decentně zvýraznit
               const activeModuleClass = isOpen
                 ? 'bg-blue-50 border border-blue-300 text-blue-900 shadow-sm'
                 : 'hover:bg-blue-100';
@@ -50,10 +44,7 @@ export function renderSidebar(root, modules = [], opts = {}) {
                     ${(m.tiles || []).map(t => `
                       <a href="#/m/${m.id}/t/${t.id}"
                         class="block text-sm rounded px-2 py-1 transition font-medium
-                          ${activeMod === m.id && activeTile === t.id
-                            ? 'bg-blue-100 text-blue-900'
-                            : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'
-                          }"
+                          text-slate-600 hover:bg-blue-50 hover:text-blue-900"
                       >
                         ${icon(t.icon || 'list')} ${t.title}
                       </a>
@@ -61,10 +52,7 @@ export function renderSidebar(root, modules = [], opts = {}) {
                     ${(m.forms || []).map(f => `
                       <a href="#/m/${m.id}/f/${f.id}"
                         class="block text-sm rounded px-2 py-1 transition font-medium
-                          ${activeMod === m.id && activeTile === f.id
-                            ? 'bg-blue-100 text-blue-900'
-                            : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'
-                          }"
+                          text-slate-600 hover:bg-blue-50 hover:text-blue-900"
                       >
                         ${icon(f.icon || 'form')} ${f.title}
                       </a>
@@ -78,31 +66,50 @@ export function renderSidebar(root, modules = [], opts = {}) {
       </div>
     `;
 
-    // Klik na modul (rozbalí/sbalí)
+    // Klik na modul (přesměruje na defaultTile/form)
     root.querySelectorAll('button[data-mod]').forEach(btn => {
       btn.onclick = (e) => {
-      const modId = btn.dataset.mod;
-      if (openModId !== modId) {
-        // najdi defaultTile
-        const mod = modules.find(m => m.id === modId);
-        const defaultId = mod?.defaultTile || (mod?.tiles?.[0]?.id || mod?.forms?.[0]?.id);
-        if (defaultId) {
-          location.hash = `#/m/${modId}/t/${defaultId}`;
+        const modId = btn.dataset.mod;
+        if (openModId !== modId) {
+          // najdi defaultTile/form
+          const mod = modules.find(m => m.id === modId);
+          const defaultId =
+            mod?.defaultTile ||
+            (mod?.tiles?.[0]?.id || mod?.forms?.[0]?.id);
+          if (defaultId) {
+            // Upřednostni tile, pokud je k dispozici, jinak form
+            if (mod?.tiles?.some(t => t.id === defaultId)) {
+              location.hash = `#/m/${modId}/t/${defaultId}`;
+            } else {
+              location.hash = `#/m/${modId}/f/${defaultId}`;
+            }
+            // otevře se sekce a sidebar bude znovu vykreslen podle hashchange
+          } else {
+            // Pokud není sekce, pouze rozbal
+            openModId = modId;
+            render();
+          }
         } else {
-          location.hash = `#/m/${modId}`;
+          openModId = null;
+          render();
         }
-      } else {
-        openModId = null;
-        render();
-      }
-    };
+      };
+    });
+
+    // Zvýraznění aktivního modulu (jen pokud je rozbalený)
+    const hash = location.hash || '';
+    const activeMod = (/#\/m\/([^\/]+)/.exec(hash) || [])[1];
+    root.querySelectorAll('button[data-mod]').forEach(btn => {
+      btn.classList.toggle('ring-2', btn.dataset.mod === activeMod);
+    });
   }
 
-  // Otevřít modul podle hash (např. kliknutí v contentu)
+  // Otevřít modul podle hash (při načtení, nebo změně url)
   function openFromHash() {
-    const { mod } = getCurrent();
-    if (mod && openModId !== mod) {
-      openModId = mod;
+    const hash = location.hash || '';
+    const m = (/#\/m\/([^\/]+)/.exec(hash) || [])[1];
+    if (m && openModId !== m) {
+      openModId = m;
       render();
     }
   }
