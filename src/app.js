@@ -6,7 +6,7 @@ import { renderHeaderActions } from './ui/headerActions.js';
 import { renderSidebar } from './ui/sidebar.js';
 import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
-// import { renderHeader } from './ui/header.js'; // přeškrtnuto, místo toho máme homebtnbox + headeractions
+import { renderDashboardTiles } from './ui/content.js'; // <-- přidáno pro dashboard tiles
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -97,7 +97,8 @@ async function route() {
     if (!m) {
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
       if (commonActions) commonActions.innerHTML = '';
-      c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
+      // Zobrazit dashboard tiles místo prostého textu:
+      renderDashboardTiles(c, Array.from(window.registry.values()));
       return;
     }
 
