@@ -54,7 +54,7 @@ function tileType(mod, tile) {
 function renderTile(mod, tile) {
   const tileId = `${mod.id}/${tile.id}`;
   return `
-    <div class="tile-draggable group relative bg-white rounded-2xl p-5 shadow-lg flex flex-col min-w-[300px] max-w-lg min-h-[150px] border border-slate-200 hover:ring-2 hover:ring-blue-400 transition cursor-move" data-id="${tileId}">
+    <div class="tile-draggable group relative bg-white rounded-2xl p-5 shadow-lg flex flex-col min-w-[200px] max-w-lg min-h-[150px] border border-slate-200 hover:ring-2 hover:ring-blue-400 transition cursor-move" data-id="${tileId}">
       <div class="mb-1 text-xs font-semibold text-blue-700 uppercase tracking-wider flex items-center gap-1">
         ${icon(mod.icon || 'folder')} <span>${mod.title}</span>
       </div>
