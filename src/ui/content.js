@@ -105,7 +105,7 @@ export function renderDashboardTiles(root, modules = []) {
     .filter(Boolean);
 
   root.innerHTML = `
-    <div id="fav-tiles-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div id="fav-tiles-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       ${favTiles.length
         ? favTiles.map(({ mod, tile }) => renderTile(mod, tile)).join('')
         : `<div class="text-slate-400 col-span-full p-6 text-center">
