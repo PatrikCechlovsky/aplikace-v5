@@ -6,7 +6,7 @@ import { renderHeaderActions } from './ui/headerActions.js';
 import { renderSidebar } from './ui/sidebar.js';
 import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
-import { renderDashboardTiles } from './ui/content.js'; // <-- přidáno pro dashboard tiles
+import { renderDashboardTiles } from './ui/content.js'; // dashboard s oblíbenými dlaždicemi
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -97,7 +97,7 @@ async function route() {
     if (!m) {
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
       if (commonActions) commonActions.innerHTML = '';
-      // Zobrazit dashboard tiles místo prostého textu:
+      // Zobrazit pouze oblíbené dlaždice na hlavní panelu:
       renderDashboardTiles(c, Array.from(window.registry.values()));
       return;
     }
