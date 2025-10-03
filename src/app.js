@@ -147,6 +147,8 @@ async function route() {
         onArchive: () => alert('Archivovat (demo)'),
         onRefresh: () => alert('Obnovit (demo)'),
         onAttach: () => alert('Příloha (demo)')
+        onStar: () => { /* toggle favorite */ },
+        isStarred: true/false // podle toho, jestli je tile v oblíbených
       });
     }
 
