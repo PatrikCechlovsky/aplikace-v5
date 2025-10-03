@@ -6,7 +6,7 @@ import { renderHeaderActions } from './ui/headerActions.js';
 import { renderSidebar } from './ui/sidebar.js';
 import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
-import { renderDashboardTiles } from './ui/content.js'; // dashboard s oblíbenými dlaždicemi
+import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -94,10 +94,25 @@ async function route() {
     const h = location.hash || '#/';
     const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
 
+    // Pokud je pouze modul bez sekce, přesměruj na default sekci
+    if (m && m[1] && !m[2]) {
+      const modId = decodeURIComponent(m[1]);
+      const mod = registry.get(modId);
+      const defaultTile = mod?.defaultTile || (mod?.tiles?.[0]?.id || mod?.forms?.[0]?.id);
+      if (defaultTile) {
+        if (mod?.tiles?.some(t => t.id === defaultTile)) {
+          location.hash = `#/m/${modId}/t/${defaultTile}`;
+        } else {
+          location.hash = `#/m/${modId}/f/${defaultTile}`;
+        }
+        return;
+      }
+    }
+
+    // Dashboard (domů)
     if (!m) {
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
       if (commonActions) commonActions.innerHTML = '';
-      // Zobrazit pouze oblíbené dlaždice na hlavní panelu:
       renderDashboardTiles(c, Array.from(window.registry.values()));
       return;
     }
@@ -105,8 +120,8 @@ async function route() {
     const modId = decodeURIComponent(m[1]);
     const kind = m[2] === 'f' ? 'form' : 'tile';
     const secId = m[3] ? decodeURIComponent(m[3]) : null;
-
     const mod = registry.get(modId);
+
     if (!mod) {
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
       if (commonActions) commonActions.innerHTML = '';
@@ -116,43 +131,49 @@ async function route() {
       return;
     }
 
-    const tileId = secId || mod.defaultTile || (mod.tiles?.[0]?.id || null);
-    if (!tileId) {
-      setBreadcrumb(crumb, [
-        { icon: 'home', label: 'Domů', href: '#/' },
-        { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` }
-      ]);
-      if (commonActions) commonActions.innerHTML = '';
-      c.innerHTML = `<div class="p-3">Modul nemá žádné sekce.</div>`;
-      return;
-    }
+    const tileId = secId || mod.defaultTile || (mod.tiles?.[0]?.id || mod.forms?.[0]?.id || null);
 
-    // Breadcrumbs
-    setBreadcrumb(crumb, [
+    // Breadcrumbs vždy ukazují cestu Domů > Modul > Sekce (pokud existuje sekce)
+    const crumbs = [
       { icon: 'home', label: 'Domů', href: '#/' },
-      { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` },
-      {
+      { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` }
+    ];
+    if (tileId) {
+      const label = (kind === 'tile'
+        ? (mod.tiles?.find(t => t.id === tileId)?.title || tileId)
+        : (mod.forms?.find(f => f.id === tileId)?.title || tileId));
+      crumbs.push({
         icon: kind === 'tile' ? 'list' : 'form',
-        label: (kind === 'tile'
-          ? (mod.tiles?.find(t => t.id === tileId)?.title || tileId)
-          : (mod.forms?.find(f => f.id === tileId)?.title || tileId))
-      },
-    ]);
+        label
+      });
+    }
+    setBreadcrumb(crumb, crumbs);
 
-    // Render common actions – případně přidej další podle potřeby
+    // Common Actions (hvězdička jen pokud má smysl)
     if (commonActions) {
+      // oblíbené pouze pro konkrétní sekci
+      let starTileId = null;
+      if (tileId) starTileId = modId + '/' + tileId;
+      const favIds = loadFavorites();
+      const isStar = starTileId && favIds.includes(starTileId);
+
       renderCommonActions(commonActions, {
         onAdd: () => alert('Přidat (demo)'),
         onEdit: () => alert('Upravit (demo)'),
         onArchive: () => alert('Archivovat (demo)'),
         onRefresh: () => alert('Obnovit (demo)'),
         onAttach: () => alert('Příloha (demo)'),
-        onStar: () => { /* toggle favorite */ },
-        isStarred: true/false // podle toho, jestli je tile v oblíbených
+        ...(starTileId && {
+          onStar: () => {
+            setFavorite(starTileId, !isStar);
+            route();
+          },
+          isStarred: isStar
+        })
       });
     }
 
-    // Render content
+    // Render content (zatím demo)
     c.innerHTML = `<div class="p-6 text-slate-500">Zde bude obsah modulu <b>${mod.title}</b> sekce <b>${tileId}</b>.</div>`;
 
     // Pokud chceš načítat skutečný modul dynamicky, odkomentuj:
@@ -170,6 +191,7 @@ async function route() {
       </div>`;
     }
     */
+
   } catch (err) {
     c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
       Chyba v routeru: ${err?.message || err}
