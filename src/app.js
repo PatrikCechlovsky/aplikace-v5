@@ -8,6 +8,11 @@ import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
 
+
+// Přidej tyto dva řádky:
+import Sortable from 'sortablejs';
+window.Sortable = Sortable;
+
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
 const $id = (id) => document.getElementById(id);
