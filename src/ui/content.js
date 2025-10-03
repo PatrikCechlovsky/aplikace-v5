@@ -1,4 +1,10 @@
 // src/ui/content.js
+
+/**
+ * Vykreslí hlavní obsah (hnědá oblast)
+ * @param {HTMLElement} root - kam se obsah vykreslí
+ * @param {Object} opts - { mod, kind, id }
+ */
 export function renderContent(root, { mod, kind, id } = {}){
   if (!root) return;
   const title = mod ? `${mod.title}${kind ? ' – ' + kind : ''}` : 'Dashboard';
