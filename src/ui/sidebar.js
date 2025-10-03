@@ -81,11 +81,21 @@ export function renderSidebar(root, modules = [], opts = {}) {
     // Klik na modul (rozbalí/sbalí)
     root.querySelectorAll('button[data-mod]').forEach(btn => {
       btn.onclick = (e) => {
-        const modId = btn.dataset.mod;
-        openModId = openModId === modId ? null : modId;
+      const modId = btn.dataset.mod;
+      if (openModId !== modId) {
+        // najdi defaultTile
+        const mod = modules.find(m => m.id === modId);
+        const defaultId = mod?.defaultTile || (mod?.tiles?.[0]?.id || mod?.forms?.[0]?.id);
+        if (defaultId) {
+          location.hash = `#/m/${modId}/t/${defaultId}`;
+        } else {
+          location.hash = `#/m/${modId}`;
+        }
+      } else {
+        openModId = null;
         render();
-      };
-    });
+      }
+    };
   }
 
   // Otevřít modul podle hash (např. kliknutí v contentu)
