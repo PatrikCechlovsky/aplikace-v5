@@ -1,14 +1,17 @@
 // ========== Imports ==========
 import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
-import { renderHeader } from './ui/header.js';
-import { renderHeaderActions } from './ui/headerActions.js';
 import { renderHomeButton } from './ui/homebutton.js';
+import { renderHeaderActions } from './ui/headerActions.js';
 import { renderSidebar } from './ui/sidebar.js';
+import { setBreadcrumb } from './ui/breadcrumb.js';
+import { renderCommonActions } from './ui/commonActions.js';
+// import { renderHeader } from './ui/header.js'; // přeškrtnuto, místo toho máme homebtnbox + headeractions
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
 const $id = (id) => document.getElementById(id);
+
 export function navigateTo(hash) {
   if (!hash.startsWith('#')) hash = '#' + hash;
   if (location.hash === hash) {
@@ -80,23 +83,11 @@ async function initModules() {
 }
 window.registry = registry;
 
-// ========== Sidebar (už NEpoužívej tuto funkci, ale importuj renderSidebar z ui/sidebar.js) ==========
-
-// ========== Breadcrumb ==========
-function setBreadcrumb(items = []) {
-  const root = $id('crumb');
-  if (!root) return;
-  root.innerHTML = items.map((it, i) => {
-    const c = i === items.length - 1 ? 'opacity-70' : '';
-    const body = `${it.icon ? icon(it.icon) + ' ' : ''}${it.label ?? ''}`;
-    const piece = it.href ? `<a href="${it.href}" class="hover:underline">${body}</a>` : `<span class="${c}">${body}</span>`;
-    return i ? `<span class="mx-1">›</span>${piece}` : piece;
-  }).join('');
-}
-
 // ========== Router ==========
 async function route() {
   const c = $id('content');
+  const crumb = $id('crumb');
+  const commonActions = $id('commonactions');
   if (!c) return;
 
   try {
@@ -104,7 +95,9 @@ async function route() {
     const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
 
     if (!m) {
-      setBreadcrumb([{ icon: 'home', label: 'Domů' }]);
+      setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
+      // commonActions můžeš podle potřeby vymazat/vykreslit
+      if (commonActions) commonActions.innerHTML = '';
       c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
       return;
     }
@@ -115,6 +108,8 @@ async function route() {
 
     const mod = registry.get(modId);
     if (!mod) {
+      setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
+      if (commonActions) commonActions.innerHTML = '';
       c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
         Modul <b>${modId}</b> nenalezen.
       </div>`;
@@ -123,11 +118,17 @@ async function route() {
 
     const tileId = secId || mod.defaultTile || (mod.tiles?.[0]?.id || null);
     if (!tileId) {
+      setBreadcrumb(crumb, [
+        { icon: 'home', label: 'Domů', href: '#/' },
+        { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` }
+      ]);
+      if (commonActions) commonActions.innerHTML = '';
       c.innerHTML = `<div class="p-3">Modul nemá žádné sekce.</div>`;
       return;
     }
 
-    setBreadcrumb([
+    // Breadcrumbs
+    setBreadcrumb(crumb, [
       { icon: 'home', label: 'Domů', href: '#/' },
       { icon: mod.icon || 'folder', label: mod.title, href: `#/m/${mod.id}` },
       {
@@ -138,27 +139,37 @@ async function route() {
       },
     ]);
 
-    // Import a vykreslení
+    // Render common actions – případně přidej další podle potřeby
+    if (commonActions) {
+      renderCommonActions(commonActions, {
+        onAdd: () => alert('Přidat (demo)'),
+        onEdit: () => alert('Upravit (demo)'),
+        onArchive: () => alert('Archivovat (demo)'),
+        onRefresh: () => alert('Obnovit (demo)'),
+        onAttach: () => alert('Příloha (demo)')
+      });
+    }
+
+    // Render content
+    // Dynamický import obsahu - FÁZE 2 (zatím demo placeholder)
+    c.innerHTML = `<div class="p-6 text-slate-500">Zde bude obsah modulu <b>${mod.title}</b> sekce <b>${tileId}</b>.</div>`;
+
+    // Pokud chceš načítat skutečný modul dynamicky, odkomentuj:
+    /*
     const rel = kind === 'form' ? `forms/${tileId}.js` : `tiles/${tileId}.js`;
     const path = `${mod.baseDir}/${rel}`;
     const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
-
-    console.log('[ROUTE try import]', pathWithCb);
     c.innerHTML = `<div class="p-2 text-slate-500">Načítám ${pathWithCb}…</div>`;
-
     try {
       const imported = await import(pathWithCb);
-      console.log('[ROUTE loaded]', pathWithCb, Object.keys(imported));
       await runRenderer(Promise.resolve(imported), c, {}, `path=${pathWithCb}`);
     } catch (err) {
-      console.error('[IMPORT ERROR]', pathWithCb, err);
       c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
         Import selhal: ${err?.message || err}
       </div>`;
     }
-
+    */
   } catch (err) {
-    console.error('[ROUTE ERROR]', err);
     c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
       Chyba v routeru: ${err?.message || err}
     </div>`;
@@ -167,7 +178,6 @@ async function route() {
 
 // ========== Ochrana rozdělané práce ==========
 let hasUnsavedChanges = false;
-
 export function setUnsaved(flag) {
   hasUnsavedChanges = !!flag;
 }
@@ -179,7 +189,6 @@ window.addEventListener('beforeunload', function (e) {
     return '';
   }
 });
-
 window.addEventListener('hashchange', function (e) {
   if (hasUnsavedChanges) {
     if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) {
@@ -194,19 +203,18 @@ window.addEventListener('hashchange', function (e) {
 // ========== Init ==========
 (async function start() {
   try {
-    // Header a akce (pokud máš)
-    const headerRoot = $id('header');
-    let actionsContainer = null;
-    if (headerRoot) {
-      const out = renderHeader(headerRoot, { appName: 'Pronajímatel' });
-      actionsContainer = out && out.actionsContainer;
-    }
-    if (actionsContainer) {
-      renderHeaderActions(actionsContainer);
-    }
-
-    // Home button a sidebar – volat do správných kontejnerů
-    renderHomeButton($id('homebtnbox'), { appName: 'Pronajímatel', onHome: () => location.hash = "#/" });
+    // Header: home button a akce
+    renderHomeButton($id('homebtnbox'), {
+      appName: 'Pronajímatel',
+      onHome: () => {
+        // Ochrana rozpracované práce (globální)
+        if (hasUnsavedChanges) {
+          if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) return;
+        }
+        location.hash = "#/";
+      }
+    });
+    renderHeaderActions($id('headeractions'));
 
     await initModules();
     renderSidebar($id('sidebarbox'), Array.from(registry.values()));
@@ -214,10 +222,13 @@ window.addEventListener('hashchange', function (e) {
 
     route();
   } catch (err) {
-    console.error('[INIT ERROR]', err);
     const c = $id('content');
     if (c) c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
       Inicializace selhala: ${err?.message || err}
     </div>`;
   }
 })();
+
+// ========== Nepoužívané/legacy funkce (ponecháno zakomentováno) ==========
+// import { renderHeader } from './ui/header.js'; // už nepoužíváme
+// function renderSidebar() { ... } // už nepoužíváme, vše řeší renderSidebar z ui/sidebar.js
