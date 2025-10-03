@@ -96,7 +96,6 @@ async function route() {
 
     if (!m) {
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
-      // commonActions můžeš podle potřeby vymazat/vykreslit
       if (commonActions) commonActions.innerHTML = '';
       c.innerHTML = `<div class="p-4 text-slate-500">Vyber modul vlevo…</div>`;
       return;
@@ -151,7 +150,6 @@ async function route() {
     }
 
     // Render content
-    // Dynamický import obsahu - FÁZE 2 (zatím demo placeholder)
     c.innerHTML = `<div class="p-6 text-slate-500">Zde bude obsah modulu <b>${mod.title}</b> sekce <b>${tileId}</b>.</div>`;
 
     // Pokud chceš načítat skutečný modul dynamicky, odkomentuj:
@@ -204,23 +202,34 @@ window.addEventListener('hashchange', function (e) {
 (async function start() {
   try {
     // Header: home button a akce
+    renderHeaderActions($id('headeractions'));
+
+    await initModules();
+
+    // Render sidebar a zpřístupni closeAll pro homebutton
+    renderSidebar($id('sidebarbox'), Array.from(registry.values()));
+    // Zpřístupni funkci closeAll globálně
+    window.renderSidebar = renderSidebar;
+
     renderHomeButton($id('homebtnbox'), {
       appName: 'Pronajímatel',
       onHome: () => {
+        // Zavřít sidebar pokud funkce existuje
+        if (window.renderSidebar && typeof window.renderSidebar.closeAll === 'function') {
+          window.renderSidebar.closeAll();
+        }
         // Ochrana rozpracované práce (globální)
         if (hasUnsavedChanges) {
           if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) return;
         }
+        // Přepnout na dashboard nebo domovskou stránku
         location.hash = "#/";
       }
     });
-    renderHeaderActions($id('headeractions'));
 
-    await initModules();
-    renderSidebar($id('sidebarbox'), Array.from(registry.values()));
     window.addEventListener('hashchange', route);
-
     route();
+
   } catch (err) {
     const c = $id('content');
     if (c) c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
