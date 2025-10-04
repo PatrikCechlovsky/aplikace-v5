@@ -5,7 +5,7 @@ import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { listProfiles } from '../../../db.js';
 import { ROLE_CONFIG, getRoleConfig } from '../../../ui/roles.js';
 
-// Funkce pro barevný badge podle role
+// Barevný badge pro role
 function roleBadge(role) {
   const cfg = getRoleConfig(role);
   return `<span class="inline-block text-xs px-2 py-0.5 rounded border font-semibold"
@@ -14,43 +14,138 @@ function roleBadge(role) {
   </span>`;
 }
 
+// Lokální stav
+let selectedRow = null;
+let showFilter = false;
+let filterValue = "";
+
+// Simulace přihlášeného uživatele (nahraď svým auth systémem!)
+function getCurrentUser() {
+  // TODO: napoj na svůj auth systém
+  return {
+    role: "admin", // nebo 'najemnik', 'servisak', ...
+    permissions: ["can_edit_user", "can_archive_user"], // příklad
+  };
+}
+
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home', label: 'Domů', href: '#/' },
     { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
     { icon: 'list', label: 'Přehled' },
   ]);
-  renderCommonActions(document.getElementById('crumb-actions'), {
-    onAdd: () => navigateTo('#/m/010-uzivatele/f/create'),
-    onRefresh: () => route(),
-  });
 
   const { data, error } = await listProfiles();
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`;
     return;
   }
-  const rows = data || [];
+  let rows = data || [];
 
-  renderTable(root, {
-    columns: [
-      { key: 'display_name', label: 'Jméno', sortable: true, width: '20%' },
-      { key: 'email', label: 'E‑mail', sortable: true, width: '25%' },
-      { key: 'role', label: 'Role', sortable: true, width: '15%', render: row => roleBadge(row.role) },
-      { key: 'archived', label: 'Archivován', sortable: true, width: '10%', render: row => row.archived ? 'Ano' : '' },
-    ],
+  // Filtrování
+  if (filterValue) {
+    const f = filterValue.toLowerCase();
+    rows = rows.filter(r =>
+      ["display_name", "email", "phone", "mesto", "role"]
+        .some(k => String(r[k] ?? "").toLowerCase().includes(f))
+    );
+  }
+
+  const user = getCurrentUser();
+  const canAdd = user.role === 'admin' || user.permissions.includes("can_add_user");
+  const canEdit = user.role === 'admin' || user.permissions.includes("can_edit_user");
+  const canArchive = user.role === 'admin' || user.permissions.includes("can_archive_user");
+
+  // Akce v common actions – vždy viditelné, ale s kontrolou vybraného řádku
+  renderCommonActions(document.getElementById('crumb-actions'), {
+    onAdd: canAdd
+      ? () => navigateTo('#/m/010-uzivatele/f/create')
+      : () => alert("Nemáte oprávnění přidávat uživatele."),
+    onEdit: () => {
+      if (!selectedRow) return alert("Nejprve vyberte řádek.");
+      if (!canEdit) return alert("Nemáte oprávnění upravovat.");
+      navigateTo(`#/m/010-uzivatele/f/edit?id=${selectedRow.id}`);
+    },
+    onArchive: () => {
+      if (!selectedRow) return alert("Nejprve vyberte řádek.");
+      if (!canArchive) return alert("Nemáte oprávnění archivovat.");
+      navigateTo(`#/m/010-uzivatele/f/read?id=${selectedRow.id}`);
+    },
+    onAttach: () => {
+      if (!selectedRow) return alert("Nejprve vyberte řádek.");
+      navigateTo(`#/m/010-uzivatele/f/read?id=${selectedRow.id}`);
+    },
+    onRefresh: () => route(),
+    // Lupa pro hledání
+    onSearch: () => { showFilter = !showFilter; render(root); }
+  });
+
+  // Sloupce tabulky
+  const columns = [
+    { key: 'display_name', label: 'Jméno', sortable: true, width: '18%' },
+    { key: 'email', label: 'E‑mail', sortable: true, width: '20%' },
+    { key: 'phone', label: 'Telefon', sortable: true, width: '15%' },
+    { key: 'mesto', label: 'Město', sortable: true, width: '15%' },
+    { key: 'role', label: 'Role', sortable: true, width: '15%', render: row => roleBadge(row.role) },
+    { key: 'archived', label: 'Archivován', sortable: true, width: '10%', render: row => row.archived ? 'Ano' : '' },
+  ];
+
+  // Render filtru pod common actions (po kliknutí na lupu)
+  let filterHtml = "";
+  if (showFilter) {
+    filterHtml = `
+      <div class="flex items-center gap-2 mb-2">
+        <input
+          class="border rounded px-2 py-1 text-sm w-full sm:w-80"
+          placeholder="Hledat uživatele…"
+          value="${filterValue}"
+          id="user-filter-input"
+        />
+        <button class="border rounded px-2 py-1 bg-white" id="user-filter-close" title="Zavřít hledání">${icon('close')}</button>
+      </div>
+    `;
+  }
+
+  root.innerHTML = `
+    ${filterHtml}
+    <div id="user-table"></div>
+  `;
+
+  // Render tabulky
+  renderTable(root.querySelector('#user-table'), {
+    columns,
     rows,
-    rowActions: [
-      { label: 'Detail', icon: icon('detail'), onClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`) },
-      { label: 'Editace', icon: icon('edit'), onClick: row => navigateTo(`#/m/010-uzivatele/f/edit?id=${row.id}`) },
-      { label: 'Archivace', icon: icon('archive'), onClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`) },
-      { label: 'Příloha', icon: icon('paperclip'), onClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`) },
-    ],
+    rowActions: [], // žádná akční tlačítka v řádku
     options: {
-      filterPlaceholder: 'Hledat uživatele…',
       onRowDblClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`),
+      onRowSelect: row => {
+        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
+        render(root);
+      },
+      selectedRow,
     },
   });
+
+  // Hledání - input events
+  if (showFilter) {
+    const inp = root.querySelector('#user-filter-input');
+    const close = root.querySelector('#user-filter-close');
+    if (inp) {
+      inp.focus();
+      inp.selectionStart = inp.value.length;
+      inp.addEventListener('input', e => {
+        filterValue = e.target.value;
+        render(root);
+      });
+    }
+    if (close) {
+      close.addEventListener('click', () => {
+        showFilter = false;
+        filterValue = "";
+        render(root);
+      });
+    }
+  }
 }
 
 export default { render };
