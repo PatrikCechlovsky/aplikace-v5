@@ -1,8 +1,8 @@
 export async function getManifest() {
   return {
-    id: "030-pronajimatel",      // unikátní ID
-    title: "Pronajímatel",       // název v menu
-    icon: "home",                // volitelně ikonka (podle tvého systému ikon)
+    id: "030-pronajimatel",
+    title: "Pronajímatel",
+    icon: "home",
     tiles: [
       {
         id: "detail",
@@ -25,6 +25,6 @@ export async function getManifest() {
         desc: "Formulář"
       }
     ],
-    defaultTile: "prehled" // volitelné, jaký je výchozí tile
+    defaultTile: "prehled"
   }
 }
