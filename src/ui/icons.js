@@ -24,7 +24,7 @@ const I = {
   export: '📤',
   import: '📥',
   print: '🖨️',
-  filter: '🔍',     // zůstává stejné, případně vyměníme za ⚲
+  filter: '🔍',
   stats: '📊',
   reminder: '📨',
   sign: '🖋️',
@@ -38,18 +38,10 @@ const I = {
   removed: '🚫',
   tile: '🟦',
   form: '📝',
-  paperclip: '📎', // příloha
+  paperclip: '📎',
+  refresh: '🔄',
+  "chevron-right": "▶️", // ← přidej tuto ikonu do hlavního registru
 };
-// … tvůj původní registr I = { … }
-export function icon(name, fallback = "❓") {
-  const icons = {
-    // ... ostatní ikonky ...
-    "chevron-right": "▶️"
-  }
-  return icons[name] || fallback;
-}
-
-I.refresh = I.refresh || '🔄'; // doplníme chybějící refresh
 // aliasy — ať je jedno, jestli někdo napíše plus/user/logout apod.
 const ALIASES = { plus: 'add', user: 'account', logout: 'exit', attach: 'paperclip' };
 
