@@ -107,7 +107,10 @@ export async function render(root) {
     columns,
     rows,
     options: {
-      onRowDblClick: row => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`),
+      onRowDblClick: row => {
+        console.log("DVOJKLIK", row); // Debug: uvidíš v konzoli o jaký řádek jde
+        navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
+      },
       onRowSelect: row => {
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
         render(root);
