@@ -1,11 +1,11 @@
 // src/ui/table.js
-// Jednoduchá tabulka s řazením, filtrem, volitelným pořadím sloupců a dblclick akcí.
+// Univerzální tabulka s řazením, filtrem, výběrem řádku a akcemi.
 // columns: [{ key, label, width?, render?(row), sortable?:true, className? }]
 // rows: array objektů
 // rowActions: [{ label, icon, onClick(row), show?(row):boolean }]
-// options: { filterPlaceholder, columnsOrder?: string[], onRowDblClick?(row) }
+// options: { filterPlaceholder, columnsOrder?: string[], onRowDblClick?(row), onRowSelect?(row), selectedRow? }
 
-export function renderTable(root, { columns, rows, rowActions = [], options = {} }) {
+export function renderTable(root, { columns, rows, rowActions = [], options = {}, selectedRow }) {
   if (!root) return;
   const state = {
     sortKey: columns.find(c => c.sortable !== false)?.key || columns[0]?.key,
@@ -27,12 +27,21 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
   wrap.className = 'bg-white rounded-2xl border';
   root.appendChild(wrap);
 
+  // HEAD: filtr (možno vypnout/skryt zvenku)
+  let showFilter = typeof options.showFilter === 'undefined' ? true : options.showFilter;
+  let filterPlaceholder = options.filterPlaceholder || 'Filtrovat…';
+  let filterValue = typeof options.filterValue === 'string' ? options.filterValue : state.filter;
+
+  let headHtml = '';
+  if (showFilter) {
+    headHtml = `
+      <input type="text" id="tblFilter" class="border rounded px-2 py-1 text-sm w-full sm:w-72"
+             placeholder="${filterPlaceholder}" value="${escapeHtml(filterValue)}" />
+    `;
+  }
   const head = document.createElement('div');
   head.className = 'p-3 border-b flex items-center gap-2';
-  head.innerHTML = `
-    <input type="text" id="tblFilter" class="border rounded px-2 py-1 text-sm w-full sm:w-72"
-           placeholder="${options.filterPlaceholder || 'Filtrovat…'}" />
-  `;
+  head.innerHTML = headHtml;
   wrap.appendChild(head);
 
   const scroller = document.createElement('div');
@@ -88,7 +97,9 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
 
     data.forEach(row => {
       const tr = document.createElement('tr');
-      tr.className = 'border-t hover:bg-slate-50';
+      // Zvýraznění vybraného řádku
+      const isSelected = (options.selectedRow && row.id && options.selectedRow.id === row.id);
+      tr.className = 'border-t hover:bg-slate-50' + (isSelected ? ' bg-amber-100' : '');
       tr.innerHTML = cols.map(c => {
         const val = c.render ? c.render(row) : escapeHtml(row[c.key]);
         return `<td class="px-3 py-2 align-top ${c.className||''}">${val}</td>`;
@@ -105,13 +116,20 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
         </td>` : '');
       tbody.appendChild(tr);
 
-      // dblclick řádek
-      if (typeof options.onRowDblClick === 'function') {
-        tr.addEventListener('dblclick', () => options.onRowDblClick(row));
+      // Výběr řádku (klik)
+      if (typeof options.onRowSelect === 'function') {
+        tr.addEventListener('click', () => options.onRowSelect(row));
         tr.style.cursor = 'pointer';
       }
-
-      // akce vpravo
+      // Dvojklik řádek
+      if (typeof options.onRowDblClick === 'function') {
+        tr.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          options.onRowDblClick(row);
+        });
+        tr.style.cursor = 'pointer';
+      }
+      // Akce vpravo
       if (rowActions.length) {
         tr.querySelectorAll('button[data-act]').forEach(btn => {
           const i = Number(btn.dataset.act);
@@ -141,10 +159,12 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
       });
     }
   });
-  head.querySelector('#tblFilter').addEventListener('input', e => {
-    state.filter = e.target.value || '';
-    renderBody();
-  });
+  if (showFilter && head.querySelector('#tblFilter')) {
+    head.querySelector('#tblFilter').addEventListener('input', e => {
+      state.filter = e.target.value || '';
+      renderBody();
+    });
+  }
 
   renderBody();
 }
