@@ -3,7 +3,7 @@
 // columns: [{ key, label, width?, render?(row), sortable?:true, className? }]
 // rows: array objektů
 // rowActions: [{ label, icon, onClick(row), show?(row):boolean }]
-// options: { filterPlaceholder, columnsOrder?: string[], onRowDblClick?(row), onRowSelect?(row), selectedRow? }
+// options: { filterPlaceholder, columnsOrder?: string[], onRowDblClick?(row), onRowSelect?(row), selectedRow?, moduleId? }
 
 export function renderTable(root, { columns, rows, rowActions = [], options = {}, selectedRow }) {
   if (!root) return;
@@ -61,7 +61,7 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
           <span class="opacity-60 text-xs" data-dir="${c.key}"></span>
         </button>
       </th>`).join('')}
-      ${rowActions.length ? `<th class="px-3 py-2 text-right">Akce</th>` : ''}
+      ${(rowActions.length || !options.disableDefaultRowActions) ? `<th class="px-3 py-2 text-right">Akce</th>` : ''}
   </tr>`;
   table.appendChild(thead);
 
@@ -91,6 +91,28 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
     return out;
   }
 
+  function getDefaultRowActions(row) {
+    // Modul určuj podle options.moduleId (použij podle potřeby)
+    const moduleId = options.moduleId || 'unknown';
+    return [
+      {
+        label: "Upravit",
+        icon: "✏️",
+        onClick: row => window.navigateTo && window.navigateTo(`#/m/${moduleId}/f/edit?id=${row.id}`)
+      },
+      {
+        label: "Archivovat",
+        icon: "🗄️",
+        onClick: row => alert("Archivace není implementována.")
+      },
+      {
+        label: "Příloha",
+        icon: "📎",
+        onClick: row => alert("Přílohy nejsou implementovány.")
+      }
+    ];
+  }
+
   function renderBody() {
     tbody.innerHTML = '';
     const data = applySortAndFilter(rows);
@@ -103,16 +125,22 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
       tr.innerHTML = cols.map(c => {
         const val = c.render ? c.render(row) : escapeHtml(row[c.key]);
         return `<td class="px-3 py-2 align-top ${c.className||''}">${val}</td>`;
-      }).join('') + (rowActions.length ? `
+      }).join('') 
+      + ((rowActions.length || !options.disableDefaultRowActions) ? `
         <td class="px-3 py-2 text-right whitespace-nowrap">
-          ${rowActions
-            .filter(a => (typeof a.show === 'function' ? a.show(row) : true))
-            .map((a,i) => `
-              <button data-act="${i}" class="group inline-flex items-center gap-1 px-2 py-1 border rounded bg-white ml-1"
-                      title="${a.label}">
-                ${a.icon || '⋯'}
-                <span class="hidden sm:inline group-hover:inline">${a.label}</span>
-              </button>`).join('')}
+          ${
+            (
+              (rowActions.length ? rowActions : getDefaultRowActions(row))
+                .filter(a => (typeof a.show === 'function' ? a.show(row) : true))
+                .map((a,i) => `
+                  <button data-act="${i}" class="group inline-flex items-center gap-1 px-2 py-1 border rounded bg-white ml-1"
+                          title="${a.label}">
+                    ${a.icon || '⋯'}
+                    <span class="hidden sm:inline group-hover:inline">${a.label}</span>
+                  </button>`)
+                .join('')
+            )
+          }
         </td>` : '');
       tbody.appendChild(tr);
 
@@ -121,21 +149,34 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
         tr.addEventListener('click', () => options.onRowSelect(row));
         tr.style.cursor = 'pointer';
       }
-      // Dvojklik řádek
+      // Dvojklik řádek – pokud není handler, použij default na detail
       if (typeof options.onRowDblClick === 'function') {
         tr.addEventListener('dblclick', (e) => {
           e.stopPropagation();
           options.onRowDblClick(row);
         });
         tr.style.cursor = 'pointer';
+      } else {
+        // Výchozí: otevři detail (read)
+        tr.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          const moduleId = options.moduleId || 'unknown';
+          if (window.navigateTo) {
+            window.navigateTo(`#/m/${moduleId}/f/read?id=${row.id}`);
+          } else {
+            alert(`Detail pro ID: ${row.id}`);
+          }
+        });
+        tr.style.cursor = 'pointer';
       }
       // Akce vpravo
-      if (rowActions.length) {
+      const actions = rowActions.length ? rowActions : (!options.disableDefaultRowActions ? getDefaultRowActions(row) : []);
+      if (actions.length) {
         tr.querySelectorAll('button[data-act]').forEach(btn => {
           const i = Number(btn.dataset.act);
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            rowActions[i].onClick?.(row);
+            actions[i]?.onClick?.(row);
           });
         });
       }
