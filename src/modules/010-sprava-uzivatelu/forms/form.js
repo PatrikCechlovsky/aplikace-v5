@@ -4,22 +4,18 @@ import { getProfile, updateProfile, createProfile } from '../../../db.js';
 import { navigateTo } from '../../../app.js';
 
 // Univerzální formulář pro uživatele (edit, detail, nový)
-// Nepoužívá žádné pronajímatele!
-
 export async function render(root, params = {}) {
-  // Získání id a mode z parametru NEBO z URL (pro kompatibilitu s routerem)
   const search = location.hash.split('?')[1] || '';
   const urlParams = new URLSearchParams(search);
   const id = params.id || urlParams.get('id');
-  const mode = params.mode || urlParams.get('mode') || 'read';
+  const mode = params.mode || urlParams.get('mode') || 'edit'; // defaultně edit!
 
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home', label: 'Domů', href: '#/' },
     { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
-    { icon: mode === "read" ? 'detail' : (mode === "edit" ? 'edit' : 'add'), label: mode === "read" ? 'Detail' : (mode === "edit" ? 'Upravit' : 'Nový / Pozvat') },
+    { icon: mode === "create" ? 'add' : 'edit', label: mode === "create" ? 'Nový / Pozvat' : 'Editace' },
   ]);
 
-  // Načtení dat pro edit/detail
   let values = {};
   if (id && mode !== "create") {
     const { data: user, error } = await getProfile(id);
@@ -42,7 +38,6 @@ export async function render(root, params = {}) {
     { key: "note", label: "Poznámka", type: "textarea" },
   ];
 
-  // Ukládání/upravení/vytvoření
   async function onSubmit(values) {
     let error;
     if (mode === "edit" && id) {
