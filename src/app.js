@@ -85,7 +85,7 @@ async function initModules() {
 window.registry = registry;
 
 // ========== Router ==========
-async function route() {
+export async function route() { // <-- OPRAVENO: export!
   const c = $id('content');
   const crumb = $id('crumb');
   const commonActions = $id('commonactions');
