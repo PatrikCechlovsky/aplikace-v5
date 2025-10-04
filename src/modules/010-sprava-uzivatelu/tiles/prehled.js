@@ -47,6 +47,9 @@ export async function render(root) {
     );
   }
 
+  // Zkontroluj, že každý řádek má id!
+  rows = rows.map(r => ({ ...r, id: r.id ?? r.user_id ?? r.ID }));
+
   const user = getCurrentUser();
   const canAdd = user.role === 'admin' || user.permissions.includes("can_add_user");
   const canEdit = user.role === 'admin' || user.permissions.includes("can_edit_user");
@@ -108,7 +111,7 @@ export async function render(root) {
     rows,
     options: {
       onRowDblClick: row => {
-        console.log("DVOJKLIK", row); // Debug: uvidíš v konzoli o jaký řádek jde
+        console.log("DVOJKLIK", row);
         navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
       },
       onRowSelect: row => {
