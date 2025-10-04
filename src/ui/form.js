@@ -1,10 +1,11 @@
-// Univerzální komponenta pro vykreslení a správu formulářů s výchozími tlačítky a možností rozšíření
+// Univerzální komponenta pro vykreslení a správu formulářů (v češtině)
+// ŽÁDNÁ tlačítka typu Archivovat/Příloha apod., pouze Uložit (save) – ostatní akce jsou v common actions!
 // Použití: renderForm(root, fields, data, onSubmit, options)
 // - root: DOM element, kam se formulář vykreslí
 // - fields: pole s definicí polí (viz níže)
 // - data: předvyplněná data (pro editaci), může být {}
 // - onSubmit: async funkce, která dostane values, při success zavolat return true
-// - options: { mode: "edit"|"read", onArchive, onAttach, hideArchive, hideAttach, extraButtons }
+// - options: { mode: "edit"|"read" }
 
 export function renderForm(root, fields, data = {}, onSubmit, options = {}) {
   if (!root) return;
@@ -83,26 +84,13 @@ export function renderForm(root, fields, data = {}, onSubmit, options = {}) {
       }
     });
 
-    // Výchozí tlačítka
-    const btnWrap = document.createElement("div");
-    btnWrap.className = "pt-4 flex gap-2";
-
+    // Tlačítko pouze Uložit (save), ostatní akce jsou v common actions!
     if (mode === "edit") {
-      btnWrap.innerHTML += `<button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Uložit</button>`;
+      const btnWrap = document.createElement("div");
+      btnWrap.className = "pt-4";
+      btnWrap.innerHTML = `<button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Uložit</button>`;
+      form.appendChild(btnWrap);
     }
-    if (!options.hideArchive) {
-      btnWrap.innerHTML += `<button type="button" id="btn-archive" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 font-semibold">Archivovat</button>`;
-    }
-    if (!options.hideAttach) {
-      btnWrap.innerHTML += `<button type="button" id="btn-attach" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 font-semibold">Příloha</button>`;
-    }
-    // Extra tlačítka
-    if (Array.isArray(options.extraButtons)) {
-      for (const btn of options.extraButtons) {
-        btnWrap.innerHTML += `<button type="button" id="btn-${btn.key}" class="${btn.className||'px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 font-semibold'}">${btn.label}</button>`;
-      }
-    }
-    form.appendChild(btnWrap);
 
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -119,35 +107,6 @@ export function renderForm(root, fields, data = {}, onSubmit, options = {}) {
         }
       }
     });
-
-    // Handler pro Archivovat
-    if (!options.hideArchive) {
-      form.querySelector("#btn-archive").onclick = e => {
-        e.preventDefault();
-        if (options.onArchive) return options.onArchive(state.values);
-        alert("Archivace není implementována.");
-      };
-    }
-    // Handler pro Přílohu
-    if (!options.hideAttach) {
-      form.querySelector("#btn-attach").onclick = e => {
-        e.preventDefault();
-        if (options.onAttach) return options.onAttach(state.values);
-        alert("Přidání přílohy není implementováno.");
-      };
-    }
-    // Handlery pro extra tlačítka
-    if (Array.isArray(options.extraButtons)) {
-      for (const btn of options.extraButtons) {
-        const el = form.querySelector(`#btn-${btn.key}`);
-        if (el && typeof btn.onClick === "function") {
-          el.onclick = e => {
-            e.preventDefault();
-            btn.onClick(state.values);
-          };
-        }
-      }
-    }
 
     root.appendChild(form);
   }
