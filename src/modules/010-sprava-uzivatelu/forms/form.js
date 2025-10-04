@@ -8,7 +8,8 @@ export async function render(root, params = {}) {
   const search = location.hash.split('?')[1] || '';
   const urlParams = new URLSearchParams(search);
   const id = params.id || urlParams.get('id');
-  const mode = params.mode || urlParams.get('mode') || 'edit';
+  // Pokud není mode zadané, defaultně "edit", protože chceš hlavně editovat
+  const mode = params.mode || urlParams.get('mode') || (id ? 'edit' : 'create');
 
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home', label: 'Domů', href: '#/' },
