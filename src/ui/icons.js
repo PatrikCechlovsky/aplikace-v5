@@ -41,6 +41,13 @@ const I = {
   paperclip: '📎', // příloha
 };
 // … tvůj původní registr I = { … }
+export function icon(name, fallback = "❓") {
+  const icons = {
+    // ... ostatní ikonky ...
+    "chevron-right": "▶️"
+  }
+  return icons[name] || fallback;
+}
 
 I.refresh = I.refresh || '🔄'; // doplníme chybějící refresh
 // aliasy — ať je jedno, jestli někdo napíše plus/user/logout apod.
