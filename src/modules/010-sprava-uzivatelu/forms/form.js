@@ -1,24 +1,21 @@
 import { renderForm } from '../../../ui/form.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
-import { getProfile, updateProfile, createProfile, listPronajimatele, getPronajimatel } from '../../../db.js';
+import { getProfile, updateProfile, createProfile, listPronajimatele } from '../../../db.js';
 import { navigateTo } from '../../../app.js';
 
 // Univerzální formulář pro uživatele (edit, detail, nový)
 export async function render(root, params = {}) {
-  // Získání id a mode z parametru NEBO z URL (pro kompatibilitu s routerem)
   const search = location.hash.split('?')[1] || '';
   const urlParams = new URLSearchParams(search);
   const id = params.id || urlParams.get('id');
   const mode = params.mode || urlParams.get('mode') || 'read';
 
-  // Breadcrumb podle módu
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home', label: 'Domů', href: '#/' },
     { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
     { icon: mode === "read" ? 'detail' : (mode === "edit" ? 'edit' : 'add'), label: mode === "read" ? 'Detail' : (mode === "edit" ? 'Upravit' : 'Nový / Pozvat') },
   ]);
 
-  // Načtení dat
   let values = {};
   if (id && mode !== "create") {
     const { data: user, error } = await getProfile(id);
@@ -50,21 +47,6 @@ export async function render(root, params = {}) {
     { key: "note", label: "Poznámka", type: "textarea" },
   ];
 
-  // Handler pro změnu pronajímatele (pro edit/create)
-  async function onFieldChange(values, changedKey) {
-    if (changedKey === "pronajimatel_id" && values.pronajimatel_id) {
-      const { data: p } = await getPronajimatel(values.pronajimatel_id);
-      if (p) {
-        values.display_name = p.display_name || values.display_name;
-        values.email = p.email || values.email;
-        values.phone = p.phone || values.phone;
-        values.mesto = p.mesto || values.mesto;
-      }
-      renderForm(root, fields, values, onSubmit, { mode, onFieldChange });
-      return;
-    }
-  }
-
   // Ukládání/upravení/vytvoření
   async function onSubmit(values) {
     let error;
@@ -87,7 +69,7 @@ export async function render(root, params = {}) {
     fields,
     values,
     mode === "read" ? undefined : onSubmit,
-    { mode, onFieldChange: mode !== "read" ? onFieldChange : undefined }
+    { mode }
   );
 }
 export default { render };
