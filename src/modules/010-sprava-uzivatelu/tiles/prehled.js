@@ -4,6 +4,7 @@ import { renderCommonActions } from '../../../ui/commonActions.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { listProfiles } from '../../../db.js';
 import { ROLE_CONFIG, getRoleConfig } from '../../../ui/roles.js';
+import { navigateTo, route } from '../../../app.js'; // DŮLEŽITÉ: přidat tento import!
 
 // Barevný badge pro role
 function roleBadge(role) {
@@ -14,7 +15,7 @@ function roleBadge(role) {
   </span>`;
 }
 
-// Lokální stav
+// Uchovej stav mimo funkci render!
 let selectedRow = null;
 let showFilter = false;
 let filterValue = "";
@@ -115,7 +116,7 @@ export async function render(root) {
   renderTable(root.querySelector('#user-table'), {
     columns,
     rows,
-    rowActions: [], // žádná akční tlačítka v řádku
+    rowActions: [],
     options: {
       onRowDblClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`),
       onRowSelect: row => {
