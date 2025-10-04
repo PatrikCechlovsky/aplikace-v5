@@ -4,7 +4,13 @@ import { getProfile, updateProfile, createProfile, listPronajimatele, getPronaji
 import { navigateTo } from '../../../app.js';
 
 // Univerzální formulář pro uživatele (edit, detail, nový)
-export async function render(root, { mode = "edit", id = null } = {}) {
+export async function render(root, params = {}) {
+  // Získání id a mode z parametru NEBO z URL (pro kompatibilitu s routerem)
+  const search = location.hash.split('?')[1] || '';
+  const urlParams = new URLSearchParams(search);
+  const id = params.id || urlParams.get('id');
+  const mode = params.mode || urlParams.get('mode') || 'read';
+
   // Breadcrumb podle módu
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home', label: 'Domů', href: '#/' },
@@ -20,7 +26,7 @@ export async function render(root, { mode = "edit", id = null } = {}) {
     values = user;
   }
 
-  // Pronajímatelé (pro select)
+  // Pronajímatelé (pro select) – pouze v edit/create
   let pronajOptions = [];
   if (mode !== "read") {
     const { data: pronajimatele, error: pronError } = await listPronajimatele?.() || {};
@@ -72,7 +78,7 @@ export async function render(root, { mode = "edit", id = null } = {}) {
       return false;
     }
     alert(mode === "create" ? "Uživatel vytvořen." : "Uživatel upraven.");
-    navigateTo('#/m/010-uzivatele/t/prehled');
+    navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
     return true;
   }
 
