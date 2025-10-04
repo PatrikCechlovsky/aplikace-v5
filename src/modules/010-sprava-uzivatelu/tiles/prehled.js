@@ -4,7 +4,7 @@ import { renderCommonActions } from '../../../ui/commonActions.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { listProfiles } from '../../../db.js';
 import { ROLE_CONFIG, getRoleConfig } from '../../../ui/roles.js';
-import { navigateTo, route } from '../../../app.js'; // DŮLEŽITÉ: přidat tento import!
+import { navigateTo, route } from '../../../app.js';
 
 // Barevný badge pro role
 function roleBadge(role) {
@@ -57,7 +57,7 @@ export async function render(root) {
   const canEdit = user.role === 'admin' || user.permissions.includes("can_edit_user");
   const canArchive = user.role === 'admin' || user.permissions.includes("can_archive_user");
 
-  // Akce v common actions – vždy viditelné, ale s kontrolou vybraného řádku
+  // Akce v common actions – řízené tímto modulem
   renderCommonActions(document.getElementById('crumb-actions'), {
     onAdd: canAdd
       ? () => navigateTo('#/m/010-uzivatele/f/create')
@@ -70,14 +70,16 @@ export async function render(root) {
     onArchive: () => {
       if (!selectedRow) return alert("Nejprve vyberte řádek.");
       if (!canArchive) return alert("Nemáte oprávnění archivovat.");
-      navigateTo(`#/m/010-uzivatele/f/read?id=${selectedRow.id}`);
+      // Zde můžeš napojit archivaci, nebo otevřít archivaci
+      alert("Archivace uživatele není zatím implementována.");
     },
     onAttach: () => {
       if (!selectedRow) return alert("Nejprve vyberte řádek.");
-      navigateTo(`#/m/010-uzivatele/f/read?id=${selectedRow.id}`);
+      // Zde otevři dialog pro přílohy nebo formulář pro nahrání
+      alert(`Přidat přílohu k uživateli: ${selectedRow.display_name}`);
+      // navigateTo(`#/m/010-uzivatele/f/attach?id=${selectedRow.id}`);
     },
     onRefresh: () => route(),
-    // Lupa pro hledání
     onSearch: () => { showFilter = !showFilter; render(root); }
   });
 
