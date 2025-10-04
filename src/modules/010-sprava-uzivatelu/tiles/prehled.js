@@ -24,8 +24,8 @@ let filterValue = "";
 function getCurrentUser() {
   // TODO: napoj na svůj auth systém
   return {
-    role: "admin", // nebo 'najemnik', 'servisak', ...
-    permissions: ["can_edit_user", "can_archive_user"], // příklad
+    role: "admin",
+    permissions: ["can_edit_user", "can_archive_user"],
   };
 }
 
@@ -57,27 +57,25 @@ export async function render(root) {
   const canEdit = user.role === 'admin' || user.permissions.includes("can_edit_user");
   const canArchive = user.role === 'admin' || user.permissions.includes("can_archive_user");
 
-  // Akce v common actions – řízené tímto modulem
+  // Common Actions: napojení na UNIVERZÁLNÍ form.js
   renderCommonActions(document.getElementById('crumb-actions'), {
     onAdd: canAdd
-      ? () => navigateTo('#/m/010-uzivatele/f/create')
+      ? () => navigateTo('#/m/010-sprava-uzivatelu/f/form?mode=create')
       : () => alert("Nemáte oprávnění přidávat uživatele."),
     onEdit: () => {
       if (!selectedRow) return alert("Nejprve vyberte řádek.");
       if (!canEdit) return alert("Nemáte oprávnění upravovat.");
-      navigateTo(`#/m/010-uzivatele/f/edit?id=${selectedRow.id}`);
+      navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`);
     },
     onArchive: () => {
       if (!selectedRow) return alert("Nejprve vyberte řádek.");
       if (!canArchive) return alert("Nemáte oprávnění archivovat.");
-      // Zde můžeš napojit archivaci, nebo otevřít archivaci
       alert("Archivace uživatele není zatím implementována.");
     },
     onAttach: () => {
       if (!selectedRow) return alert("Nejprve vyberte řádek.");
-      // Zde otevři dialog pro přílohy nebo formulář pro nahrání
       alert(`Přidat přílohu k uživateli: ${selectedRow.display_name}`);
-      // navigateTo(`#/m/010-uzivatele/f/attach?id=${selectedRow.id}`);
+      // navigateTo(`#/m/010-sprava-uzivatelu/f/attach?id=${selectedRow.id}`);
     },
     onRefresh: () => route(),
     onSearch: () => { showFilter = !showFilter; render(root); }
@@ -118,9 +116,8 @@ export async function render(root) {
   renderTable(root.querySelector('#user-table'), {
     columns,
     rows,
-    rowActions: [],
     options: {
-      onRowDblClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`),
+      onRowDblClick: row => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=read`),
       onRowSelect: row => {
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
         render(root);
