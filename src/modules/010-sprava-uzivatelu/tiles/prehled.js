@@ -1,75 +1,56 @@
+import { renderTable } from '../../../ui/table.js';
 import { icon } from '../../../ui/icons.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { listProfiles } from '../../../db.js';
+import { ROLE_CONFIG, getRoleConfig } from '../../../ui/roles.js';
 
-const roleBadge = (role) => {
-  const cls = role === 'admin' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200';
-  return `<span class="inline-block text-xs px-2 py-0.5 rounded border ${cls}">${role || 'user'}</span>`;
-};
+// Funkce pro barevný badge podle role
+function roleBadge(role) {
+  const cfg = getRoleConfig(role);
+  return `<span class="inline-block text-xs px-2 py-0.5 rounded border font-semibold"
+    style="background:${cfg.bg};color:${cfg.fg};border-color:${cfg.border}">
+    ${cfg.label}
+  </span>`;
+}
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
-    { icon:'home',  label:'Domů', href:'#/' },
-    { icon:'users', label:'Uživatelé', href:'#/m/010-sprava-uzivatelu' },
-    { icon:'list',  label:'Přehled' },
+    { icon: 'home', label: 'Domů', href: '#/' },
+    { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
+    { icon: 'list', label: 'Přehled' },
   ]);
   renderCommonActions(document.getElementById('crumb-actions'), {
-    onAdd:     () => navigateTo('#/m/010-uzivatele/f/create'),
+    onAdd: () => navigateTo('#/m/010-uzivatele/f/create'),
     onRefresh: () => route(),
   });
 
   const { data, error } = await listProfiles();
-  if (error) { root.innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; return; }
+  if (error) {
+    root.innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`;
+    return;
+  }
   const rows = data || [];
 
-  root.innerHTML = `
-    <div class="p-4 bg-white rounded-2xl border">
-      <div class="overflow-auto">
-        <table class="min-w-full text-sm">
-          <thead class="border-b bg-slate-50">
-            <tr>
-              <th class="text-left p-2 w-10">#</th>
-              <th class="text-left p-2">Jméno</th>
-              <th class="text-left p-2">E‑mail</th>
-              <th class="text-left p-2">Role</th>
-              <th class="text-right p-2">Akce</th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
-      ${rows.length ? '' : `<div class="p-4 text-slate-500 text-sm">Žádná data.</div>`}
-    </div>
-  `;
-
-  const tbody = root.querySelector('#rows');
-  tbody.innerHTML = rows.map((r, i) => `
-    <tr data-id="${r.id}" class="border-b hover:bg-slate-50 cursor-pointer">
-      <td class="p-2">${i+1}</td>
-      <td class="p-2">${r.display_name || '—'}</td>
-      <td class="p-2">${r.email || '—'}</td>
-      <td class="p-2">${roleBadge(r.role)}</td>
-      <td class="p-2 text-right">
-        <button data-act="detail" class="inline-flex items-center gap-1 px-2 py-1 border rounded bg-white" title="Zobrazit">${icon('detail')}</button>
-        <button data-act="edit"   class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Upravit">${icon('edit')}</button>
-        <button data-act="archive"class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Archivovat">${icon('archive')}</button>
-        <button data-act="attach" class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Příloha">${icon('paperclip')}</button>
-      </td>
-    </tr>
-  `).join('');
-
-  tbody.addEventListener('dblclick', (ev) => {
-    const tr = ev.target.closest('tr[data-id]'); if (!tr) return;
-    navigateTo(`#/m/010-uzivatele/f/read?id=${tr.dataset.id}`);
-  });
-  tbody.addEventListener('click', (ev) => {
-    const btn = ev.target.closest('button[data-act]'); if (!btn) return;
-    const tr = ev.target.closest('tr[data-id]'); const id = tr?.dataset.id; if (!id) return;
-    if (btn.dataset.act==='detail') navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
-    if (btn.dataset.act==='edit')   navigateTo(`#/m/010-uzivatele/f/edit?id=${id}`);
-    if (btn.dataset.act==='archive') navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
-    if (btn.dataset.act==='attach')  navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
+  renderTable(root, {
+    columns: [
+      { key: 'display_name', label: 'Jméno', sortable: true, width: '20%' },
+      { key: 'email', label: 'E‑mail', sortable: true, width: '25%' },
+      { key: 'role', label: 'Role', sortable: true, width: '15%', render: row => roleBadge(row.role) },
+      { key: 'archived', label: 'Archivován', sortable: true, width: '10%', render: row => row.archived ? 'Ano' : '' },
+    ],
+    rows,
+    rowActions: [
+      { label: 'Detail', icon: icon('detail'), onClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`) },
+      { label: 'Editace', icon: icon('edit'), onClick: row => navigateTo(`#/m/010-uzivatele/f/edit?id=${row.id}`) },
+      { label: 'Archivace', icon: icon('archive'), onClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`) },
+      { label: 'Příloha', icon: icon('paperclip'), onClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`) },
+    ],
+    options: {
+      filterPlaceholder: 'Hledat uživatele…',
+      onRowDblClick: row => navigateTo(`#/m/010-uzivatele/f/read?id=${row.id}`),
+    },
   });
 }
+
 export default { render };
