@@ -1,9 +1,11 @@
 import { renderForm } from '../../../ui/form.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
-import { getProfile, updateProfile, createProfile, listPronajimatele } from '../../../db.js';
+import { getProfile, updateProfile, createProfile } from '../../../db.js';
 import { navigateTo } from '../../../app.js';
 
 // Univerzální formulář pro uživatele (edit, detail, nový)
+// Nepoužívá žádné pronajímatele!
+
 export async function render(root, params = {}) {
   // Získání id a mode z parametru NEBO z URL (pro kompatibilitu s routerem)
   const search = location.hash.split('?')[1] || '';
@@ -11,7 +13,6 @@ export async function render(root, params = {}) {
   const id = params.id || urlParams.get('id');
   const mode = params.mode || urlParams.get('mode') || 'read';
 
-  // Breadcrumb podle módu
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home', label: 'Domů', href: '#/' },
     { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
@@ -26,16 +27,7 @@ export async function render(root, params = {}) {
     values = user;
   }
 
-  // Pronajímatelé (pro select) – pouze v edit/create
-  let pronajOptions = [];
-  if (mode !== "read") {
-    const { data: pronajimatele, error: pronError } = await listPronajimatele?.() || {};
-    if (pronError) { root.innerHTML = `<div class="p-4 text-red-600">${pronError.message}</div>`; return; }
-    pronajOptions = (pronajimatele || []).map(p => ({ value: p.id, label: p.display_name }));
-  }
-
   const fields = [
-    { key: "pronajimatel_id", label: "Pronajímatel", type: "select", required: true, options: pronajOptions },
     { key: "display_name", label: "Jméno", type: "text", required: true },
     { key: "email", label: "E‑mail", type: "email", required: true },
     { key: "phone", label: "Telefon", type: "text" },
