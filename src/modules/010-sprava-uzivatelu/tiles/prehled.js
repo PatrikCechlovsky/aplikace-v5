@@ -75,7 +75,6 @@ export async function render(root) {
     onAttach: () => {
       if (!selectedRow) return alert("Nejprve vyberte řádek.");
       alert(`Přidat přílohu k uživateli: ${selectedRow.display_name}`);
-      // navigateTo(`#/m/010-sprava-uzivatelu/f/attach?id=${selectedRow.id}`);
     },
     onRefresh: () => route(),
     onSearch: () => { showFilter = !showFilter; render(root); }
