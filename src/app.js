@@ -178,7 +178,6 @@ async function route() {
     c.innerHTML = `<div class="p-6 text-slate-500">Zde bude obsah modulu <b>${mod.title}</b> sekce <b>${tileId}</b>.</div>`;
 
     // Pokud chceš načítat skutečný modul dynamicky, odkomentuj:
-    /*
     const rel = kind === 'form' ? `forms/${tileId}.js` : `tiles/${tileId}.js`;
     const path = `${mod.baseDir}/${rel}`;
     const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
@@ -191,7 +190,6 @@ async function route() {
         Import selhal: ${err?.message || err}
       </div>`;
     }
-    */
 
   } catch (err) {
     c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
