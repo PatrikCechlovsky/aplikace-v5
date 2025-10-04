@@ -6,7 +6,6 @@ import { listProfiles } from '../../../db.js';
 import { ROLE_CONFIG, getRoleConfig } from '../../../ui/roles.js';
 import { navigateTo, route } from '../../../app.js';
 
-// Barevný badge pro role
 function roleBadge(role) {
   const cfg = getRoleConfig(role);
   return `<span class="inline-block text-xs px-2 py-0.5 rounded border font-semibold"
@@ -15,14 +14,11 @@ function roleBadge(role) {
   </span>`;
 }
 
-// Uchovej stav mimo funkci render!
 let selectedRow = null;
 let showFilter = false;
 let filterValue = "";
 
-// Simulace přihlášeného uživatele (nahraď svým auth systémem!)
 function getCurrentUser() {
-  // TODO: napoj na svůj auth systém
   return {
     role: "admin",
     permissions: ["can_edit_user", "can_archive_user"],
@@ -43,7 +39,6 @@ export async function render(root) {
   }
   let rows = data || [];
 
-  // Filtrování
   if (filterValue) {
     const f = filterValue.toLowerCase();
     rows = rows.filter(r =>
@@ -57,10 +52,9 @@ export async function render(root) {
   const canEdit = user.role === 'admin' || user.permissions.includes("can_edit_user");
   const canArchive = user.role === 'admin' || user.permissions.includes("can_archive_user");
 
-  // Common Actions: napojení na UNIVERZÁLNÍ form.js
   renderCommonActions(document.getElementById('crumb-actions'), {
     onAdd: canAdd
-      ? () => navigateTo('#/m/010-sprava-uzivatelu/f/form?mode=create')
+      ? () => navigateTo('#/m/010-sprava-uzivatelu/f/create')
       : () => alert("Nemáte oprávnění přidávat uživatele."),
     onEdit: () => {
       if (!selectedRow) return alert("Nejprve vyberte řádek.");
@@ -80,7 +74,6 @@ export async function render(root) {
     onSearch: () => { showFilter = !showFilter; render(root); }
   });
 
-  // Sloupce tabulky
   const columns = [
     { key: 'display_name', label: 'Jméno', sortable: true, width: '18%' },
     { key: 'email', label: 'E‑mail', sortable: true, width: '20%' },
@@ -90,7 +83,6 @@ export async function render(root) {
     { key: 'archived', label: 'Archivován', sortable: true, width: '10%', render: row => row.archived ? 'Ano' : '' },
   ];
 
-  // Render filtru pod common actions (po kliknutí na lupu)
   let filterHtml = "";
   if (showFilter) {
     filterHtml = `
@@ -111,12 +103,11 @@ export async function render(root) {
     <div id="user-table"></div>
   `;
 
-  // Render tabulky
   renderTable(root.querySelector('#user-table'), {
     columns,
     rows,
     options: {
-      onRowDblClick: row => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=read`),
+      onRowDblClick: row => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`),
       onRowSelect: row => {
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
         render(root);
@@ -125,7 +116,6 @@ export async function render(root) {
     },
   });
 
-  // Hledání - input events
   if (showFilter) {
     const inp = root.querySelector('#user-filter-input');
     const close = root.querySelector('#user-filter-close');
