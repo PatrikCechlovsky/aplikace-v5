@@ -1,4 +1,4 @@
-// Univerzální komponenta pro vykreslení a správu formulářů s výchozími tlačítky
+// Univerzální komponenta pro vykreslení a správu formulářů s výchozími tlačítky a možností rozšíření
 // Použití: renderForm(root, fields, data, onSubmit, options)
 // - root: DOM element, kam se formulář vykreslí
 // - fields: pole s definicí polí (viz níže)
