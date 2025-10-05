@@ -1,12 +1,14 @@
 // src/modules/010-sprava-uzivatelu/forms/create.js
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
+import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo } from '../../../app.js';
 
 const FIELDS = [
-  { key: 'email',        label: 'E-mail (pro pozvánku)', type: 'email', required: true, placeholder: 'user@example.com' },
-  { key: 'display_name', label: 'Jméno (volitelné)',      type: 'text' },
-  { key: 'role',         label: 'Role',                   type: 'select', options: ['user','admin'], required: true }
+  { key: 'display_name', label: 'Jméno',   type: 'text',  required: true },
+  { key: 'email',        label: 'E-mail',  type: 'email', required: true, placeholder: 'user@example.com' },
+  { key: 'phone',        label: 'Telefon', type: 'text' },
+  { key: 'role',         label: 'Role',    type: 'select', options: ['user', 'admin'], required: true }
 ];
 
 export async function render(root) {
@@ -16,22 +18,48 @@ export async function render(root) {
     { icon: 'add',   label: 'Nový / Pozvat' }
   ]);
 
+  // Header akce – pouze tady (formální tlačítka v těle vypínáme)
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions: ['invite', 'reject'],   // ← NOVÁ akce „invite“
+    userRole: 'admin',                     // (zatím natvrdo)
+    handlers: {
+      onInvite: async () => {
+        const values = grabValues(root);
+        const ok = await handleInvite(values);
+        if (ok) navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+      },
+      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
+    }
+  });
+
+  // Výchozí hodnoty
   const initial = { role: 'user' };
 
-  renderForm(root, FIELDS, initial, async (values) => {
-    // DEMO: sem přijde logika pozvánky (e-mail). Teď jen náhled UI.
-    console.log('[INVITE]', values);
-    alert('Pozvánka odeslána (demo).');
-    navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-    return true;
-  }, {
+  // Vykresli formulář – BEZ submit buttonů (showSubmit:false)
+  renderForm(root, FIELDS, initial, async () => true, {
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
-    sections: [
-      { id: 'zaklad', label: 'Základ', fields: ['email','display_name','role'] }
-    ],
-    showSubmit: true,
-    submitLabel: 'Odeslat pozvánku'
+    sections: [{ id: 'zaklad', label: 'Základ', fields: FIELDS.map(f => f.key) }],
+    showSubmit: false
   });
+}
+
+// ---- helpers ----
+
+function grabValues(scopeEl) {
+  const obj = {};
+  for (const f of FIELDS) {
+    const el = scopeEl.querySelector(`[name="${f.key}"]`);
+    if (!el) continue;
+    obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
+  }
+  return obj;
+}
+
+// Tady bude reálná logika pozvánky (e-mail/Supabase). Zatím demo.
+async function handleInvite(values) {
+  console.log('[INVITE]', values);
+  alert('Pozvánka odeslána (demo).');
+  return true;
 }
 
 export default { render };
