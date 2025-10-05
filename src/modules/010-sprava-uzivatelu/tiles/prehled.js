@@ -1,33 +1,29 @@
-// src/app/modules/010-sprava-uzivatelu/tiles/prehled.js
-// Přehled uživatelů – dynamická tlačítka podle role + dvojklik → formulář
+// Přehled uživatelů – dynamická tlačítka + dvojklik + diagnostika povolených akcí
 
 import { renderTable } from '../../../ui/table.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { listProfiles } from '../../../db.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { navigateTo, route } from '../../../app.js';
+import { getAllowedActions } from '../../../security/permissions.js';
 
-// Dlaždice umí tyto akce (z nich se následně vyfiltrují jen ty,
-// na které má aktuální uživatel oprávnění).
+// 1) Dlaždice umí tyto akce (z nich pak Permissions vyfiltruje, co smí uživatel)
 const MODULE_ACTIONS = ['add', 'edit', 'archive', 'attach', 'refresh', 'search'];
 
 let selectedRow = null;
 
 export async function render(root) {
-  // 1) Breadcrumbs
+  // 2) Breadcrumbs
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home',  label: 'Domů',      href: '#/' },
     { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
     { icon: 'list',  label: 'Přehled' }
   ]);
 
-  // 2) (Dočasně) role uživatele
-  //   Až napojíme profily, nahradíme za např.:
-  //   const { data: profile } = await getMyProfile();
-  //   const userRole = profile?.role || 'najemnik';
+  // 3) (Dočasně) role = admin, aby byly akce jistě vidět
   const userRole = 'admin';
 
-  // 3) Data
+  // 4) Data
   const { data, error } = await listProfiles();
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message}</div>`;
@@ -41,9 +37,21 @@ export async function render(root) {
     archived: r.archived ? 'Ano' : ''
   }));
 
-  // 4) Akční tlačítka – dynamicky podle role
+  // 5) Diagnostika povolených akcí (log do konzole)
+  const allowed = getAllowedActions(userRole, MODULE_ACTIONS);
+  console.log('[ACTIONS DIAG]',
+    { moduleActions: MODULE_ACTIONS, userRole, allowedKeys: allowed.map(a => a.key) }
+  );
+
+  // 6) Pokud by z nějakého důvodu vyšel prázdný průnik, zobrazíme dočasně fallback
+  const actionsToRender = allowed.length ? MODULE_ACTIONS : MODULE_ACTIONS; // fallback stejný seznam
+  if (!allowed.length) {
+    console.warn('[ACTIONS DIAG] allowed.length === 0 → Fallback: vykreslím MODULE_ACTIONS bez filtru (dočasně)');
+  }
+
+  // 7) Akční tlačítka
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: MODULE_ACTIONS,
+    moduleActions: actionsToRender,
     userRole,
     handlers: {
       onAdd: () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
@@ -64,7 +72,7 @@ export async function render(root) {
     }
   });
 
-  // 5) Tabulka
+  // 8) Tabulka
   const columns = [
     { key: 'display_name', label: 'Jméno',      sortable: true, width: '25%' },
     { key: 'email',        label: 'E-mail',     sortable: true, width: '25%' },
@@ -80,9 +88,8 @@ export async function render(root) {
     options: {
       moduleId: '010-sprava-uzivatelu',
       onRowSelect: row => {
-        // toggle výběru řádku
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
-        render(root);
+        render(root); // re-render kvůli aktivaci/deaktivaci tlačítek
       },
       onRowDblClick: row => {
         navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
