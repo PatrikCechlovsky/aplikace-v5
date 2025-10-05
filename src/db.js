@@ -103,3 +103,24 @@ export async function removeAttachment(path) {
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).remove([path]);
   return { data, error };
 }
+// --- Roles API ---
+export async function listRoles() {
+  const { data, error } = await supabase
+    .from('roles')
+    .select('slug,label,color,is_system')
+    .order('label', { ascending: true });
+  return { data, error };
+}
+
+export async function upsertRole({ slug, label, color, is_system = false }) {
+  const { data, error } = await supabase
+    .from('roles')
+    .upsert({ slug, label, color, is_system }, { onConflict: 'slug' })
+    .select();
+  return { data, error };
+}
+
+export async function deleteRole(slug) {
+  const { error } = await supabase.from('roles').delete().eq('slug', slug);
+  return { error };
+}
