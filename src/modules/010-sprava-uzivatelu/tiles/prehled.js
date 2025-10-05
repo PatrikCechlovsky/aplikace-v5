@@ -1,75 +1,92 @@
-import { icon } from '../../../ui/icons.js';
-import { renderCommonActions } from '../../../ui/commonActions.js';
-import { setBreadcrumb } from '../../../ui/breadcrumb.js';
-import { listProfiles } from '../../../db.js';
+// src/app/modules/010-sprava-uzivatelu/tiles/prehled.js
+// Přehled uživatelů – verze s dynamickými tlačítky a oprávněními
 
-const roleBadge = (role) => {
-  const cls = role === 'admin' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200';
-  return `<span class="inline-block text-xs px-2 py-0.5 rounded border ${cls}">${role || 'user'}</span>`;
-};
+import { renderTable } from '../../../ui/table.js';
+import { renderCommonActions } from '../../../ui/commonActions.js';
+import { getSessionUser, listProfiles } from '../../../db.js';
+import { setBreadcrumb } from '../../../ui/breadcrumb.js';
+import { navigateTo, route } from '../../../app.js';
+
+/**
+ * Modulový seznam dostupných akcí
+ * Tyto akce modul umí, ale zobrazí se jen ty,
+ * které uživatel má ve svých oprávněních.
+ */
+const MODULE_ACTIONS = ['add', 'edit', 'archive', 'attach', 'refresh', 'search'];
+
+let selectedRow = null;
 
 export async function render(root) {
+  // Nastavení breadcrumb
   setBreadcrumb(document.getElementById('crumb'), [
-    { icon:'home',  label:'Domů', href:'#/' },
-    { icon:'users', label:'Uživatelé', href:'#/m/010-sprava-uzivatelu' },
-    { icon:'list',  label:'Přehled' },
+    { icon: 'home',  label: 'Domů',      href: '#/' },
+    { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
+    { icon: 'list',  label: 'Přehled' }
   ]);
-  renderCommonActions(document.getElementById('crumb-actions'), {
-    onAdd:     () => navigateTo('#/m/010-uzivatele/f/create'),
-    onRefresh: () => route(),
-  });
 
+  // Načtení uživatele (kvůli roli)
+  const { user } = await getSessionUser();
+  const userRole = user?.role || 'najemnik'; // fallback na nájemníka
+
+  // Načtení dat
   const { data, error } = await listProfiles();
-  if (error) { root.innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; return; }
-  const rows = data || [];
+  if (error) {
+    root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message}</div>`;
+    return;
+  }
+  const rows = (data || []).map(r => ({
+    id: r.id,
+    display_name: r.display_name,
+    email: r.email,
+    role: r.role,
+    archived: r.archived ? 'Ano' : ''
+  }));
 
-  root.innerHTML = `
-    <div class="p-4 bg-white rounded-2xl border">
-      <div class="overflow-auto">
-        <table class="min-w-full text-sm">
-          <thead class="border-b bg-slate-50">
-            <tr>
-              <th class="text-left p-2 w-10">#</th>
-              <th class="text-left p-2">Jméno</th>
-              <th class="text-left p-2">E‑mail</th>
-              <th class="text-left p-2">Role</th>
-              <th class="text-right p-2">Akce</th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
-      ${rows.length ? '' : `<div class="p-4 text-slate-500 text-sm">Žádná data.</div>`}
-    </div>
-  `;
-
-  const tbody = root.querySelector('#rows');
-  tbody.innerHTML = rows.map((r, i) => `
-    <tr data-id="${r.id}" class="border-b hover:bg-slate-50 cursor-pointer">
-      <td class="p-2">${i+1}</td>
-      <td class="p-2">${r.display_name || '—'}</td>
-      <td class="p-2">${r.email || '—'}</td>
-      <td class="p-2">${roleBadge(r.role)}</td>
-      <td class="p-2 text-right">
-        <button data-act="detail" class="inline-flex items-center gap-1 px-2 py-1 border rounded bg-white" title="Zobrazit">${icon('detail')}</button>
-        <button data-act="edit"   class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Upravit">${icon('edit')}</button>
-        <button data-act="archive"class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Archivovat">${icon('archive')}</button>
-        <button data-act="attach" class="inline-flex items-center gap-1 ml-1 px-2 py-1 border rounded bg-white" title="Příloha">${icon('paperclip')}</button>
-      </td>
-    </tr>
-  `).join('');
-
-  tbody.addEventListener('dblclick', (ev) => {
-    const tr = ev.target.closest('tr[data-id]'); if (!tr) return;
-    navigateTo(`#/m/010-uzivatele/f/read?id=${tr.dataset.id}`);
+  // Vykreslení akčních tlačítek (dle role)
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions: MODULE_ACTIONS,
+    userRole,
+    handlers: {
+      onAdd: () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
+      onEdit: () => {
+        if (!selectedRow) return alert('Vyberte řádek.');
+        navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`);
+      },
+      onArchive: () => {
+        if (!selectedRow) return alert('Vyberte řádek.');
+        alert(`Archivace uživatele ${selectedRow.display_name}`);
+      },
+      onAttach: () => {
+        if (!selectedRow) return alert('Vyberte řádek.');
+        alert(`Přílohy k uživateli ${selectedRow.display_name}`);
+      },
+      onRefresh: () => route(),
+      onSearch: () => alert('Zatím demo – vyhledávání')
+    }
   });
-  tbody.addEventListener('click', (ev) => {
-    const btn = ev.target.closest('button[data-act]'); if (!btn) return;
-    const tr = ev.target.closest('tr[data-id]'); const id = tr?.dataset.id; if (!id) return;
-    if (btn.dataset.act==='detail') navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
-    if (btn.dataset.act==='edit')   navigateTo(`#/m/010-uzivatele/f/edit?id=${id}`);
-    if (btn.dataset.act==='archive') navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
-    if (btn.dataset.act==='attach')  navigateTo(`#/m/010-uzivatele/f/read?id=${id}`);
+
+  // Sloupce tabulky
+  const columns = [
+    { key: 'display_name', label: 'Jméno', sortable: true, width: '25%' },
+    { key: 'email',        label: 'E-mail', sortable: true, width: '25%' },
+    { key: 'role',         label: 'Role', sortable: true, width: '15%' },
+    { key: 'archived',     label: 'Archivován', sortable: true, width: '10%' }
+  ];
+
+  // Tabulka
+  root.innerHTML = `<div id="user-table"></div>`;
+  renderTable(root.querySelector('#user-table'), {
+    columns,
+    rows,
+    options: {
+      moduleId: '010-sprava-uzivatelu',
+      onRowSelect: row => {
+        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
+        render(root);
+      },
+      onRowDblClick: row => {
+        navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
+      }
+    }
   });
 }
-export default { render };
