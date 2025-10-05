@@ -20,15 +20,11 @@ export async function render(root) {
 
   // Header akce – pouze tady (formální tlačítka v těle vypínáme)
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['invite', 'reject'],   // ← NOVÁ akce „invite“
-    userRole: 'admin',                     // (zatím natvrdo)
+    moduleActions: ['invite','reject'],  // ← teď se vykreslí ✉️ a ✖
+    userRole: 'admin',
     handlers: {
-      onInvite: async () => {
-        const values = grabValues(root);
-        const ok = await handleInvite(values);
-        if (ok) navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-      },
-      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
+      onInvite: async () => { /* pošli e-mail, ulož, ... */ },
+      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled'),
     }
   });
 
