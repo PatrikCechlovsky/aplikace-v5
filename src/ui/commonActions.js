@@ -1,73 +1,104 @@
 // src/ui/commonActions.js
-// Zobrazuje pouze ikonky; text se ukáže jako tooltip při hoveru
+// Kompaktní ikonové akce s kompatibilitou pro různé tvary permissions.
 
-import { icon } from './icons.js';
+import { icon as uiIcon } from './icons.js';
 import { getAllowedActions } from '../security/permissions.js';
 
-// Katalog všech podporovaných akcí (centrální definice)
-const ACTIONS = {
-  // navigační / CRUD
-  detail:  { key: 'detail',  label: 'Detail',            title: 'Zobrazit detail',       icon: 'detail',  on: 'onDetail'  },
-  add:     { key: 'add',     label: 'Přidat',            title: 'Přidat nový záznam',    icon: 'add',     on: 'onAdd'     },
-  edit:    { key: 'edit',    label: 'Upravit',           title: 'Upravit záznam',        icon: 'edit',    on: 'onEdit'    },
-  delete:  { key: 'delete',  label: 'Smazat',            title: 'Smazat záznam',         icon: 'delete',  on: 'onDelete'  },
-  archive: { key: 'archive', label: 'Archivovat',        title: 'Přesunout do archivu',  icon: 'archive', on: 'onArchive' },
-  attach:  { key: 'attach',  label: 'Přílohy',           title: 'Zobrazit přílohy',      icon: 'paperclip', on: 'onAttach' },
-  refresh: { key: 'refresh', label: 'Obnovit',           title: 'Obnovit data',          icon: 'refresh', on: 'onRefresh' },
-  search:  { key: 'search',  label: 'Hledat',            title: 'Hledat / filtrovat',    icon: 'search',  on: 'onSearch'  },
+// Katalog známých akcí (label/title jen pro tooltipy)
+const CATALOG = {
+  detail:  { key: 'detail',  icon: 'detail',     label: 'Detail',    title: 'Zobrazit detail' },
+  add:     { key: 'add',     icon: 'add',        label: 'Přidat',    title: 'Přidat nový záznam' },
+  edit:    { key: 'edit',    icon: 'edit',       label: 'Upravit',   title: 'Upravit záznam' },
+  delete:  { key: 'delete',  icon: 'delete',     label: 'Smazat',    title: 'Smazat záznam' },
+  archive: { key: 'archive', icon: 'archive',    label: 'Archivovat',title: 'Přesunout do archivu' },
+  attach:  { key: 'attach',  icon: 'paperclip',  label: 'Přílohy',   title: 'Zobrazit přílohy' },
+  refresh: { key: 'refresh', icon: 'refresh',    label: 'Obnovit',   title: 'Obnovit data' },
+  search:  { key: 'search',  icon: 'search',     label: 'Hledat',    title: 'Hledat / filtrovat' },
 
-  // workflow
-  approve: { key: 'approve', label: 'Uložit',            title: 'Uložit a zůstat',       icon: 'save',    on: 'onApprove' },
-  reject:  { key: 'reject',  label: 'Zpět',              title: 'Zpět bez uložení',      icon: 'reject',  on: 'onReject'  },
+  approve: { key: 'approve', icon: 'save',       label: 'Uložit',    title: 'Uložit a zůstat' },
+  reject:  { key: 'reject',  icon: 'reject',     label: 'Zpět',      title: 'Zpět bez uložení' },
 
-  // nové akce
-  invite:  { key: 'invite',  label: 'Pozvat',            title: 'Odeslat pozvánku e-mailem', icon: 'invite', on: 'onInvite'  },
-  send:    { key: 'send',    label: 'Odeslat',           title: 'Odeslat dokument / e-mail', icon: 'send',   on: 'onSend'    },
+  invite:  { key: 'invite',  icon: 'invite',     label: 'Pozvat',    title: 'Odeslat pozvánku e-mailem' },
+  send:    { key: 'send',    icon: 'send',       label: 'Odeslat',   title: 'Odeslat dokument / e-mail' },
 
-  // export/import/print (pro jistotu)
-  export:  { key: 'export',  label: 'Export',            title: 'Exportovat data',       icon: 'export',  on: 'onExport'  },
-  import:  { key: 'import',  label: 'Import',            title: 'Importovat data',       icon: 'import',  on: 'onImport'  },
-  print:   { key: 'print',   label: 'Tisk',              title: 'Vytisknout',            icon: 'print',   on: 'onPrint'   },
+  export:  { key: 'export',  icon: 'export',     label: 'Export',    title: 'Exportovat' },
+  import:  { key: 'import',  icon: 'import',     label: 'Import',    title: 'Importovat' },
+  print:   { key: 'print',   icon: 'print',      label: 'Tisk',      title: 'Vytisknout' },
+
+  // oblíbené (renderuj jen pokud existuje handler onStar)
+  star:    { key: 'star',    icon: 'star',       label: 'Oblíbené',  title: 'Přidat/odebrat z oblíbených' },
 };
 
+// Když nepředáš moduleActions, odvozujeme je z názvů handlerů (onAdd → 'add'…)
+function deriveFromHandlers(handlers = {}) {
+  return Object.keys(handlers)
+    .filter(k => k.startsWith('on'))
+    .map(k => k.slice(2).replace(/^[A-Z]/, c => c.toLowerCase()));
+}
+
+// Normalizace výsledku getAllowedActions
+function normalizeAllowed(input = [], fallbackKeys = []) {
+  if (!Array.isArray(input) || !input.length) {
+    return fallbackKeys.map(k => ({ ...(CATALOG[k] || { key: k, icon: k }), key: k }));
+  }
+  return input.map(a => {
+    if (typeof a === 'string') {
+      const k = a;
+      return { ...(CATALOG[k] || { key: k, icon: k }), key: k };
+    }
+    const k = a.key || a.id;
+    const base = CATALOG[k] || {};
+    return {
+      key: k,
+      icon: a.icon || base.icon || k,
+      label: a.label || base.label || k,
+      title: a.title || base.title || a.label || k
+    };
+  });
+}
+
 /**
- * Dynamické akční tlačítka podle oprávnění
  * @param {HTMLElement} root
- * @param {Object} opts - { moduleActions: string[], userRole: string, handlers: Record<string,Function> }
+ * @param {{ moduleActions?:string[], userRole?:string, handlers?:Record<string,Function>, isStarred?:boolean }} param1
  */
 export function renderCommonActions(
   root,
-  { moduleActions = [], userRole = 'admin', handlers = {} } = {}
+  { moduleActions = null, userRole = 'admin', handlers = {}, isStarred = false } = {}
 ) {
   if (!root) return;
   root.innerHTML = '';
 
-  // 1) vyhodnocení oprávnění – může vracet stringy nebo objekty
-  let allowed = [];
+  // 1) jaké akce chceme?
+  const wantedKeys = (moduleActions && moduleActions.length)
+    ? moduleActions
+    : deriveFromHandlers(handlers);
+
+  // 2) permissions (bez pádu, když nejsou)
+  let allowedRaw = [];
   try {
-    const res = getAllowedActions(userRole, moduleActions);
-    allowed = Array.isArray(res) ? res : [];
+    allowedRaw = getAllowedActions(userRole, wantedKeys) || [];
   } catch {
-    // když permissions nejsou k dispozici, povolíme zadané akce
-    allowed = moduleActions.slice();
+    allowedRaw = wantedKeys;
   }
 
-  // 2) normalizace na pole klíčů
-  const toKey = (a) => (typeof a === 'string' ? a : a?.key);
-  const keys = (allowed.length ? allowed : moduleActions).map(toKey).filter(Boolean);
+  // 3) normalizace
+  let acts = normalizeAllowed(allowedRaw, wantedKeys);
 
-  // 3) mapování na známé akce
-  const acts = keys.map(k => ACTIONS[k]).filter(Boolean);
+  // 4) hvězdička jen pokud je handler
+  if (typeof handlers.onStar === 'function') {
+    acts = acts.concat([{ ...CATALOG.star, title: isStarred ? 'Odebrat z oblíbených' : 'Přidat do oblíbených' }]);
+  }
+
   if (!acts.length) {
     root.innerHTML = `<div class="text-slate-400 text-sm italic p-2">Žádné dostupné akce</div>`;
     return;
   }
 
-  // 4) render
+  // 5) render
   const wrap = document.createElement('div');
   wrap.className = 'flex items-center gap-2';
 
-  for (const act of acts) {
+  acts.forEach(act => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = [
@@ -76,83 +107,25 @@ export function renderCommonActions(
       'text-slate-700 text-lg'
     ].join(' ');
 
-    // ikona (bez textu)
-    btn.innerHTML = icon(act.icon);
-    btn.title = act.title || act.label;
-    btn.setAttribute('aria-label', act.label);
+    btn.innerHTML = uiIcon(act.icon); // ← použij aliasovaný import
+    btn.title = act.title || act.label || act.key;
+    btn.setAttribute('aria-label', act.label || act.key);
 
-    // handler – preferujeme explicitní "on" z katalogu, jinak on<Key>
-    const handlerName = act.on || ('on' + act.key.charAt(0).toUpperCase() + act.key.slice(1));
+    const handlerName = 'on' + act.key.charAt(0).toUpperCase() + act.key.slice(1);
     const handler = handlers[handlerName];
-
     if (typeof handler === 'function') {
       btn.addEventListener('click', handler);
+      if (act.key === 'star' && isStarred) btn.classList.add('!bg-yellow-100');
     } else {
       btn.disabled = true;
       btn.classList.add('opacity-40', 'cursor-not-allowed');
-      btn.title = `${act.label} – akce není dostupná`;
+      btn.title = (btn.title + ' – akce není dostupná');
     }
 
     wrap.appendChild(btn);
-  }
+  });
 
   root.appendChild(wrap);
 }
 
-export { ACTIONS };
-// src/ui/commonActions.js
-// Zobrazuje pouze ikonky; text se ukáže jako tooltip při hoveru
-
-import { icon } from './icons.js';
-import { getAllowedActions } from '../security/permissions.js';
-
-/**
- * Dynamické akční tlačítka podle oprávnění
- * @param {HTMLElement} root
- * @param {Object} opts - { moduleActions: [], userRole: '', handlers: {} }
- */
-export function renderCommonActions(
-  root,
-  { moduleActions = [], userRole = 'admin', handlers = {} } = {}
-) {
-  if (!root) return;
-  root.innerHTML = '';
-
-  const allowedActions = getAllowedActions(userRole, moduleActions);
-  if (!allowedActions.length) {
-    root.innerHTML = `<div class="text-slate-400 text-sm italic p-2">Žádné dostupné akce</div>`;
-    return;
-  }
-
-  const wrap = document.createElement('div');
-  wrap.className = 'flex items-center gap-2';
-
-  for (const act of allowedActions) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = [
-      'relative flex items-center justify-center w-8 h-8 rounded-md border transition',
-      'border-slate-200 bg-white hover:bg-slate-100',
-      'text-slate-700 text-lg'
-    ].join(' ');
-
-    // ikona (bez textu)
-    btn.innerHTML = icon(act.icon);
-    btn.title = act.label; // zobrazí se jako tooltip při hoveru
-
-    // handler
-    const handler =
-      handlers[`on${act.key.charAt(0).toUpperCase() + act.key.slice(1)}`];
-    if (typeof handler === 'function') {
-      btn.addEventListener('click', handler);
-    } else {
-      btn.disabled = true;
-      btn.classList.add('opacity-40', 'cursor-not-allowed');
-      btn.title = `${act.label} – akce není dostupná`;
-    }
-
-    wrap.appendChild(btn);
-  }
-
-  root.appendChild(wrap);
-}
+export { CATALOG };
