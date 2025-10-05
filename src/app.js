@@ -120,7 +120,8 @@ export async function route() { // <-- OPRAVENO: export!
 
     const modId = decodeURIComponent(m[1]);
     const kind = m[2] === 'f' ? 'form' : 'tile';
-    const secId = m[3] ? decodeURIComponent(m[3]) : null;
+    const rawSec = m[3] ? decodeURIComponent(m[3]) : null;
+    const secId = rawSec ? rawSec.split('?')[0] : null;
     const mod = registry.get(modId);
 
     if (!mod) {
