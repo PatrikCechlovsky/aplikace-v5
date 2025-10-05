@@ -4,7 +4,6 @@ import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo, route } from '../../../app.js';
 
-// Pomocná: čtení query z hash
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
@@ -21,7 +20,7 @@ const FIELDS = [
 
 export async function render(root) {
   const { id, mode: modeParam } = getHashParams();
-  const mode = (modeParam === 'read') ? 'read' : 'edit';
+  const mode = (modeParam === 'read') ? 'read' : 'edit'; // default edit
 
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home',  label: 'Domů',      href: '#/' },
@@ -29,7 +28,7 @@ export async function render(root) {
     { icon: 'form',  label: 'Formulář' }
   ]);
 
-  // DEMO data – napojení na DB doděláme později
+  // DEMO data – reálné natažení/uložení doplníme
   const data = id ? {
     id,
     display_name: '',
@@ -40,44 +39,62 @@ export async function render(root) {
     note: ''
   } : {};
 
-  // Header akce (ikony nahoře)
-  const userRole = 'admin'; // zatím natvrdo
+  // Akce podle režimu
+  const actionsByMode = {
+    read: ['edit', 'reject'],                      // Detail: jen Upravit + Zpět
+    edit: ['approve', 'attach', 'delete', 'reject'] // Edit: Uložit(zůstat), Přílohy, Smazat, Zpět
+  };
+  const moduleActions = actionsByMode[mode];
+
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['detail','edit','approve','reject','refresh','delete'],
-    userRole,
+    moduleActions,
+    userRole: 'admin',
     handlers: {
-      onDetail: () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=read`),
       onEdit:   () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`),
       onApprove: async () => {
-        // Uložit a zůstat
-        console.log('[SAVE STAY] (demo)');
-        alert('Uloženo (demo) – zůstávám ve formuláři.');
+        const values = grabValues(root);
+        const ok = await handleSave(values, { stay: true });
+        if (ok) alert('Uloženo (demo) – zůstávám ve formuláři.');
+      },
+      onAttach: () => alert('Přílohy (demo)'),
+      onDelete: async () => {
+        if (!id) return alert('Chybí ID.');
+        if (confirm('Opravdu smazat?')) {
+          // TODO: delete v DB
+          alert('Smazáno (demo).');
+          navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+        }
       },
       onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled'),
-      onRefresh: () => route(),
-      onDelete: () => alert('Smazání (demo)')
+      onRefresh: () => route()
     }
   });
 
-  // Vykreslení formuláře – kompaktní grid + záložky
-  renderForm(root, FIELDS, data, async (values) => {
-    if (mode === 'read') {
-      alert('Formulář je jen pro čtení.');
-      return false;
-    }
-    console.log('[SAVE CLOSE]', values);
-    alert('Uloženo (demo) – návrat na přehled.');
-    navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-    return true;
-  }, {
+  renderForm(root, FIELDS, data, async () => true, {
     readOnly: (mode === 'read'),
-    showSubmit: false, // tlačítka máme v headeru
+    showSubmit: false, // ← žádné tlačítko dole
     layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
     sections: [
       { id: 'profil', label: 'Profil', fields: ['display_name','email','phone','mesto'] },
       { id: 'system', label: 'Systém', fields: ['role','note'] },
     ]
   });
+}
+
+// helpers
+function grabValues(scopeEl) {
+  const obj = {};
+  for (const f of FIELDS) {
+    const el = scopeEl.querySelector(`[name="${f.key}"]`);
+    if (!el) continue;
+    obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
+  }
+  return obj;
+}
+async function handleSave(values, { stay } = { stay: true }) {
+  console.log('[FORM SAVE]', values);
+  // TODO: uložit do DB
+  return true;
 }
 
 export default { render };
