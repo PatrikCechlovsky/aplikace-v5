@@ -1,34 +1,18 @@
-// Přehled uživatelů – dynamická tlačítka + dvojklik s ohledem na oprávnění
+// src/modules/010-sprava-uzivatelu/tiles/prehled.js
+// Přehled uživatelů — dynamická CommonActions + univerzální tabulka s dblclickem
 
 import { renderTable } from '../../../ui/table.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { listProfiles } from '../../../db.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { navigateTo, route } from '../../../app.js';
-import { getAllowedActions, canPerform } from '../../../security/permissions.js';
 
-// Dlaždice umí tyto akce (vyfiltrují se podle role uživatele)
+// Dlaždice umí tyto akce (později se filtrují podle role uživatele)
 const MODULE_ACTIONS = ['detail', 'add', 'edit', 'archive', 'attach', 'refresh', 'search'];
 
+// Držíme si vybraný řádek kvůli handlerům (Upravit/Archivovat/Příloha…)
 let selectedRow = null;
-let suppressNextSelect = false;
 
-// ...v options renderTable:
-options: {
-  moduleId: '010-sprava-uzivatelu',
-
-  onRowSelect: row => {
-    // Když předtím padnul dblclick, neprovádět re-render přehledu
-    if (suppressNextSelect) { suppressNextSelect = false; return; }
-    selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
-    render(root); // zvýraznění výběru apod.
-  },
-
-  onRowDblClick: row => {
-    suppressNextSelect = true; // potlač re-render z clicku
-    navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
-  }
-}
 export async function render(root) {
   // Breadcrumbs
   setBreadcrumb(document.getElementById('crumb'), [
@@ -37,7 +21,7 @@ export async function render(root) {
     { icon: 'list',  label: 'Přehled' }
   ]);
 
-  // Dočasně role = admin (později napojíme na profil v DB)
+  // Dočasně: role „admin“, ať je UI hned použitelné (později napojíme na profil z DB)
   const userRole = 'admin';
 
   // Data
@@ -54,7 +38,7 @@ export async function render(root) {
     archived: r.archived ? 'Ano' : ''
   }));
 
-  // Akční tlačítka
+  // Common actions – dynamicky podle role a seznamu akcí této dlaždice
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions: MODULE_ACTIONS,
     userRole,
@@ -81,7 +65,7 @@ export async function render(root) {
     }
   });
 
-  // Tabulka
+  // Sloupce tabulky
   const columns = [
     { key: 'display_name', label: 'Jméno',      sortable: true, width: '25%' },
     { key: 'email',        label: 'E-mail',     sortable: true, width: '25%' },
@@ -89,22 +73,19 @@ export async function render(root) {
     { key: 'archived',     label: 'Archivován', sortable: true, width: '10%' }
   ];
 
+  // Vykreslit tabulku
   root.innerHTML = `<div id="user-table"></div>`;
-
   renderTable(root.querySelector('#user-table'), {
     columns,
     rows,
     options: {
       moduleId: '010-sprava-uzivatelu',
-      onRowSelect: row => {
-        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
-        render(root); // re-render kvůli aktivaci/deaktivaci tlačítek
-      },
+      // Tabulka si výběr zvýrazní sama; tady si jen uložíme posledně vybraný řádek
+      onRowSelect: row => { selectedRow = row; },
+      // Dvojklik otevře vyplněný formulář (edit)
       onRowDblClick: row => {
-        // Pokud ROLE smí editovat → otevřít edit; jinak jen detail (read-only)
-        const canEdit = canPerform(userRole, 'edit');
-        const mode = canEdit ? 'edit' : 'read';
-        navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=${mode}`);
+        selectedRow = row;
+        navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
       }
     }
   });
