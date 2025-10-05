@@ -1,149 +1,298 @@
-// Univerzální komponenta pro vykreslení a správu formulářů (v češtině)
-// ŽÁDNÁ tlačítka typu Archivovat/Příloha apod., pouze Uložit (save) – ostatní akce jsou v common actions!
-// Použití: renderForm(root, fields, data, onSubmit, options)
-// - root: DOM element, kam se formulář vykreslí
-// - fields: pole s definicí polí (viz níže)
-// - data: předvyplněná data (pro editaci), může být {}
-// - onSubmit: async funkce, která dostane values, při success zavolat return true
-// - options: { mode: "edit"|"read" }
+// src/ui/form.js
+// Univerzální renderer formulářů: kompaktní grid, volitelné záložky (tabs), plně responsivní.
 
-export function renderForm(root, fields, data = {}, onSubmit, options = {}) {
+export function renderForm(
+  root,
+  fields = [],
+  initialData = {},
+  onSubmit = async () => true,
+  options = {}
+) {
   if (!root) return;
 
-  const state = { values: { ...data }, errors: {} };
-  const mode = options.mode || "edit";
+  const opt = {
+    readOnly: !!options.readOnly || options.mode === 'read',
+    showSubmit: options.showSubmit !== false,      // default true
+    submitLabel: options.submitLabel || 'Uložit',
+    // layout
+    layout: {
+      columns: { base: 1, md: 2, xl: 2, ...(options.layout?.columns || {}) },
+      density: options.layout?.density || 'compact', // 'compact' | 'normal'
+    },
+    // záložky: [{ id, label, icon?, fields: ['email','name',...] }]
+    sections: Array.isArray(options.sections) ? options.sections : null,
+  };
 
-  function validate() {
-    state.errors = {};
-    for (const f of fields) {
-      if (f.required && !state.values[f.key]?.toString().trim()) {
-        state.errors[f.key] = "Toto pole je povinné";
-      }
-      if (f.type === "email" && state.values[f.key]) {
-        if (!/^[\w-.]+@[\w-.]+\.[a-z]{2,}$/i.test(state.values[f.key])) {
-          state.errors[f.key] = "Zadejte platný e-mail";
-        }
-      }
-    }
-    return Object.keys(state.errors).length === 0;
+  const data = { ...(initialData || {}) };
+
+  // === PŘÍPRAVA DOM ===
+  root.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'bg-white rounded-2xl border p-4 md:p-6 max-w-5xl mx-auto';
+  root.appendChild(card);
+
+  // Záhlaví tabs (jen když máme sekce)
+  let tabsBar = null;
+  let activeSectionId = null;
+  if (opt.sections && opt.sections.length > 1) {
+    tabsBar = document.createElement('div');
+    tabsBar.className = 'border-b mb-4 -mt-2 overflow-x-auto';
+    const ul = document.createElement('div');
+    ul.className = 'flex gap-1 md:gap-2 min-w-max';
+    tabsBar.appendChild(ul);
+    card.appendChild(tabsBar);
+
+    activeSectionId = opt.sections[0].id;
+
+    opt.sections.forEach(sec => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = tabBtnClass(sec.id === activeSectionId);
+      btn.textContent = sec.label;
+      btn.dataset.tab = sec.id;
+      btn.addEventListener('click', () => {
+        setActiveSection(sec.id);
+      });
+      ul.appendChild(btn);
+    });
   }
 
-  function render() {
-    root.innerHTML = "";
-    const form = document.createElement("form");
-    form.className = "space-y-6";
-    form.noValidate = true;
+  // Form element
+  const formEl = document.createElement('form');
+  formEl.className = opt.layout.density === 'compact'
+    ? 'space-y-4'
+    : 'space-y-6';
+  card.appendChild(formEl);
 
-    fields.forEach(f => {
-      const val = state.values[f.key] ?? f.default ?? "";
-      const err = state.errors[f.key];
-      const fieldWrap = document.createElement("div");
+  // Sekce / plocha pro pole
+  const sectionsToRender = opt.sections && opt.sections.length
+    ? opt.sections
+    : [{ id: '_default', label: '', fields: fields.map(f => f.key) }];
 
-      // v read módu jsou pole readonly/disabled
-      const isReadonly = mode === "read" || f.readonly;
+  const sectionEls = new Map();
 
-      fieldWrap.innerHTML = `
-        <label class="block font-semibold mb-1" for="fld_${f.key}">
-          ${f.label}${f.required ? ' <span class="text-red-500">*</span>' : ""}
-        </label>
-        ${genInput(f, val, isReadonly)}
-        ${err ? `<div class="text-red-600 text-xs mt-1">${err}</div>` : ""}
-      `;
-      form.appendChild(fieldWrap);
+  sectionsToRender.forEach(sec => {
+    const secWrap = document.createElement('div');
+    secWrap.dataset.section = sec.id;
 
-      // Eventy jen pokud není readonly
-      if (!isReadonly) {
-        const input = fieldWrap.querySelector(`[name="${f.key}"]`);
-        if (input) {
-          input.addEventListener("input", function (e) {
-            if (f.type === "checkbox-group") {
-              // Checkbox group
-              state.values[f.key] = Array.from(
-                fieldWrap.querySelectorAll(`input[type="checkbox"]:checked`)
-              ).map(ch => ch.value);
-            } else if (f.type === "checkbox") {
-              state.values[f.key] = input.checked;
-            } else {
-              state.values[f.key] = input.value;
-            }
-            render();
-          });
-        }
-        // Special handling for checkbox-group
-        if (f.type === "checkbox-group") {
-          const group = fieldWrap.querySelectorAll(`input[type="checkbox"]`);
-          group.forEach(ch => {
-            ch.addEventListener("change", function (e) {
-              state.values[f.key] = Array.from(
-                fieldWrap.querySelectorAll(`input[type="checkbox"]:checked`)
-              ).map(ch => ch.value);
-              render();
-            });
-          });
-        }
-      }
-    });
-
-    // Tlačítko pouze Uložit (save), ostatní akce jsou v common actions!
-    if (mode === "edit") {
-      const btnWrap = document.createElement("div");
-      btnWrap.className = "pt-4";
-      btnWrap.innerHTML = `<button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Uložit</button>`;
-      form.appendChild(btnWrap);
+    // Titulek sekce (pokud se nevykreslují tabs a sekce má label)
+    if ((!tabsBar) && sec.label) {
+      const h = document.createElement('div');
+      h.className = 'text-sm font-semibold text-slate-700 mb-2';
+      h.textContent = sec.label;
+      secWrap.appendChild(h);
     }
 
-    form.addEventListener("submit", async function (e) {
+    // Grid wrapper
+    const grid = document.createElement('div');
+    grid.className = gridClass(opt.layout);
+    secWrap.appendChild(grid);
+
+    // pro každý field, který do sekce patří
+    const keysInSec = new Set(sec.fields || []);
+    const fieldsInSection = keysInSec.size
+      ? fields.filter(f => keysInSec.has(f.key))
+      : fields;
+
+    fieldsInSection.forEach(f => {
+      const cell = document.createElement('div');
+      // colspan (span=2) → přes dva sloupce na md+
+      if (f.fullWidth || f.span === 2) {
+        cell.className = 'md:col-span-2';
+      }
+      grid.appendChild(cell);
+
+      renderField(cell, f, data[f.key], {
+        readOnly: opt.readOnly,
+        density: opt.layout.density,
+        onChange: (val) => { data[f.key] = val; }
+      });
+    });
+
+    formEl.appendChild(secWrap);
+    sectionEls.set(sec.id, secWrap);
+  });
+
+  // Submit row (volitelné; pro případy bez CommonActions)
+  if (opt.showSubmit && !opt.readOnly) {
+    const actions = document.createElement('div');
+    actions.className = 'pt-2 mt-2 border-t flex gap-2';
+    const btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.className =
+      'inline-flex items-center px-4 py-2 rounded-md bg-slate-900 text-white hover:bg-slate-800 text-sm';
+    btn.textContent = opt.submitLabel;
+    actions.appendChild(btn);
+
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className =
+      'inline-flex items-center px-3 py-2 rounded-md border text-sm';
+    cancel.textContent = 'Zpět';
+    cancel.addEventListener('click', (e) => {
       e.preventDefault();
-      if (!validate()) {
-        render();
-        return;
-      }
-      if (onSubmit && mode === "edit") {
-        form.querySelector("button[type=submit]").disabled = true;
-        const ok = await onSubmit({ ...state.values });
-        form.querySelector("button[type=submit]").disabled = false;
-        if (ok) {
-          // success, optionally close form or show message
-        }
-      }
+      history.back();
     });
+    actions.appendChild(cancel);
 
-    root.appendChild(form);
+    formEl.appendChild(actions);
   }
 
-  render();
-}
+  // Submit handler
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (opt.readOnly) return;
+    try {
+      const ok = await onSubmit({ ...data });
+      if (ok) {
+        // nic – řízení si převezme volající (navigate atd.)
+      }
+    } catch (err) {
+      console.error('[FORM SUBMIT ERROR]', err);
+      alert(err?.message || String(err));
+    }
+  });
 
-// Pomocná funkce pro jednotlivé typy inputů
-function genInput(f, val, isReadonly) {
-  const id = `fld_${f.key}`;
-  switch (f.type) {
-    case "text":
-    case "email":
-    case "number":
-    case "date":
-      return `<input type="${f.type}" id="${id}" name="${f.key}" class="border rounded px-2 py-1 w-full" value="${escapeHtml(val)}" ${f.required ? "required" : ""} ${isReadonly ? "readonly disabled" : ""} />`;
-    case "textarea":
-      return `<textarea id="${id}" name="${f.key}" class="border rounded px-2 py-1 w-full" rows="3" ${f.required ? "required" : ""} ${isReadonly ? "readonly disabled" : ""}>${escapeHtml(val)}</textarea>`;
-    case "select":
-      return `<select id="${id}" name="${f.key}" class="border rounded px-2 py-1 w-full" ${f.required ? "required" : ""} ${isReadonly ? "disabled" : ""}>
-        ${f.options.map(opt => `<option value="${opt.value}" ${val == opt.value ? "selected" : ""}>${opt.label}</option>`).join("")}
-      </select>`;
-    case "checkbox":
-      return `<input type="checkbox" id="${id}" name="${f.key}" class="mr-2 align-middle" ${val ? "checked" : ""} ${isReadonly ? "disabled" : ""} />`;
-    case "checkbox-group":
-      return `<div class="flex flex-col gap-1">
-        ${f.options.map(opt => `
-          <label class="inline-flex items-center gap-2">
-            <input type="checkbox" name="${f.key}" value="${opt.value}" ${Array.isArray(val) && val.includes(opt.value) ? "checked" : ""} ${isReadonly ? "disabled" : ""} />
-            ${opt.label}
-          </label>`).join("")}
-      </div>`;
-    default:
-      return `<input type="text" id="${id}" name="${f.key}" class="border rounded px-2 py-1 w-full" value="${escapeHtml(val)}" ${isReadonly ? "readonly disabled" : ""} />`;
+  // Aktivace první sekce u tabs
+  if (tabsBar) {
+    setActiveSection(activeSectionId);
+  }
+
+  // ===== helpers =====
+  function setActiveSection(id) {
+    activeSectionId = id;
+    // toggle body
+    for (const [secId, el] of sectionEls.entries()) {
+      el.style.display = (secId === id) ? '' : 'none';
+    }
+    // toggle tabs
+    tabsBar.querySelectorAll('button[data-tab]').forEach(b => {
+      b.className = tabBtnClass(b.dataset.tab === id);
+    });
   }
 }
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+function gridClass(layout) {
+  const cols = layout.columns || { base: 1, md: 2, xl: 2 };
+  // Tailwind grid col classes
+  const parts = ['grid gap-3 md:gap-4'];
+  const mdCols = cols.md || 1;
+  const xlCols = cols.xl || mdCols;
+  parts.push('grid-cols-1');
+  if (mdCols > 1) parts.push(`md:grid-cols-${clampCols(mdCols)}`);
+  if (xlCols > mdCols) parts.push(`xl:grid-cols-${clampCols(xlCols)}`);
+  return parts.join(' ');
 }
+
+function clampCols(n) { return Math.max(1, Math.min(4, n)); }
+
+function tabBtnClass(active) {
+  return [
+    'px-3 py-2 text-sm border-b-2',
+    active
+      ? 'border-slate-900 text-slate-900 font-medium'
+      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+  ].join(' ');
+}
+
+function renderField(cell, f, value, ctx) {
+  const dense = ctx.density === 'compact';
+
+  const wrap = document.createElement('div');
+  wrap.className = dense ? 'space-y-1' : 'space-y-2';
+  cell.appendChild(wrap);
+
+  if (f.label && f.type !== 'checkbox') {
+    const lab = document.createElement('label');
+    lab.className = 'block text-sm text-slate-700';
+    lab.textContent = f.label + (f.required ? ' *' : '');
+    lab.htmlFor = `f_${f.key}`;
+    wrap.appendChild(lab);
+  }
+
+  const common = (el) => {
+    el.name = f.key;
+    el.id = `f_${f.key}`;
+    el.disabled = !!ctx.readOnly || !!f.disabled;
+    el.required = !!f.required;
+    if (f.placeholder) el.placeholder = f.placeholder;
+    el.className = baseInputClass(ctx, f, el);
+    if (value != null) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+        if (el.type === 'checkbox') el.checked = !!value;
+        else el.value = value;
+      }
+    }
+    el.addEventListener('input', () => {
+      let val = (el.type === 'checkbox') ? !!el.checked : el.value;
+      ctx.onChange?.(val);
+    });
+    return el;
+  };
+
+  let ctrl = null;
+
+  switch ((f.type || 'text')) {
+    case 'textarea': {
+      ctrl = common(document.createElement('textarea'));
+      ctrl.rows = f.rows || (dense ? 3 : 4);
+      break;
+    }
+    case 'select': {
+      ctrl = common(document.createElement('select'));
+      (f.options || []).forEach(opt => {
+        const o = document.createElement('option');
+        if (typeof opt === 'string') {
+          o.value = opt; o.textContent = opt;
+        } else {
+          o.value = opt.value; o.textContent = opt.label;
+        }
+        ctrl.appendChild(o);
+      });
+      break;
+    }
+    case 'checkbox': {
+      const boxWrap = document.createElement('label');
+      boxWrap.className = 'inline-flex items-center gap-2';
+      ctrl = common(document.createElement('input'));
+      ctrl.type = 'checkbox';
+      boxWrap.appendChild(ctrl);
+      const t = document.createElement('span');
+      t.textContent = f.label || '';
+      t.className = 'text-sm text-slate-700';
+      boxWrap.appendChild(t);
+      wrap.appendChild(boxWrap);
+      // skip extra label (už je vedle checkboxu)
+      return;
+    }
+    default: {
+      ctrl = common(document.createElement('input'));
+      ctrl.type = f.type || 'text';
+    }
+  }
+
+  wrap.appendChild(ctrl);
+
+  if (f.help) {
+    const help = document.createElement('div');
+    help.className = 'text-xs text-slate-500';
+    help.textContent = f.help;
+    wrap.appendChild(help);
+  }
+}
+
+function baseInputClass(ctx, f, el) {
+  const dense = ctx.density === 'compact';
+  const base = [
+    'w-full border rounded-md',
+    'focus:outline-none focus:ring-2 focus:ring-slate-300',
+    'disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed'
+  ];
+  // text inputs
+  if (el.tagName === 'INPUT' && el.type !== 'checkbox' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+    base.push(dense ? 'px-3 py-1.5 text-sm' : 'px-3 py-2');
+  }
+  return base.join(' ');
+}
+
+export default { renderForm };
