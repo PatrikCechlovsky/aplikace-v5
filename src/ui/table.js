@@ -1,15 +1,15 @@
 // src/ui/table.js
 // Univerzální tabulka s řazením, filtrem, výběrem řádku a bezpečným dblclickem.
-// columns: [{ key, label, width?, render?(row), sortable?:true, className? }]
+// columns: [{ key, label, width?, render?(row), sortable?: true, className? }]
 // rows: array objektů
 // options: {
 //   filterPlaceholder?,
 //   columnsOrder?: string[],
 //   showFilter?: boolean, filterValue?: string,
-//   moduleId?: string,
-//   onRowDblClick?(row),
+//   moduleId?: string,              // pro defaultní chování dblclicku
 //   onRowSelect?(row),
-//   selectedRow?: { id: any }   // volitelný počáteční výběr
+//   onRowDblClick?(row),
+//   selectedRow?: { id: any }       // volitelný počáteční výběr
 // }
 
 export function renderTable(root, { columns, rows, options = {} }) {
@@ -105,45 +105,42 @@ export function renderTable(root, { columns, rows, options = {} }) {
       }).join('');
       tbody.appendChild(tr);
 
-      // per-row timer: pokud přijde dblclick, zrušíme single-click akci
+      // detekce dblclicku bez kolize se single-clickem
       let clickTimer = null;
 
-      // Výběr řádku (click)
+      // Klik = výběr řádku (a notifikace nadřazenému modulu)
       tr.addEventListener('click', () => {
-        if (clickTimer) return; // už čekáme na potvrzení/dblclick
+        if (clickTimer) return; // čekáme, zda nepřijde dblclick
         clickTimer = setTimeout(() => {
           clickTimer = null;
           state.selectedId = (state.selectedId === row.id) ? null : row.id;
-          // informuj nadřazený modul, ale tabulka se zvýrazní sama
           if (typeof options.onRowSelect === 'function') options.onRowSelect(row);
           renderBody();
-        }, 220); // okno pro rozpoznání dvojkliku
+        }, 220);
       });
 
-      // Dvojklik řádek
+      // Dvojklik = otevřít detail/volat handler
       tr.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
-        state.selectedId = row.id; // vyber i vizuálně
+        state.selectedId = row.id; // vizuálně vyber
         renderBody();
 
         if (typeof options.onRowDblClick === 'function') {
           options.onRowDblClick(row);
+        } else if (window.navigateTo) {
+          const modId = options.moduleId || 'unknown';
+          window.navigateTo(`#/m/${modId}/f/read?id=${row.id}`);
         } else {
-          // Výchozí: otevři detail (read)
-          if (window.navigateTo) {
-            window.navigateTo(`#/m/${options.moduleId || 'unknown'}/f/read?id=${row.id}`);
-          } else {
-            alert(`Detail pro ID: ${row.id}`);
-          }
+          alert(`Detail pro ID: ${row.id}`);
         }
       });
 
       tr.style.cursor = 'pointer';
     });
 
-    // směrové šipky v head
-    thead.querySelectorAll('[data-dir]').forEach(span => span.textContent = '');
+    // Šipka směru řazení v head
+    thead.querySelectorAll('[data-dir]').forEach(span => (span.textContent = ''));
     const arrow = thead.querySelector(`[data-dir="${state.sortKey}"]`);
     if (arrow) arrow.textContent = state.sortDir === 'asc' ? '▲' : '▼';
   }
@@ -164,7 +161,7 @@ export function renderTable(root, { columns, rows, options = {} }) {
   if (showFilter) {
     const fi = head.querySelector('#tblFilter');
     if (fi) {
-      fi.addEventListener('input', e => {
+      fi.addEventListener('input', (e) => {
         state.filter = e.target.value || '';
         renderBody();
       });
@@ -174,4 +171,8 @@ export function renderTable(root, { columns, rows, options = {} }) {
   renderBody();
 }
 
-func
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, m => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]
+  ));
+}
