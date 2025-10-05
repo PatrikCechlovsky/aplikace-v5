@@ -60,7 +60,7 @@ function extractImportPath(fn) {
   try {
     const str = String(fn);
     const m = str.match(/import\((['"])(.*?)\1\)/);
-    return m ? m[1] : null;
+    return m ? m[2] : null;   // ← SPRÁVNĚ: vrací skutečnou cestu z importu
   } catch {
     return null;
   }
@@ -68,10 +68,19 @@ function extractImportPath(fn) {
 
 async function initModules() {
   for (const src of MODULE_SOURCES) {
-    const rel = extractImportPath(src);
-    const abs = '/src/app/' + rel;
-    const norm = abs.replace('/src/app/../', '/src/');
-    const baseDir = norm.replace(/\/module\.config\.js$/, '');
+  const rel = extractImportPath(src);
+  if (!rel) continue;
+  
+  // když je cesta relativní (../modules/...), udělej ji absolutní vůči /src/app/
+  // když je už absolutní (/src/modules/...), necháme ji být
+  let abs = rel.startsWith('/') ? rel : '/src/app/' + rel;
+  
+  // normalize: /src/app/../modules → /src/modules
+  abs = abs.replace('/src/app/../', '/src/');
+  
+  // odsekni název souboru, zůstane baseDir modulu
+  const baseDir = abs.replace(/\/module\.config\.js$/, '');
+ 
 
     const mod = await src();
     const manifest = (await mod.getManifest?.()) || {};
