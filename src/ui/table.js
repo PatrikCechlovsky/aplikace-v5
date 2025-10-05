@@ -1,46 +1,48 @@
 // src/ui/table.js
-// Univerzální tabulka s řazením, filtrem, výběrem řádku. ŽÁDNÉ akce v řádku!
+// Univerzální tabulka s řazením, filtrem, výběrem řádku a bezpečným dblclickem.
 // columns: [{ key, label, width?, render?(row), sortable?:true, className? }]
 // rows: array objektů
-// options: { filterPlaceholder, columnsOrder?: string[], onRowDblClick?(row), onRowSelect?(row), selectedRow? }
+// options: {
+//   filterPlaceholder?,
+//   columnsOrder?: string[],
+//   showFilter?: boolean, filterValue?: string,
+//   moduleId?: string,
+//   onRowDblClick?(row),
+//   onRowSelect?(row),
+//   selectedRow?: { id: any }   // volitelný počáteční výběr
+// }
 
-export function renderTable(root, { columns, rows, options = {}, selectedRow }) {
+export function renderTable(root, { columns, rows, options = {} }) {
   if (!root) return;
+
   const state = {
     sortKey: columns.find(c => c.sortable !== false)?.key || columns[0]?.key,
     sortDir: 'asc',
-    filter: '',
+    filter: typeof options.filterValue === 'string' ? options.filterValue : '',
+    selectedId: options.selectedRow?.id ?? null
   };
 
-  // volitelné pořadí sloupců (např. z uživatelského nastavení)
+  // volitelné pořadí sloupců
   const order = Array.isArray(options.columnsOrder) && options.columnsOrder.length
     ? options.columnsOrder
     : columns.map(c => c.key);
 
-  const cols = order
-    .map(k => columns.find(c => c.key === k))
-    .filter(Boolean);
+  const cols = order.map(k => columns.find(c => c.key === k)).filter(Boolean);
 
   root.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'bg-white rounded-2xl border';
   root.appendChild(wrap);
 
-  // HEAD: filtr (možno vypnout/skryt zvenku)
-  let showFilter = typeof options.showFilter === 'undefined' ? true : options.showFilter;
-  let filterPlaceholder = options.filterPlaceholder || 'Filtrovat…';
-  let filterValue = typeof options.filterValue === 'string' ? options.filterValue : state.filter;
-
-  let headHtml = '';
-  if (showFilter) {
-    headHtml = `
-      <input type="text" id="tblFilter" class="border rounded px-2 py-1 text-sm w-full sm:w-72"
-             placeholder="${filterPlaceholder}" value="${escapeHtml(filterValue)}" />
-    `;
-  }
+  // HEAD: filtr (volitelný)
+  const showFilter = typeof options.showFilter === 'undefined' ? true : !!options.showFilter;
   const head = document.createElement('div');
   head.className = 'p-3 border-b flex items-center gap-2';
-  head.innerHTML = headHtml;
+  head.innerHTML = showFilter ? `
+    <input type="text" id="tblFilter" class="border rounded px-2 py-1 text-sm w-full sm:w-72"
+           placeholder="${options.filterPlaceholder || 'Filtrovat…'}"
+           value="${escapeHtml(state.filter)}" />
+  ` : '';
   wrap.appendChild(head);
 
   const scroller = document.createElement('div');
@@ -95,8 +97,7 @@ export function renderTable(root, { columns, rows, options = {}, selectedRow }) 
 
     data.forEach(row => {
       const tr = document.createElement('tr');
-      // Zvýraznění vybraného řádku
-      const isSelected = (options.selectedRow && row.id && options.selectedRow.id === row.id);
+      const isSelected = state.selectedId != null && row.id === state.selectedId;
       tr.className = 'border-t hover:bg-slate-50' + (isSelected ? ' bg-amber-100' : '');
       tr.innerHTML = cols.map(c => {
         const val = c.render ? c.render(row) : escapeHtml(row[c.key]);
@@ -104,30 +105,41 @@ export function renderTable(root, { columns, rows, options = {}, selectedRow }) 
       }).join('');
       tbody.appendChild(tr);
 
-      // Výběr řádku (klik)
-      if (typeof options.onRowSelect === 'function') {
-        tr.addEventListener('click', () => options.onRowSelect(row));
-        tr.style.cursor = 'pointer';
-      }
-      // Dvojklik řádek – pokud není handler, použij default na detail
-      if (typeof options.onRowDblClick === 'function') {
-        tr.addEventListener('dblclick', (e) => {
-          e.stopPropagation();
+      // per-row timer: pokud přijde dblclick, zrušíme single-click akci
+      let clickTimer = null;
+
+      // Výběr řádku (click)
+      tr.addEventListener('click', () => {
+        if (clickTimer) return; // už čekáme na potvrzení/dblclick
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          state.selectedId = (state.selectedId === row.id) ? null : row.id;
+          // informuj nadřazený modul, ale tabulka se zvýrazní sama
+          if (typeof options.onRowSelect === 'function') options.onRowSelect(row);
+          renderBody();
+        }, 220); // okno pro rozpoznání dvojkliku
+      });
+
+      // Dvojklik řádek
+      tr.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+        state.selectedId = row.id; // vyber i vizuálně
+        renderBody();
+
+        if (typeof options.onRowDblClick === 'function') {
           options.onRowDblClick(row);
-        });
-        tr.style.cursor = 'pointer';
-      } else {
-        // Výchozí: otevři detail (read)
-        tr.addEventListener('dblclick', (e) => {
-          e.stopPropagation();
+        } else {
+          // Výchozí: otevři detail (read)
           if (window.navigateTo) {
             window.navigateTo(`#/m/${options.moduleId || 'unknown'}/f/read?id=${row.id}`);
           } else {
             alert(`Detail pro ID: ${row.id}`);
           }
-        });
-        tr.style.cursor = 'pointer';
-      }
+        }
+      });
+
+      tr.style.cursor = 'pointer';
     });
 
     // směrové šipky v head
@@ -136,7 +148,7 @@ export function renderTable(root, { columns, rows, options = {}, selectedRow }) 
     if (arrow) arrow.textContent = state.sortDir === 'asc' ? '▲' : '▼';
   }
 
-  // events
+  // events (sort + filter)
   thead.querySelectorAll('button[data-sort]').forEach(btn => {
     const key = btn.dataset.sort;
     const col = cols.find(c => c.key === key);
@@ -148,16 +160,18 @@ export function renderTable(root, { columns, rows, options = {}, selectedRow }) 
       });
     }
   });
-  if (showFilter && head.querySelector('#tblFilter')) {
-    head.querySelector('#tblFilter').addEventListener('input', e => {
-      state.filter = e.target.value || '';
-      renderBody();
-    });
+
+  if (showFilter) {
+    const fi = head.querySelector('#tblFilter');
+    if (fi) {
+      fi.addEventListener('input', e => {
+        state.filter = e.target.value || '';
+        renderBody();
+      });
+    }
   }
 
   renderBody();
 }
 
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
+func
