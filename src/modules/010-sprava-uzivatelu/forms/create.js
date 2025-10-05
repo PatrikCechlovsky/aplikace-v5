@@ -18,24 +18,31 @@ export async function render(root) {
     { icon: 'add',   label: 'Nový / Pozvat' }
   ]);
 
-  // Header akce – pouze tady (formální tlačítka v těle vypínáme)
+  // Všechny akce jen v CommonActions (žádná tlačítka dole ve formu)
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['invite','reject'],  // ← teď se vykreslí ✉️ a ✖
+    moduleActions: ['approve', 'invite', 'reject'],   // Uložit (zůstat), Pozvat, Zpět
     userRole: 'admin',
     handlers: {
-      onInvite: async () => { /* pošli e-mail, ulož, ... */ },
-      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled'),
+      onApprove: async () => {
+        const values = grabValues(root);
+        const ok = await handleSave(values, { stay: true });
+        if (ok) alert('Uloženo (demo) – zůstávám ve formuláři.');
+      },
+      onInvite: async () => {
+        const values = grabValues(root);
+        const ok = await handleInvite(values);
+        if (ok) navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+      },
+      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
     }
   });
 
-  // Výchozí hodnoty
   const initial = { role: 'user' };
 
-  // Vykresli formulář – BEZ submit buttonů (showSubmit:false)
   renderForm(root, FIELDS, initial, async () => true, {
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
     sections: [{ id: 'zaklad', label: 'Základ', fields: FIELDS.map(f => f.key) }],
-    showSubmit: false
+    showSubmit: false // ← žádná tlačítka dole
   });
 }
 
@@ -51,9 +58,15 @@ function grabValues(scopeEl) {
   return obj;
 }
 
-// Tady bude reálná logika pozvánky (e-mail/Supabase). Zatím demo.
+async function handleSave(values, { stay } = { stay: true }) {
+  console.log('[CREATE SAVE]', values);
+  // TODO: napojit na DB
+  return true;
+}
+
 async function handleInvite(values) {
   console.log('[INVITE]', values);
+  // TODO: odeslat pozvánku (e-mail / Supabase)
   alert('Pozvánka odeslána (demo).');
   return true;
 }
