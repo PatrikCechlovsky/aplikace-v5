@@ -1,8 +1,7 @@
 // src/ui/icons.js
-// Jednoduchý registr ikon (emoji). Kdykoliv můžeme vyměnit za SVG.
-// Zachovává původní klíče a přidává nové (star, send, save, exit, ...).
+// Jednoduchý registr ikon (emoji). Kdykoliv lze nahradit SVG.
 
-const I = {
+export const ICONS = {
   // ZÁKLAD
   home: '🏠',
   users: '👥',
@@ -14,7 +13,8 @@ const I = {
   help: '❓',
   info: 'ℹ️',
   search: '🔍',
-  filter: '🔍',      // můžeš případně změnit na jiné emoji/SVG „funnel“
+  filter: '🔍',
+  'chevron-right': '▶️',
 
   // CRUD / NAV
   add: '➕',
@@ -24,26 +24,19 @@ const I = {
   archive: '🗄️',
   paperclip: '📎',
   refresh: '🔄',
-  'chevron-right': '▶️',
 
   // WORKFLOW
-  approve: '✔️',     // uložit / potvrdit
-  save: '💾',        // explicitní "Uložit"
-  reject: '❌',      // zpět / zrušit
-  exit: '🚪',        // odhlásit / zavřít
-
-  // OPRÁVNĚNÍ / ÚČTY
-  block: '⛔',
-  resetPwd: '🔁',
-  perms: '✳️',
-  history: '🧑‍💻',
+  approve: '✔️',   // potvrdit / uložit
+  save: '💾',      // explicitní „Uložit“
+  reject: '❌',    // zpět / zrušit
+  exit: '🚪',      // odhlásit / zavřít
 
   // DOKUMENTY / KOMUNIKACE
   docs: '📑',
   note: '📝',
   comment: '💬',
-  invite: '📨',      // pozvánka e-mailem
-  send: '📤',        // odeslat dokument/e-mail
+  invite: '📨',    // pozvánka e-mailem
+  send: '📤',      // odeslat dokument/e-mail
   mail: '✉️',
 
   // EXPORT/IMPORT/TISK
@@ -63,7 +56,7 @@ const I = {
   form: '📝',
 
   // PREFERENCES
-  star: '⭐️',        // oblíbené
+  star: '⭐️',
 };
 
 // Aliasy – pohodlnější klíče na totéž
@@ -77,11 +70,16 @@ const ALIASES = {
   remove: 'delete',
 };
 
+/**
+ * Vrátí znak/SVG pro daný klíč.
+ * Používej: import { icon } from './icons.js';  ->  innerHTML = icon('edit')
+ */
 export function icon(name, fallback = '•') {
   const key = ALIASES[name] || name;
-  if (!I[key]) console.warn('Neznámá ikona:', name);
-  return I[key] || fallback;
+  const val = ICONS[key];
+  if (!val) {
+    console.warn('[icons] neznámá ikona:', name);
+    return fallback;
+  }
+  return val;
 }
-
-// Volitelně, když chceš někde rychle zkontrolovat dostupné klíče:
-// export function listIconKeys() { return Object.keys(I); }
