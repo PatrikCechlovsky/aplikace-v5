@@ -12,6 +12,7 @@ const FIELDS = [
 ];
 
 export async function render(root) {
+  // Breadcrumb
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home',  label: 'Domů',      href: '#/' },
     { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
@@ -20,34 +21,38 @@ export async function render(root) {
 
   // Všechny akce jen v CommonActions (žádná tlačítka dole ve formu)
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['approve', 'invite', 'reject'],   // Uložit (zůstat), Pozvat, Zpět
+    moduleActions: ['approve', 'invite', 'reject'], // Uložit(zůstat), Pozvat, Zpět
     userRole: 'admin',
     handlers: {
       onApprove: async () => {
         const values = grabValues(root);
-        const ok = await handleSave(values, { stay: true });
-        if (ok) alert('Uloženo (demo) – zůstávám ve formuláři.');
+        // TODO: uložení do DB (zůstat ve formu)
+        console.log('[CREATE SAVE]', values);
+        alert('Uloženo (demo) – zůstávám ve formuláři.');
       },
       onInvite: async () => {
         const values = grabValues(root);
-        const ok = await handleInvite(values);
-        if (ok) navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+        // TODO: odeslat pozvánku e-mailem
+        console.log('[INVITE]', values);
+        alert('Pozvánka odeslána (demo).');
+        navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
       },
       onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
     }
   });
 
+  // Výchozí hodnoty
   const initial = { role: 'user' };
 
+  // Formulář – BEZ spodních tlačítek (showSubmit:false)
   renderForm(root, FIELDS, initial, async () => true, {
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
     sections: [{ id: 'zaklad', label: 'Základ', fields: FIELDS.map(f => f.key) }],
-    showSubmit: false // ← žádná tlačítka dole
+    showSubmit: false
   });
 }
 
-// ---- helpers ----
-
+// Helper: sebrat hodnoty z polí (pro akce v headeru)
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
@@ -56,19 +61,6 @@ function grabValues(scopeEl) {
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
   }
   return obj;
-}
-
-async function handleSave(values, { stay } = { stay: true }) {
-  console.log('[CREATE SAVE]', values);
-  // TODO: napojit na DB
-  return true;
-}
-
-async function handleInvite(values) {
-  console.log('[INVITE]', values);
-  // TODO: odeslat pozvánku (e-mail / Supabase)
-  alert('Pozvánka odeslána (demo).');
-  return true;
 }
 
 export default { render };
