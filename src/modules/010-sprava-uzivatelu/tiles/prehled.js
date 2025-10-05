@@ -11,7 +11,24 @@ import { getAllowedActions, canPerform } from '../../../security/permissions.js'
 const MODULE_ACTIONS = ['detail', 'add', 'edit', 'archive', 'attach', 'refresh', 'search'];
 
 let selectedRow = null;
+let suppressNextSelect = false;
 
+// ...v options renderTable:
+options: {
+  moduleId: '010-sprava-uzivatelu',
+
+  onRowSelect: row => {
+    // Když předtím padnul dblclick, neprovádět re-render přehledu
+    if (suppressNextSelect) { suppressNextSelect = false; return; }
+    selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
+    render(root); // zvýraznění výběru apod.
+  },
+
+  onRowDblClick: row => {
+    suppressNextSelect = true; // potlač re-render z clicku
+    navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
+  }
+}
 export async function render(root) {
   // Breadcrumbs
   setBreadcrumb(document.getElementById('crumb'), [
