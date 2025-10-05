@@ -29,8 +29,13 @@ export async function getManifest() {
         icon: 'edit',
         renderer: () => import('./forms/form.js')
       }
+    {
+        id: 'role',
+        title: 'Role & barvy',
+        icon: 'settings',
+        renderer: () => import('./forms/role.js'),
+      },
     ],
-
     // výchozí sekce pro /m/010-sprava-uzivatelu
     defaultTile: 'prehled',
   };
