@@ -1,4 +1,5 @@
 // ========== Imports ==========
+import './auth.js'; // zajistí requireAuthOnApp() na app.html
 import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
 import { renderHomeButton } from './ui/homebutton.js';
@@ -8,7 +9,6 @@ import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
 import './supabase.js';
-import './auth.js'; // zajistí requireAuthOnApp() na app.html
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -53,65 +53,50 @@ async function runRenderer(modPromise, root, params, debugTag) {
   }
 }
 
-// ========== Registry modulů z manifestů ==========
+// ========== Registr modulů ==========
 const registry = new Map();
 
-// Získá import(path) z lazy funkce () => import('…')
 function extractImportPath(fn) {
   try {
-    const str = String(fn);
-    const m = str.match(/import\((['"])(.*?)\1\)/);
-    return m ? m[2] : null;   // ← SPRÁVNĚ: vrací skutečnou cestu z importu
+    const s = fn.toString();
+    const m = s.match(/import\(['"`]([^'"`]+)['"`]\)/);
+    return m ? m[1] : null;
   } catch {
     return null;
   }
 }
 
-// v app.js
 async function initModules() {
   for (const src of MODULE_SOURCES) {
     const rel = extractImportPath(src);
-    if (!rel) continue;
+    const abs = '/src/app/' + rel;
+    const norm = abs.replace('/src/app/../', '/src/');
+    const baseDir = norm.replace(/\/module\.config\.js$/, '');
 
-    // relativní -> absolutní vůči /src/app/
-    let abs = rel.startsWith('/') ? rel : '/src/app/' + rel;
-    abs = abs.replace('/src/app/../', '/src/');
-
-    // baseDir modulu (bez /module.config.js)
-    const baseDir = abs.replace(/\/module\.config\.js$/, '');
-
-    // ⬇️ DŮLEŽITÉ: vezmi default nebo getManifest(), případně manifest property
     const mod = await src();
-    const manifest =
-      mod?.default ||
-      (await mod.getManifest?.()) ||
-      mod?.manifest ||
-      null;
+    const manifest = (await mod.getManifest?.()) || {};
+    if (!manifest?.id) continue;
 
-    if (!manifest || !manifest.id) {
-      console.warn('[modules] manifest chybí nebo bez id:', mod);
-      continue;
-    }
-
-    registry.set(manifest.id, { ...manifest, baseDir });
+    registry.set(manifest.id, {
+      ...manifest,
+      baseDir,
+    });
   }
 }
-
-// pokud registry ještě nevznikla, vytvoř ji jako Map
-window.registry = (window.registry instanceof Map) ? window.registry : registry;
-
+window.registry = registry;
 
 // ========== Router ==========
-export async function route() { // <-- export!
+export async function route() {
   const c = $id('content');
   const crumb = $id('crumb');
   const commonActions = $id('commonactions');
+  if (!c) return;
 
   try {
-    const hash = location.hash || '#/';
-    const m = hash.match(/^#\/(?:m\/([^/]+)(?:\/(t|f)\/([^/]+))?)?$/);
+    const h = location.hash || '#/';
+    const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
 
-    // Domů: žádný modul v URL
+    // Dashboard (domů)
     if (!m) {
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
       if (commonActions) commonActions.innerHTML = '';
@@ -119,25 +104,29 @@ export async function route() { // <-- export!
       return;
     }
 
-    const modId = decodeURIComponent(m[1]);
-    const kind = m[2] === 'f' ? 'form' : 'tile';
-    // ✂️ odřízneme query string ze jména sekce (např. "form?id=…" -> "form")
-    const rawSec = m[3] ? decodeURIComponent(m[3]) : null;
-    const secId = rawSec ? rawSec.split('?')[0] : null;
-    const mod = registry.get(modId);
+    // Základní parsování
+    const rawModId = m[1];
+    const modId = rawModId ? decodeURIComponent(rawModId) : null;
 
-    if (!mod) {
+    // Fallback: pokud modId chybí / je "undefined" nebo modul neexistuje → jdi na dashboard
+    if (!modId || modId === 'undefined' || !registry.get(modId)) {
+      if (location.hash !== '#/') {
+        navigateTo('#/');
+        return;
+      }
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
       if (commonActions) commonActions.innerHTML = '';
-      c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
-        Modul <b>${modId}</b> nenalezen.
-      </div>`;
+      renderDashboardTiles(c, Array.from(window.registry.values()));
       return;
     }
 
-    // Pokud není specifikovaná sekce, pošli uživatele na výchozí
-    if (!secId) {
-      const defaultTile = mod.defaultTile || (mod.tiles?.[0]?.id || mod.forms?.[0]?.id);
+    const kind = m[2] === 'f' ? 'form' : 'tile';
+    const secId = m[3] ? decodeURIComponent(m[3]) : null;
+    const mod = registry.get(modId);
+
+    // Pokud je pouze modul bez sekce, přesměruj na default sekci
+    if (mod && !m[2]) {
+      const defaultTile = mod?.defaultTile || (mod?.tiles?.[0]?.id || mod?.forms?.[0]?.id);
       if (defaultTile) {
         if (mod?.tiles?.some(t => t.id === defaultTile)) {
           location.hash = `#/m/${modId}/t/${defaultTile}`;
@@ -146,14 +135,6 @@ export async function route() { // <-- export!
         }
         return;
       }
-    }
-
-    // Dashboard (domů)
-    if (!m) {
-      setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
-      if (commonActions) commonActions.innerHTML = '';
-      renderDashboardTiles(c, Array.from(window.registry.values()));
-      return;
     }
 
     const tileId = secId || mod.defaultTile || (mod.tiles?.[0]?.id || mod.forms?.[0]?.id || null);
@@ -167,14 +148,11 @@ export async function route() { // <-- export!
       const label = (kind === 'tile'
         ? (mod.tiles?.find(t => t.id === tileId)?.title || tileId)
         : (mod.forms?.find(f => f.id === tileId)?.title || tileId));
-      crumbs.push({
-        icon: kind === 'tile' ? 'list' : 'form',
-        label
-      });
+      crumbs.push({ icon: kind === 'tile' ? 'list' : 'form', label });
     }
     setBreadcrumb(crumb, crumbs);
 
-    // Common Actions (demo hvězdička; vlastní akce vykreslují jednotlivé moduly)
+    // Common Actions (hvězdička jen pokud má smysl)
     if (commonActions) {
       let starTileId = null;
       if (tileId) starTileId = modId + '/' + tileId;
@@ -197,14 +175,10 @@ export async function route() { // <-- export!
       });
     }
 
-    // Načtení skutečného obsahu sekce (dynamický import)
+    // Render content (dynamický import rendereru)
     const rel = kind === 'form' ? `forms/${tileId}.js` : `tiles/${tileId}.js`;
     const path = `${mod.baseDir}/${rel}`;
     const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
-
-    // 🪪 pro rychlou diagnostiku
-    window.__lastRouteDebug = { pathWithCb, kind, secId, modId, baseDir: mod.baseDir };
-
     c.innerHTML = `<div class="p-2 text-slate-500">Načítám ${pathWithCb}…</div>`;
     try {
       const imported = await import(pathWithCb);
@@ -222,11 +196,12 @@ export async function route() { // <-- export!
   }
 }
 
-// ========== Varování při neuložených změnách ==========
+// ========== Ochrana rozdělané práce ==========
 let hasUnsavedChanges = false;
-export function setUnsaved(state) {
-  hasUnsavedChanges = !!state;
+export function setUnsaved(flag) {
+  hasUnsavedChanges = !!flag;
 }
+
 window.addEventListener('beforeunload', function (e) {
   if (hasUnsavedChanges) {
     e.preventDefault();
@@ -234,7 +209,7 @@ window.addEventListener('beforeunload', function (e) {
     return '';
   }
 });
-window.addEventListener('hashchange', function (e) {
+window.addEventListener('hashchange', function () {
   if (hasUnsavedChanges) {
     if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) {
       history.back();
@@ -248,28 +223,23 @@ window.addEventListener('hashchange', function (e) {
 // ========== Init ==========
 (async function start() {
   try {
-    // Header: home button a akce
     renderHeaderActions($id('headeractions'));
-
     await initModules();
-
-    // Render sidebar a zpřístupni closeAll pro homebutton
     renderSidebar($id('sidebarbox'), Array.from(registry.values()));
-    // Zpřístupni funkci closeAll globálně
+
+    // Zpřístupni closeAll pro home button
     window.renderSidebar = renderSidebar;
 
     renderHomeButton($id('homebtnbox'), {
       appName: 'Pronajímatel',
       onHome: () => {
-        setBreadcrumb($id('crumb'), [{ icon: 'home', label: 'Domů' }]);
-        if ($id('commonactions')) $id('commonactions').innerHTML = '';
-        renderDashboardTiles($id('content'), Array.from(window.registry.values()));
-      },
-      onCloseAll: () => {
-        setBreadcrumb($id('crumb'), [{ icon: 'home', label: 'Domů' }]);
-        if ($id('commonactions')) $id('commonactions').innerHTML = '';
-        renderDashboardTiles($id('content'), Array.from(window.registry.values()));
-        renderSidebar($id('sidebarbox'), Array.from(registry.values()), { closeAll: true });
+        if (window.renderSidebar && typeof window.renderSidebar.closeAll === 'function') {
+          window.renderSidebar.closeAll();
+        }
+        if (hasUnsavedChanges) {
+          if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) return;
+        }
+        location.hash = "#/";
       }
     });
 
@@ -284,6 +254,5 @@ window.addEventListener('hashchange', function (e) {
   }
 })();
 
-// ========== Nepoužívané/legacy funkce (ponecháno zakomentováno) ==========
-// import { renderHeader } from './ui/header.js'; // už nepoužíváme
-// function renderSidebar() { ... } // už nepoužíváme, vše řeší renderSidebar z ui/sidebar.js
+// ========== Nepoužívané/legacy (ponecháno zakomentováno) ==========
+// import { renderHeader } from './ui/header.js';
