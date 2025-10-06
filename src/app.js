@@ -66,33 +66,39 @@ function extractImportPath(fn) {
   }
 }
 
+// v app.js
 async function initModules() {
   for (const src of MODULE_SOURCES) {
-  const rel = extractImportPath(src);
-  if (!rel) continue;
-  
-  // když je cesta relativní (../modules/...), udělej ji absolutní vůči /src/app/
-  // když je už absolutní (/src/modules/...), necháme ji být
-  let abs = rel.startsWith('/') ? rel : '/src/app/' + rel;
-  
-  // normalize: /src/app/../modules → /src/modules
-  abs = abs.replace('/src/app/../', '/src/');
-  
-  // odsekni název souboru, zůstane baseDir modulu
-  const baseDir = abs.replace(/\/module\.config\.js$/, '');
- 
+    const rel = extractImportPath(src);
+    if (!rel) continue;
 
+    // relativní -> absolutní vůči /src/app/
+    let abs = rel.startsWith('/') ? rel : '/src/app/' + rel;
+    abs = abs.replace('/src/app/../', '/src/');
+
+    // baseDir modulu (bez /module.config.js)
+    const baseDir = abs.replace(/\/module\.config\.js$/, '');
+
+    // ⬇️ DŮLEŽITÉ: vezmi default nebo getManifest(), případně manifest property
     const mod = await src();
-    const manifest = (await mod.getManifest?.()) || {};
-    if (!manifest?.id) continue;
+    const manifest =
+      mod?.default ||
+      (await mod.getManifest?.()) ||
+      mod?.manifest ||
+      null;
 
-    registry.set(manifest.id, {
-      ...manifest,
-      baseDir,
-    });
+    if (!manifest || !manifest.id) {
+      console.warn('[modules] manifest chybí nebo bez id:', mod);
+      continue;
+    }
+
+    registry.set(manifest.id, { ...manifest, baseDir });
   }
 }
-window.registry = registry;
+
+// pokud registry ještě nevznikla, vytvoř ji jako Map
+window.registry = (window.registry instanceof Map) ? window.registry : registry;
+
 
 // ========== Router ==========
 export async function route() { // <-- export!
