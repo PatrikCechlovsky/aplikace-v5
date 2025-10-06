@@ -43,6 +43,27 @@ export function setFavoriteOrder(orderArr) {
   localStorage.setItem(FAV_TILES_ORDER_KEY, JSON.stringify(orderArr));
 }
 
+/**
+ * Očistí uložené oblíbené dlaždice podle registru modulů.
+ * - odstraní neexistující (smazané/přejmenované) moduly/tiles z favoriteTiles i favoriteTilesOrder
+ * - volat po initModules() (kdy už známe registry)
+ * @param {Array} modules - Array.from(registry.values())
+ */
+export function sanitizeFavorites(modules = []) {
+  // vyrob mapu validních tileId ve tvaru "modId/tileId"
+  const valid = new Set();
+  modules.forEach(m => {
+    (m.tiles || []).forEach(t => valid.add(`${m.id}/${t.id}`));
+    (m.forms || []).forEach(f => valid.add(`${m.id}/${f.id}`));
+  });
+
+  const favs = loadFavorites().filter(id => valid.has(id));
+  const order = loadFavoriteOrder().filter(id => valid.has(id));
+
+  localStorage.setItem(FAV_TILES_KEY, JSON.stringify(favs));
+  localStorage.setItem(FAV_TILES_ORDER_KEY, JSON.stringify(order));
+}
+
 // Pomocná funkce pro typ tile
 function tileType(mod, tile) {
   if (mod.tiles?.some(t => t.id === tile.id)) return 'Seznam';
@@ -117,17 +138,16 @@ export function renderDashboardTiles(root, modules = []) {
     ${favTiles.length ? `<div class="mt-4 text-xs text-slate-400 text-center italic">Dlaždice lze řadit tažením myší.</div>` : ''}
   `;
 
-  // Drag & drop pomocí SortableJS (musíš mít v projektu, jinak napiš a dám fallback)
+  // Drag & drop přes SortableJS
   if (window.Sortable && favTiles.length) {
     const list = document.getElementById('fav-tiles-list');
     if (list && !list._sortableAttached) {
       window.Sortable.create(list, {
         animation: 180,
         ghostClass: 'bg-blue-50',
-        handle: '.tile-draggable', // celá dlaždice je "handle"
+        handle: '.tile-draggable',
         draggable: '.tile-draggable',
-        onEnd: function (evt) {
-          // Zjisti nové pořadí a ulož do localStorage
+        onEnd: function () {
           const newOrder = Array.from(list.children)
             .map(tile => tile.getAttribute('data-id'))
             .filter(Boolean);
