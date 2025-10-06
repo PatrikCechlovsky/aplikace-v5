@@ -1,5 +1,7 @@
-// Seznam všech modulů pro dynamický import
-export const MODULE_SOURCES = [
+// src/modules/modules.index.js
+export async function registerModules() {
+  const reg = window.registry; // je to Map
+  const loaders = [
   () => import('../modules/010-sprava-uzivatelu/module.config.js'),
   () => import('../modules/020-muj-ucet/module.config.js'),
   () => import('../modules/030-pronajimatel/module.config.js'),
@@ -17,3 +19,19 @@ export const MODULE_SOURCES = [
   // () => import('../modules/990-help/module.config.js'),
 ];
 // Odkomentuj další řádky až budou moduly vytvořené.
+for (const load of loaders) {
+    try {
+      const mod = (await load()).default;
+      if (reg && typeof reg.set === 'function') {
+        reg.set(mod.id, mod);           // <-- DŮLEŽITÉ (registry je Map)
+      } else if (reg?.register) {
+        reg.register(mod);
+      } else {
+        // nouzově vytvoř objekt/Map, kdyby něco
+        (window.registry ??= new Map()).set(mod.id, mod);
+      }
+    } catch (e) {
+      console.error('[MODULE LOAD FAILED]', e);
+    }
+  }
+}
