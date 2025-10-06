@@ -1,17 +1,15 @@
 // ========== Imports ==========
-import './auth.js'; // zajistí requireAuthOnApp() na app.html
+import './auth.js'; // vyžádá přihlášení na app.html
 import { MODULE_SOURCES } from './app/modules.index.js';
-import { icon } from './ui/icons.js';
 import { renderHomeButton } from './ui/homebutton.js';
 import { renderHeaderActions } from './ui/headerActions.js';
 import { renderSidebar } from './ui/sidebar.js';
 import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
-import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
+import { renderDashboardTiles, loadFavorites, setFavorite, sanitizeFavorites } from './ui/content.js';
 import './supabase.js';
 
 // ========== Mini utils ==========
-const $ = (sel) => document.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
 export function navigateTo(hash) {
@@ -23,22 +21,17 @@ export function navigateTo(hash) {
   }
 }
 
-// ===== Renderer shim ("airbag") =============================================
+// ===== Renderer shim =============================================
 async function runRenderer(modPromise, root, params, debugTag) {
   try {
     const mod = await modPromise;
-
     const r =
       (mod && mod.render) ||
       (mod && mod.default && mod.default.render) ||
       (mod && typeof mod.default === 'function' ? mod.default : null) ||
       (typeof mod === 'function' ? mod : null);
 
-    console.log('[ROUTE]', debugTag, mod ? Object.keys(mod) : '(no module export)');
-
-    if (typeof r !== 'function') {
-      throw new Error(`Renderer missing in ${debugTag}`);
-    }
+    if (typeof r !== 'function') throw new Error(`Renderer missing in ${debugTag}`);
     await r(root, params);
   } catch (err) {
     console.error('[ROUTE ERROR]', debugTag, err);
@@ -77,10 +70,7 @@ async function initModules() {
     const manifest = (await mod.getManifest?.()) || {};
     if (!manifest?.id) continue;
 
-    registry.set(manifest.id, {
-      ...manifest,
-      baseDir,
-    });
+    registry.set(manifest.id, { ...manifest, baseDir });
   }
 }
 window.registry = registry;
@@ -96,7 +86,7 @@ export async function route() {
     const h = location.hash || '#/';
     const m = h.match(/^#\/m\/([^/]+)(?:\/([tf])\/([^/]+))?/);
 
-    // Dashboard (domů)
+    // Dashboard
     if (!m) {
       setBreadcrumb(crumb, [{ icon: 'home', label: 'Domů' }]);
       if (commonActions) commonActions.innerHTML = '';
@@ -104,11 +94,11 @@ export async function route() {
       return;
     }
 
-    // Základní parsování
+    // Parsování modulu
     const rawModId = m[1];
     const modId = rawModId ? decodeURIComponent(rawModId) : null;
 
-    // Fallback: pokud modId chybí / je "undefined" nebo modul neexistuje → jdi na dashboard
+    // Fallbacky: prázdný/undefined/neexistující modul → dashboard
     if (!modId || modId === 'undefined' || !registry.get(modId)) {
       if (location.hash !== '#/') {
         navigateTo('#/');
@@ -126,12 +116,12 @@ export async function route() {
 
     // Pokud je pouze modul bez sekce, přesměruj na default sekci
     if (mod && !m[2]) {
-      const defaultTile = mod?.defaultTile || (mod?.tiles?.[0]?.id || mod?.forms?.[0]?.id);
-      if (defaultTile) {
-        if (mod?.tiles?.some(t => t.id === defaultTile)) {
-          location.hash = `#/m/${modId}/t/${defaultTile}`;
+      const def = mod?.defaultTile || (mod?.tiles?.[0]?.id || mod?.forms?.[0]?.id);
+      if (def) {
+        if (mod?.tiles?.some(t => t.id === def)) {
+          location.hash = `#/m/${modId}/t/${def}`;
         } else {
-          location.hash = `#/m/${modId}/f/${defaultTile}`;
+          location.hash = `#/m/${modId}/f/${def}`;
         }
         return;
       }
@@ -152,7 +142,7 @@ export async function route() {
     }
     setBreadcrumb(crumb, crumbs);
 
-    // Common Actions (hvězdička jen pokud má smysl)
+    // Common actions (demo + hvězdička)
     if (commonActions) {
       let starTileId = null;
       if (tileId) starTileId = modId + '/' + tileId;
@@ -175,7 +165,7 @@ export async function route() {
       });
     }
 
-    // Render content (dynamický import rendereru)
+    // Dynamický import rendereru
     const rel = kind === 'form' ? `forms/${tileId}.js` : `tiles/${tileId}.js`;
     const path = `${mod.baseDir}/${rel}`;
     const pathWithCb = path + (path.includes('?') ? '&' : '?') + 'v=' + Date.now();
@@ -198,18 +188,12 @@ export async function route() {
 
 // ========== Ochrana rozdělané práce ==========
 let hasUnsavedChanges = false;
-export function setUnsaved(flag) {
-  hasUnsavedChanges = !!flag;
-}
+export function setUnsaved(flag) { hasUnsavedChanges = !!flag; }
 
-window.addEventListener('beforeunload', function (e) {
-  if (hasUnsavedChanges) {
-    e.preventDefault();
-    e.returnValue = '';
-    return '';
-  }
+window.addEventListener('beforeunload', (e) => {
+  if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; return ''; }
 });
-window.addEventListener('hashchange', function () {
+window.addEventListener('hashchange', () => {
   if (hasUnsavedChanges) {
     if (!confirm('Máte rozdělanou práci. Opravdu chcete odejít bez uložení?')) {
       history.back();
@@ -225,6 +209,10 @@ window.addEventListener('hashchange', function () {
   try {
     renderHeaderActions($id('headeractions'));
     await initModules();
+
+    // 💡 po načtení registru očistíme oblíbené od neexistujících dlaždic
+    sanitizeFavorites(Array.from(registry.values()));
+
     renderSidebar($id('sidebarbox'), Array.from(registry.values()));
 
     // Zpřístupni closeAll pro home button
@@ -245,7 +233,6 @@ window.addEventListener('hashchange', function () {
 
     window.addEventListener('hashchange', route);
     route();
-
   } catch (err) {
     const c = $id('content');
     if (c) c.innerHTML = `<div class="p-3 rounded bg-red-50 border border-red-200 text-red-700">
@@ -253,6 +240,3 @@ window.addEventListener('hashchange', function () {
     </div>`;
   }
 })();
-
-// ========== Nepoužívané/legacy (ponecháno zakomentováno) ==========
-// import { renderHeader } from './ui/header.js';
