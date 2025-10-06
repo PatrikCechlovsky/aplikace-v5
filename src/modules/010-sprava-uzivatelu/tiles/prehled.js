@@ -1,5 +1,5 @@
 // src/modules/010-sprava-uzivatelu/tiles/prehled.js
-// Přehled uživatelů — dynamická CommonActions + univerzální tabulka s dblclickem
+// Přehled uživatelů — univerzální tabulka + dynamické CommonActions podle výběru řádku
 
 import { renderTable } from '../../../ui/table.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
@@ -7,10 +7,7 @@ import { listProfiles } from '../../../db.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { navigateTo, route } from '../../../app.js';
 
-// Dlaždice umí tyto akce (později se filtrují podle role uživatele)
-const MODULE_ACTIONS = ['detail', 'add', 'edit', 'archive', 'attach', 'refresh', 'search'];
-
-// Držíme si vybraný řádek kvůli handlerům (Upravit/Archivovat/Příloha…)
+// aktuálně vybraný řádek (kvůli Edit/Archiv/Přílohy)
 let selectedRow = null;
 
 export async function render(root) {
@@ -21,10 +18,7 @@ export async function render(root) {
     { icon: 'list',  label: 'Přehled' }
   ]);
 
-  // Dočasně: role „admin“, ať je UI hned použitelné (později napojíme na profil z DB)
-  const userRole = 'admin';
-
-  // Data
+  // Načtení dat
   const { data, error } = await listProfiles();
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message}</div>`;
@@ -38,33 +32,6 @@ export async function render(root) {
     archived: r.archived ? 'Ano' : ''
   }));
 
-  // Common actions – dynamicky podle role a seznamu akcí této dlaždice
-  renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: MODULE_ACTIONS,
-    userRole,
-    handlers: {
-      onDetail: () => {
-        if (!selectedRow) return alert('Vyberte řádek.');
-        navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=read`);
-      },
-      onAdd: () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
-      onEdit: () => {
-        if (!selectedRow) return alert('Vyberte řádek.');
-        navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`);
-      },
-      onArchive: () => {
-        if (!selectedRow) return alert('Vyberte řádek.');
-        alert(`Archivace uživatele: ${selectedRow.display_name}`);
-      },
-      onAttach: () => {
-        if (!selectedRow) return alert('Vyberte řádek.');
-        alert(`Přílohy k uživateli: ${selectedRow.display_name}`);
-      },
-      onRefresh: () => route(),
-      onSearch: () => alert('Vyhledávání (demo)')
-    }
-  });
-
   // Sloupce tabulky
   const columns = [
     { key: 'display_name', label: 'Jméno',      sortable: true, width: '25%' },
@@ -73,16 +40,39 @@ export async function render(root) {
     { key: 'archived',     label: 'Archivován', sortable: true, width: '10%' }
   ];
 
-  // Vykreslit tabulku
+  // Helper pro akční tlačítka – dynamicky podle toho, zda je něco vybráno
+  function drawActions() {
+    const ca = document.getElementById('commonactions');
+    if (!ca) return;
+
+    const hasSel = !!selectedRow;
+    renderCommonActions(ca, {
+      onAdd:       () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
+      ...(hasSel && {
+        onEdit:    () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`),
+        onArchive: () => alert(`Archivace uživatele: ${selectedRow.display_name}`),
+        onAttach:  () => alert(`Přílohy k uživateli: ${selectedRow.display_name}`),
+      }),
+      onRefresh:   () => route()
+    });
+  }
+
+  // Init actions (bez výběru)
+  drawActions();
+
+  // Tabulka
   root.innerHTML = `<div id="user-table"></div>`;
   renderTable(root.querySelector('#user-table'), {
     columns,
     rows,
     options: {
       moduleId: '010-sprava-uzivatelu',
-      // Tabulka si výběr zvýrazní sama; tady si jen uložíme posledně vybraný řádek
-      onRowSelect: row => { selectedRow = row; },
-      // Dvojklik otevře vyplněný formulář (edit)
+      // klik = vybere/odznačí a překreslí akce
+      onRowSelect: row => {
+        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
+        drawActions();
+      },
+      // dvojklik = otevři edit formulář
       onRowDblClick: row => {
         selectedRow = row;
         navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${row.id}&mode=edit`);
