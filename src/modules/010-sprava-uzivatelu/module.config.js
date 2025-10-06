@@ -5,7 +5,6 @@ export default {
   icon: 'users',
   baseDir: '/src/modules/010-sprava-uzivatelu',
 
-  // volitelně: výchozí dlaždice v breadcrumbs
   defaultTitle: 'Přehled',
 
   tiles: [
