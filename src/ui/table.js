@@ -1,38 +1,48 @@
 // src/ui/table.js
-// Jednoduchá tabulka s řazením, filtrem, volitelným pořadím sloupců a dblclick akcí.
-// columns: [{ key, label, width?, render?(row), sortable?:true, className? }]
+// Univerzální tabulka s řazením, filtrem, výběrem řádku a bezpečným dblclickem.
+// columns: [{ key, label, width?, render?(row), sortable?: true, className? }]
 // rows: array objektů
-// rowActions: [{ label, icon, onClick(row), show?(row):boolean }]
-// options: { filterPlaceholder, columnsOrder?: string[], onRowDblClick?(row) }
+// options: {
+//   filterPlaceholder?,
+//   columnsOrder?: string[],
+//   showFilter?: boolean, filterValue?: string,
+//   moduleId?: string,              // pro defaultní chování dblclicku
+//   onRowSelect?(row),
+//   onRowDblClick?(row),
+//   selectedRow?: { id: any }       // volitelný počáteční výběr
+// }
 
-export function renderTable(root, { columns, rows, rowActions = [], options = {} }) {
+export function renderTable(root, { columns, rows, options = {} }) {
   if (!root) return;
+
   const state = {
     sortKey: columns.find(c => c.sortable !== false)?.key || columns[0]?.key,
     sortDir: 'asc',
-    filter: '',
+    filter: typeof options.filterValue === 'string' ? options.filterValue : '',
+    selectedId: options.selectedRow?.id ?? null
   };
 
-  // volitelné pořadí sloupců (např. z uživatelského nastavení)
+  // volitelné pořadí sloupců
   const order = Array.isArray(options.columnsOrder) && options.columnsOrder.length
     ? options.columnsOrder
     : columns.map(c => c.key);
 
-  const cols = order
-    .map(k => columns.find(c => c.key === k))
-    .filter(Boolean);
+  const cols = order.map(k => columns.find(c => c.key === k)).filter(Boolean);
 
   root.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'bg-white rounded-2xl border';
   root.appendChild(wrap);
 
+  // HEAD: filtr (volitelný)
+  const showFilter = typeof options.showFilter === 'undefined' ? true : !!options.showFilter;
   const head = document.createElement('div');
   head.className = 'p-3 border-b flex items-center gap-2';
-  head.innerHTML = `
+  head.innerHTML = showFilter ? `
     <input type="text" id="tblFilter" class="border rounded px-2 py-1 text-sm w-full sm:w-72"
-           placeholder="${options.filterPlaceholder || 'Filtrovat…'}" />
-  `;
+           placeholder="${options.filterPlaceholder || 'Filtrovat…'}"
+           value="${escapeHtml(state.filter)}" />
+  ` : '';
   wrap.appendChild(head);
 
   const scroller = document.createElement('div');
@@ -52,7 +62,6 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
           <span class="opacity-60 text-xs" data-dir="${c.key}"></span>
         </button>
       </th>`).join('')}
-      ${rowActions.length ? `<th class="px-3 py-2 text-right">Akce</th>` : ''}
   </tr>`;
   table.appendChild(thead);
 
@@ -88,48 +97,55 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
 
     data.forEach(row => {
       const tr = document.createElement('tr');
-      tr.className = 'border-t hover:bg-slate-50';
+      const isSelected = state.selectedId != null && row.id === state.selectedId;
+      tr.className = 'border-t hover:bg-slate-50' + (isSelected ? ' bg-amber-100' : '');
       tr.innerHTML = cols.map(c => {
         const val = c.render ? c.render(row) : escapeHtml(row[c.key]);
         return `<td class="px-3 py-2 align-top ${c.className||''}">${val}</td>`;
-      }).join('') + (rowActions.length ? `
-        <td class="px-3 py-2 text-right whitespace-nowrap">
-          ${rowActions
-            .filter(a => (typeof a.show === 'function' ? a.show(row) : true))
-            .map((a,i) => `
-              <button data-act="${i}" class="group inline-flex items-center gap-1 px-2 py-1 border rounded bg-white ml-1"
-                      title="${a.label}">
-                ${a.icon || '⋯'}
-                <span class="hidden sm:inline group-hover:inline">${a.label}</span>
-              </button>`).join('')}
-        </td>` : '');
+      }).join('');
       tbody.appendChild(tr);
 
-      // dblclick řádek
-      if (typeof options.onRowDblClick === 'function') {
-        tr.addEventListener('dblclick', () => options.onRowDblClick(row));
-        tr.style.cursor = 'pointer';
-      }
+      // detekce dblclicku bez kolize se single-clickem
+      let clickTimer = null;
 
-      // akce vpravo
-      if (rowActions.length) {
-        tr.querySelectorAll('button[data-act]').forEach(btn => {
-          const i = Number(btn.dataset.act);
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            rowActions[i].onClick?.(row);
-          });
-        });
-      }
+      // Klik = výběr řádku (a notifikace nadřazenému modulu)
+      tr.addEventListener('click', () => {
+        if (clickTimer) return; // čekáme, zda nepřijde dblclick
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          state.selectedId = (state.selectedId === row.id) ? null : row.id;
+          if (typeof options.onRowSelect === 'function') options.onRowSelect(row);
+          renderBody();
+        }, 220);
+      });
+
+      // Dvojklik = otevřít detail/volat handler
+      tr.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+        state.selectedId = row.id; // vizuálně vyber
+        renderBody();
+
+        if (typeof options.onRowDblClick === 'function') {
+          options.onRowDblClick(row);
+        } else if (window.navigateTo) {
+          const modId = options.moduleId || 'unknown';
+          window.navigateTo(`#/m/${modId}/f/read?id=${row.id}`);
+        } else {
+          alert(`Detail pro ID: ${row.id}`);
+        }
+      });
+
+      tr.style.cursor = 'pointer';
     });
 
-    // směrové šipky v head
-    thead.querySelectorAll('[data-dir]').forEach(span => span.textContent = '');
+    // Šipka směru řazení v head
+    thead.querySelectorAll('[data-dir]').forEach(span => (span.textContent = ''));
     const arrow = thead.querySelector(`[data-dir="${state.sortKey}"]`);
     if (arrow) arrow.textContent = state.sortDir === 'asc' ? '▲' : '▼';
   }
 
-  // events
+  // events (sort + filter)
   thead.querySelectorAll('button[data-sort]').forEach(btn => {
     const key = btn.dataset.sort;
     const col = cols.find(c => c.key === key);
@@ -141,14 +157,22 @@ export function renderTable(root, { columns, rows, rowActions = [], options = {}
       });
     }
   });
-  head.querySelector('#tblFilter').addEventListener('input', e => {
-    state.filter = e.target.value || '';
-    renderBody();
-  });
+
+  if (showFilter) {
+    const fi = head.querySelector('#tblFilter');
+    if (fi) {
+      fi.addEventListener('input', (e) => {
+        state.filter = e.target.value || '';
+        renderBody();
+      });
+    }
+  }
 
   renderBody();
 }
 
 function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return String(s ?? '').replace(/[&<>"']/g, m => (
+    { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]
+  ));
 }

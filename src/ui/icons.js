@@ -1,6 +1,8 @@
-// Jednoduchý registr ikon (emoji). Pokud bude třeba, doplníme SVG varianty.
+// src/ui/icons.js
+// Jednoduchý registr ikon (emoji). Kdykoliv lze nahradit SVG.
 
-const I = {
+export const ICONS = {
+  // ZÁKLAD
   home: '🏠',
   users: '👥',
   account: '👤',
@@ -9,45 +11,75 @@ const I = {
   list: '📄',
   bell: '🔔',
   help: '❓',
+  info: 'ℹ️',
   search: '🔍',
+  filter: '🔍',
+  'chevron-right': '▶️',
+
+  // CRUD / NAV
   add: '➕',
   edit: '✏️',
   detail: '👁️',
-  archive: '🗄️',
-  block: '⛔',
-  resetPwd: '🔁',
-  invite: '📨',
-  history: '🧑‍💻',
-  docs: '📑',
-  perms: '✳️',
   delete: '🗑️',
+  archive: '🗄️',
+  paperclip: '📎',
+  refresh: '🔄',
+
+  // WORKFLOW
+  approve: '✔️',   // potvrdit / uložit
+  save: '💾',      // explicitní „Uložit“
+  reject: '❌',    // zpět / zrušit
+  exit: '🚪',      // odhlásit / zavřít
+
+  // DOKUMENTY / KOMUNIKACE
+  docs: '📑',
+  note: '📝',
+  comment: '💬',
+  invite: '📨',    // pozvánka e-mailem
+  send: '📤',      // odeslat dokument/e-mail
+  mail: '✉️',
+
+  // EXPORT/IMPORT/TISK
   export: '📤',
   import: '📥',
   print: '🖨️',
-  filter: '🔍',     // zůstává stejné, případně vyměníme za ⚲
+
+  // STAVY
   stats: '📊',
   reminder: '📨',
-  sign: '🖋️',
-  approve: '✔️',
-  reject: '❌',
-  note: '📝',
-  info: 'ℹ️',
-  comment: '💬',
   inprogress: '⏳',
   done: '✅',
   removed: '🚫',
+
+  // UI TYPY
   tile: '🟦',
   form: '📝',
-  paperclip: '📎', // příloha
+
+  // PREFERENCES
+  star: '⭐️',
 };
-// … tvůj původní registr I = { … }
 
-I.refresh = I.refresh || '🔄'; // doplníme chybějící refresh
-// aliasy — ať je jedno, jestli někdo napíše plus/user/logout apod.
-const ALIASES = { plus: 'add', user: 'account', logout: 'exit', attach: 'paperclip' };
+// Aliasy – pohodlnější klíče na totéž
+const ALIASES = {
+  plus: 'add',
+  user: 'account',
+  logout: 'exit',
+  attach: 'paperclip',
+  favorite: 'star',
+  email: 'mail',
+  remove: 'delete',
+};
 
+/**
+ * Vrátí znak/SVG pro daný klíč.
+ * Používej: import { icon } from './icons.js';  ->  innerHTML = icon('edit')
+ */
 export function icon(name, fallback = '•') {
   const key = ALIASES[name] || name;
-  if (!I[key]) console.warn("Neznámá ikona:", name);
-  return I[key] || fallback;
+  const val = ICONS[key];
+  if (!val) {
+    console.warn('[icons] neznámá ikona:', name);
+    return fallback;
+  }
+  return val;
 }

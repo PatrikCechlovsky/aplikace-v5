@@ -1,52 +1,66 @@
+// src/modules/010-sprava-uzivatelu/forms/create.js
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
-import { inviteUserByEmail } from '../../../db.js';
+import { renderForm } from '../../../ui/form.js';
+import { renderCommonActions } from '../../../ui/commonActions.js';
+import { navigateTo } from '../../../app.js';
 
-export async function render(root){
+const FIELDS = [
+  { key: 'display_name', label: 'Jméno',   type: 'text',  required: true },
+  { key: 'email',        label: 'E-mail',  type: 'email', required: true, placeholder: 'user@example.com' },
+  { key: 'phone',        label: 'Telefon', type: 'text' },
+  { key: 'role',         label: 'Role',    type: 'select', options: ['user', 'admin'], required: true }
+];
+
+export async function render(root) {
+  // Breadcrumb
   setBreadcrumb(document.getElementById('crumb'), [
-    { icon:'home',  label:'Domů', href:'#/' },
-    { icon:'users', label:'Uživatelé', href:'#/m/010-uzivatele' },
-    { icon:'add',   label:'Nový / Pozvat' },
+    { icon: 'home',  label: 'Domů',      href: '#/' },
+    { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
+    { icon: 'add',   label: 'Nový / Pozvat' }
   ]);
 
-  const url = new URL(location.href);
-  const preEmail = url.hash.includes('?') ? new URLSearchParams(url.hash.split('?')[1]).get('email') : '';
+  // Všechny akce jen v CommonActions (žádná tlačítka dole ve formu)
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions: ['approve', 'invite', 'reject'], // Uložit(zůstat), Pozvat, Zpět
+    userRole: 'admin',
+    handlers: {
+      onApprove: async () => {
+        const values = grabValues(root);
+        // TODO: uložení do DB (zůstat ve formu)
+        console.log('[CREATE SAVE]', values);
+        alert('Uloženo (demo) – zůstávám ve formuláři.');
+      },
+      onInvite: async () => {
+        const values = grabValues(root);
+        // TODO: odeslat pozvánku e-mailem
+        console.log('[INVITE]', values);
+        alert('Pozvánka odeslána (demo).');
+        navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+      },
+      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
+    }
+  });
 
-  root.innerHTML = `
-    <form class="p-4 bg-white rounded-2xl border space-y-3">
-      <h3 class="font-medium">Nový uživatel / pozvánka</h3>
-      <label class="block">
-        <span class="text-xs text-slate-500">E‑mail (pro pozvánku)</span>
-        <input name="email" type="email" required class="w-full border rounded p-2" value="${preEmail}" placeholder="user@example.com" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-slate-500">Jméno (volitelné)</span>
-        <input name="display_name" class="w-full border rounded p-2" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-slate-500">Role</span>
-        <select name="role" class="w-full border rounded p-2">
-          <option value="user" selected>user</option>
-          <option value="admin">admin</option>
-        </select>
-      </label>
-      <div class="flex gap-2">
-        <button class="px-3 py-2 bg-slate-900 text-white rounded" type="submit">Odeslat pozvánku</button>
-        <a class="px-3 py-2 border rounded" href="#/m/010-uzivatele/t/prehled">Zpět</a>
-      </div>
-    </form>
-  `;
+  // Výchozí hodnoty
+  const initial = { role: 'user' };
 
-  root.querySelector('form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const email = String(fd.get('email') || '').trim();
-    const display_name = String(fd.get('display_name') || '').trim();
-    const role = String(fd.get('role') || 'user');
-
-    const { error } = await inviteUserByEmail({ email, display_name, role });
-    if (error) { alert('Pozvánku se nepodařilo odeslat: ' + error.message); return; }
-    alert('Pozvánka odeslána.');
-    navigateTo('#/m/010-uzivatele/t/prehled');
+  // Formulář – BEZ spodních tlačítek (showSubmit:false)
+  renderForm(root, FIELDS, initial, async () => true, {
+    layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
+    sections: [{ id: 'zaklad', label: 'Základ', fields: FIELDS.map(f => f.key) }],
+    showSubmit: false
   });
 }
+
+// Helper: sebrat hodnoty z polí (pro akce v headeru)
+function grabValues(scopeEl) {
+  const obj = {};
+  for (const f of FIELDS) {
+    const el = scopeEl.querySelector(`[name="${f.key}"]`);
+    if (!el) continue;
+    obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
+  }
+  return obj;
+}
+
 export default { render };

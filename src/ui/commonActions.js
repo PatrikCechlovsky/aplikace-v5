@@ -1,25 +1,131 @@
-import { icon } from './icons.js';
+// src/ui/commonActions.js
+// Kompaktní ikonové akce s kompatibilitou pro různé tvary permissions.
 
+import { icon as uiIcon } from './icons.js';
+import { getAllowedActions } from '../security/permissions.js';
+
+// Katalog známých akcí (label/title jen pro tooltipy)
+const CATALOG = {
+  detail:  { key: 'detail',  icon: 'detail',     label: 'Detail',    title: 'Zobrazit detail' },
+  add:     { key: 'add',     icon: 'add',        label: 'Přidat',    title: 'Přidat nový záznam' },
+  edit:    { key: 'edit',    icon: 'edit',       label: 'Upravit',   title: 'Upravit záznam' },
+  delete:  { key: 'delete',  icon: 'delete',     label: 'Smazat',    title: 'Smazat záznam' },
+  archive: { key: 'archive', icon: 'archive',    label: 'Archivovat',title: 'Přesunout do archivu' },
+  attach:  { key: 'attach',  icon: 'paperclip',  label: 'Přílohy',   title: 'Zobrazit přílohy' },
+  refresh: { key: 'refresh', icon: 'refresh',    label: 'Obnovit',   title: 'Obnovit data' },
+  search:  { key: 'search',  icon: 'search',     label: 'Hledat',    title: 'Hledat / filtrovat' },
+
+  approve: { key: 'approve', icon: 'save',       label: 'Uložit',    title: 'Uložit a zůstat' },
+  reject:  { key: 'reject',  icon: 'reject',     label: 'Zpět',      title: 'Zpět bez uložení' },
+
+  invite:  { key: 'invite',  icon: 'invite',     label: 'Pozvat',    title: 'Odeslat pozvánku e-mailem' },
+  send:    { key: 'send',    icon: 'send',       label: 'Odeslat',   title: 'Odeslat dokument / e-mail' },
+
+  export:  { key: 'export',  icon: 'export',     label: 'Export',    title: 'Exportovat' },
+  import:  { key: 'import',  icon: 'import',     label: 'Import',    title: 'Importovat' },
+  print:   { key: 'print',   icon: 'print',      label: 'Tisk',      title: 'Vytisknout' },
+
+  // oblíbené (renderuj jen pokud existuje handler onStar)
+  star:    { key: 'star',    icon: 'star',       label: 'Oblíbené',  title: 'Přidat/odebrat z oblíbených' },
+};
+
+// Když nepředáš moduleActions, odvozujeme je z názvů handlerů (onAdd → 'add'…)
+function deriveFromHandlers(handlers = {}) {
+  return Object.keys(handlers)
+    .filter(k => k.startsWith('on'))
+    .map(k => k.slice(2).replace(/^[A-Z]/, c => c.toLowerCase()));
+}
+
+// Normalizace výsledku getAllowedActions
+function normalizeAllowed(input = [], fallbackKeys = []) {
+  if (!Array.isArray(input) || !input.length) {
+    return fallbackKeys.map(k => ({ ...(CATALOG[k] || { key: k, icon: k }), key: k }));
+  }
+  return input.map(a => {
+    if (typeof a === 'string') {
+      const k = a;
+      return { ...(CATALOG[k] || { key: k, icon: k }), key: k };
+    }
+    const k = a.key || a.id;
+    const base = CATALOG[k] || {};
+    return {
+      key: k,
+      icon: a.icon || base.icon || k,
+      label: a.label || base.label || k,
+      title: a.title || base.title || a.label || k
+    };
+  });
+}
+
+/**
+ * @param {HTMLElement} root
+ * @param {{ moduleActions?:string[], userRole?:string, handlers?:Record<string,Function>, isStarred?:boolean }} param1
+ */
 export function renderCommonActions(
   root,
-  { onAdd, onEdit, onArchive, onRefresh, onAttach, onStar, isStarred } = {}
+  { moduleActions = null, userRole = 'admin', handlers = {}, isStarred = false } = {}
 ) {
   if (!root) return;
-  root.innerHTML = `
-    <div class="flex items-center gap-2">
-      ${onAdd     ? `<button id="ca-add"     class="px-2 py-1 border rounded bg-white"  title="Přidat">${icon('add')}</button>` : ''}
-      ${onEdit    ? `<button id="ca-edit"    class="px-2 py-1 border rounded bg-white"  title="Upravit">${icon('edit')}</button>` : ''}
-      ${onArchive ? `<button id="ca-arch"    class="px-2 py-1 border rounded bg-white"  title="Archivovat">${icon('archive')}</button>` : ''}
-      ${onAttach  ? `<button id="ca-attach"  class="px-2 py-1 border rounded bg-white"  title="Příloha">${icon('paperclip')}</button>` : ''}
-      ${onStar    ? `<button id="ca-star"    class="px-2 py-1 border rounded bg-white"  title="${isStarred?'Odebrat z oblíbených':'Přidat do oblíbených'}">
-                       <span class="text-xl ${isStarred?'text-yellow-400':'text-slate-400'}">${isStarred?'★':'☆'}</span>
-                     </button>` : ''}
-      ${onRefresh ? `<button id="ca-refresh" class="px-2 py-1 border rounded bg-white"  title="Obnovit">${icon('refresh')}</button>` : ''}
-    </div>`;
-  root.querySelector('#ca-add')    ?.addEventListener('click', () => onAdd?.());
-  root.querySelector('#ca-edit')   ?.addEventListener('click', () => onEdit?.());
-  root.querySelector('#ca-arch')   ?.addEventListener('click', () => onArchive?.());
-  root.querySelector('#ca-attach') ?.addEventListener('click', () => onAttach?.());
-  root.querySelector('#ca-star')   ?.addEventListener('click', () => onStar?.());
-  root.querySelector('#ca-refresh')?.addEventListener('click', () => onRefresh?.());
+  root.innerHTML = '';
+
+  // 1) jaké akce chceme?
+  const wantedKeys = (moduleActions && moduleActions.length)
+    ? moduleActions
+    : deriveFromHandlers(handlers);
+
+  // 2) permissions (bez pádu, když nejsou)
+  let allowedRaw = [];
+  try {
+    allowedRaw = getAllowedActions(userRole, wantedKeys) || [];
+  } catch {
+    allowedRaw = wantedKeys;
+  }
+
+  // 3) normalizace
+  let acts = normalizeAllowed(allowedRaw, wantedKeys);
+
+  // 4) hvězdička jen pokud je handler
+  if (typeof handlers.onStar === 'function') {
+    acts = acts.concat([{ ...CATALOG.star, title: isStarred ? 'Odebrat z oblíbených' : 'Přidat do oblíbených' }]);
+  }
+
+  if (!acts.length) {
+    root.innerHTML = `<div class="text-slate-400 text-sm italic p-2">Žádné dostupné akce</div>`;
+    return;
+  }
+
+  // 5) render
+  const wrap = document.createElement('div');
+  wrap.className = 'flex items-center gap-2';
+
+  acts.forEach(act => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = [
+      'relative flex items-center justify-center w-8 h-8 rounded-md border transition',
+      'border-slate-200 bg-white hover:bg-slate-100',
+      'text-slate-700 text-lg'
+    ].join(' ');
+
+    btn.innerHTML = uiIcon(act.icon); // ← použij aliasovaný import
+    btn.title = act.title || act.label || act.key;
+    btn.setAttribute('aria-label', act.label || act.key);
+
+    const handlerName = 'on' + act.key.charAt(0).toUpperCase() + act.key.slice(1);
+    const handler = handlers[handlerName];
+    if (typeof handler === 'function') {
+      btn.addEventListener('click', handler);
+      if (act.key === 'star' && isStarred) btn.classList.add('!bg-yellow-100');
+    } else {
+      btn.disabled = true;
+      btn.classList.add('opacity-40', 'cursor-not-allowed');
+      btn.title = (btn.title + ' – akce není dostupná');
+    }
+
+    wrap.appendChild(btn);
+  });
+
+  root.appendChild(wrap);
 }
+
+export { CATALOG };

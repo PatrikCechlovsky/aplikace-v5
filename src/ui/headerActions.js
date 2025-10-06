@@ -1,35 +1,28 @@
+// src/ui/headerActions.js
 import { icon } from './icons.js';
+import { hardLogout, getUserSafe } from '../auth.js';
 
-// Pokud potřebuješ profilové info, můžeš použít async (případně odkomentovat níže)
-// import { supabase } from '../supabase.js'; // pokud používáš supabase
-// import { getMyProfile } from '../db.js';   // pokud máš vlastní profil fetch
-
-export function renderHeaderActions(root) {
+export async function renderHeaderActions(root) {
   if (!root) return;
   root.innerHTML = '';
 
   const box = document.createElement('div');
   box.className = 'flex items-center gap-3';
 
-  // Příklad: Zobrazit uživatelské jméno (volitelné)
-  // async funkci můžeš použít později dle potřeby
-  /*
-  (async () => {
-    try {
-      const { data: profile } = await getMyProfile();
-      if (profile?.display_name) {
-        const hello = document.createElement('span');
-        hello.className = 'text-slate-600 text-sm';
-        hello.textContent = `Ahoj ${profile.display_name}`;
-        box.appendChild(hello);
-      }
-    } catch {}
-  })();
-  */
+  // Volitelně: pozdrav / identifikace uživatele
+  try {
+    const user = await getUserSafe();
+    if (user?.email) {
+      const hello = document.createElement('span');
+      hello.className = 'text-slate-600 text-sm hidden sm:inline';
+      hello.textContent = user.email;
+      box.appendChild(hello);
+    }
+  } catch (_) {}
 
-  // Tlačítka – můžeš libovolně rozšířit/změnit
   const mkIconBtn = (title, key, onClick) => {
     const b = document.createElement('button');
+    b.type = 'button';
     b.className = 'p-2 rounded hover:bg-slate-100 text-slate-700';
     b.title = title;
     b.innerHTML = icon(key);
@@ -37,19 +30,24 @@ export function renderHeaderActions(root) {
     return b;
   };
 
-  // Demo tlačítek:
-  box.appendChild(mkIconBtn('Hledat', 'search', () => alert('Hledat')));
-  box.appendChild(mkIconBtn('Notifikace', 'bell', () => alert('Notifikace')));
-  box.appendChild(mkIconBtn('Můj účet', 'account', () => alert('Můj účet')));
+  // Ikony vpravo
+  box.appendChild(mkIconBtn('Hledat', 'search', () => {
+    window.dispatchEvent(new CustomEvent('openSearch'));
+  }));
+  box.appendChild(mkIconBtn('Notifikace', 'bell', () => {
+    window.dispatchEvent(new CustomEvent('openNotifications'));
+  }));
+  box.appendChild(mkIconBtn('Můj účet', 'account', () => {
+    // můžeš později přesměrovat na vlastní modul účtu
+    alert('Můj účet (placeholder)');
+  }));
 
-  // Odhlásit (může být i textové tlačítko)
+  // Odhlásit – skutečná akce přes Supabase
   const logout = document.createElement('button');
+  logout.type = 'button';
   logout.className = 'px-3 py-1 border rounded text-slate-700 hover:bg-slate-50 ml-2';
   logout.textContent = 'Odhlásit';
-  logout.onclick = () => {
-    alert('Odhlásit');
-    // zde doplň skutečnou logiku odhlášení (supabase, api, apod.)
-  };
+  logout.onclick = hardLogout;
   box.appendChild(logout);
 
   root.appendChild(box);
