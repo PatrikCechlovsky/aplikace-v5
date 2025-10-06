@@ -1,7 +1,6 @@
 // src/app/modules.index.js
-export async function registerModules() {
-  const reg = window.registry; // Map
-  const loaders = [
+// Seznam lazy loaderů na module.config.js (relativně z /src/app/)
+export const MODULE_SOURCES = [
   () => import('../modules/010-sprava-uzivatelu/module.config.js'),
   () => import('../modules/020-muj-ucet/module.config.js'),
   () => import('../modules/030-pronajimatel/module.config.js'),
@@ -19,14 +18,3 @@ export async function registerModules() {
   // () => import('../modules/990-help/module.config.js'),
 ];
 // Odkomentuj další řádky až budou moduly vytvořené.
-for (const load of loaders) {
-    try {
-      const mod = (await load()).default;
-      if (reg && typeof reg.set === 'function') reg.set(mod.id, mod);
-      else if (reg?.register) reg.register(mod);
-      else (window.registry ??= new Map()).set(mod.id, mod);
-    } catch (e) {
-      console.error('[MODULE LOAD FAILED]', e);
-    }
-  }
-}
