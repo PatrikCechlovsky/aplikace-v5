@@ -1,6 +1,6 @@
-// src/modules/modules.index.js
+// src/app/modules.index.js
 export async function registerModules() {
-  const reg = window.registry; // je to Map
+  const reg = window.registry; // Map
   const loaders = [
   () => import('../modules/010-sprava-uzivatelu/module.config.js'),
   () => import('../modules/020-muj-ucet/module.config.js'),
@@ -22,14 +22,9 @@ export async function registerModules() {
 for (const load of loaders) {
     try {
       const mod = (await load()).default;
-      if (reg && typeof reg.set === 'function') {
-        reg.set(mod.id, mod);           // <-- DŮLEŽITÉ (registry je Map)
-      } else if (reg?.register) {
-        reg.register(mod);
-      } else {
-        // nouzově vytvoř objekt/Map, kdyby něco
-        (window.registry ??= new Map()).set(mod.id, mod);
-      }
+      if (reg && typeof reg.set === 'function') reg.set(mod.id, mod);
+      else if (reg?.register) reg.register(mod);
+      else (window.registry ??= new Map()).set(mod.id, mod);
     } catch (e) {
       console.error('[MODULE LOAD FAILED]', e);
     }
