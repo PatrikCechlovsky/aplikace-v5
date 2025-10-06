@@ -1,42 +1,40 @@
 // src/modules/010-sprava-uzivatelu/module.config.js
-export async function getManifest() {
-  return {
-    id: '010-sprava-uzivatelu',
-    title: 'Uživatelé',
-    icon: 'users',
+export default {
+  id: '010-sprava-uzivatelu',
+  title: 'Uživatelé',
+  icon: 'users',
+  baseDir: '/src/modules/010-sprava-uzivatelu',
 
-    // Dlaždice (tiles) – lazy import (renderer je funkce)
-    tiles: [
-      {
-        id: 'prehled',
-        title: 'Přehled',
-        icon: 'list',
-        renderer: () => import('./tiles/prehled.js')
-      }
-    ],
+  // volitelně: výchozí dlaždice v breadcrumbs
+  defaultTitle: 'Přehled',
 
-    // Formuláře (forms) – lazy import
-    forms: [
-      {
-        id: 'create',
-        title: 'Nový / Pozvat',
-        icon: 'add',
-        renderer: () => import('./forms/create.js')
-      },
-      {
-        id: 'form',
-        title: 'Formulář',
-        icon: 'edit',
-        renderer: () => import('./forms/form.js')
-      }
+  tiles: [
     {
-        id: 'role',
-        title: 'Role & barvy',
-        icon: 'settings',
-        renderer: () => import('./forms/role.js'),
-      },
-    ],
-    // výchozí sekce pro /m/010-sprava-uzivatelu
-    defaultTile: 'prehled',
-  };
-}
+      id: 'prehled',
+      title: 'Přehled',
+      icon: 'list',
+      renderer: () => import('./tiles/prehled.js'),
+    },
+  ],
+
+  forms: [
+    {
+      id: 'form',
+      title: 'Formulář',
+      icon: 'form',
+      renderer: () => import('./forms/form.js'),
+    },
+    {
+      id: 'create',
+      title: 'Nový / Pozvat',
+      icon: 'add',
+      renderer: () => import('./forms/create.js'),
+    },
+    {
+      id: 'role',
+      title: 'Role & barvy',
+      icon: 'settings',
+      renderer: () => import('./forms/role.js'),
+    },
+  ],
+};
