@@ -8,6 +8,7 @@ import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
 import './supabase.js';
+import './auth.js'; // zajistí requireAuthOnApp() na app.html
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
