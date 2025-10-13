@@ -20,6 +20,8 @@ export function navigateTo(hash) {
     location.hash = hash;
   }
 }
+// zpřístupni pro komponenty jako table.js (volají window.navigateTo)
+window.navigateTo = navigateTo;
 
 // ===== Renderer shim =============================================
 async function runRenderer(modPromise, root, params, debugTag) {
@@ -210,7 +212,7 @@ window.addEventListener('hashchange', () => {
     renderHeaderActions($id('headeractions'));
     await initModules();
 
-    // 💡 po načtení registru očistíme oblíbené od neexistujících dlaždic
+    // po načtení registru očistíme oblíbené od neexistujících dlaždic
     sanitizeFavorites(Array.from(registry.values()));
 
     renderSidebar($id('sidebarbox'), Array.from(registry.values()));
