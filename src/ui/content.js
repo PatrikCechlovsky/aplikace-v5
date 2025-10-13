@@ -1,16 +1,19 @@
 import { icon } from './icons.js';
 
 // Klíče do localStorage
-const FAV_TILES_KEY = 'favoriteTiles';           // ['modul1/tile1', ...]
-const FAV_TILES_ORDER_KEY = 'favoriteTilesOrder';// ['modul1/tile1', ...]
+const FAV_TILES_KEY = 'favoriteTiles';         // oblíbené ve tvaru ['modul1/tile1', ...]
+const FAV_TILES_ORDER_KEY = 'favoriteTilesOrder'; // pořadí jako ['modul1/tile1', ...]
 
 // Načtení oblíbených
 export function loadFavorites() {
-  try { return JSON.parse(localStorage.getItem(FAV_TILES_KEY) || '[]') || []; }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(FAV_TILES_KEY) || '[]') || [];
+  } catch {
+    return [];
+  }
 }
 
-// Nastavení oblíbenosti
+// Nastavení oblíbenosti (používej v nastavení nebo commonActions)
 export function setFavorite(tileId, value = true) {
   let favs = loadFavorites();
   if (value) {
@@ -19,8 +22,7 @@ export function setFavorite(tileId, value = true) {
     favs = favs.filter(id => id !== tileId);
   }
   localStorage.setItem(FAV_TILES_KEY, JSON.stringify(favs));
-
-  // údržba pořadí při odebrání
+  // Pokud odebereme, musíme i z pořadí
   let order = loadFavoriteOrder();
   if (!value) {
     order = order.filter(id => id !== tileId);
@@ -28,16 +30,20 @@ export function setFavorite(tileId, value = true) {
   }
 }
 
-// Načtení a nastavení pořadí
+// Načtení pořadí
 export function loadFavoriteOrder() {
-  try { return JSON.parse(localStorage.getItem(FAV_TILES_ORDER_KEY) || '[]') || []; }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(FAV_TILES_ORDER_KEY) || '[]') || [];
+  } catch {
+    return [];
+  }
 }
+// Nastavení pořadí
 export function setFavoriteOrder(orderArr) {
   localStorage.setItem(FAV_TILES_ORDER_KEY, JSON.stringify(orderArr));
 }
 
-// Očista oblíbených po změnách modulů (přidáno)
+// Nově: očista oblíbených po změnách modulů
 export function sanitizeFavorites(modules = []) {
   const favs = loadFavorites();
   if (!Array.isArray(favs) || !favs.length) return;
@@ -80,7 +86,7 @@ function renderTile(mod, tile) {
         <a href="#/m/${mod.id}/t/${tile.id}" class="w-full h-full block" title="Otevřít"></a>
       </div>
       <div class="absolute top-3 right-3 z-10 opacity-40 pointer-events-none group-hover:opacity-60 select-none">
-        <svg width="18" height="18" fill="currentColor" class="inline text-blue-300" viewBox="0 0 20 20"><path d="M7 4a3 3 0 1 1 6 0v1h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1V4zm2 0a1 1 0 1 1 2 0v1h-2V4zm-3 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1z"/></svg>
+        <svg width="18" height="18" fill="currentColor" class="inline text-blue-300" viewBox="0 0 20 20"><path d="M7 4a3 3 0 1 1 6 0v1h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 0-1-1h1V4zm2 0a1 1 0 1 1 2 0v1h-2V4zm-3 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1z"/></svg>
       </div>
     </div>
   `;
@@ -96,6 +102,7 @@ export function renderDashboardTiles(root, modules = []) {
 
   const favIds = loadFavorites();
   let favOrder = loadFavoriteOrder();
+  // fallback: pokud nemám uložené pořadí, použij pořadí podle favIds
   if (!favOrder.length) favOrder = favIds.slice();
 
   // Map id -> {mod, tile}
@@ -128,16 +135,17 @@ export function renderDashboardTiles(root, modules = []) {
     ${favTiles.length ? `<div class="mt-4 text-xs text-slate-400 text-center italic">Dlaždice lze řadit tažením myší.</div>` : ''}
   `;
 
-  // Drag & drop pomocí SortableJS
+  // Drag & drop pomocí SortableJS (musíš mít v projektu, jinak napiš a dám fallback)
   if (window.Sortable && favTiles.length) {
     const list = document.getElementById('fav-tiles-list');
     if (list && !list._sortableAttached) {
       window.Sortable.create(list, {
         animation: 180,
         ghostClass: 'bg-blue-50',
-        handle: '.tile-draggable',
+        handle: '.tile-draggable', // celá dlaždice je "handle"
         draggable: '.tile-draggable',
         onEnd: function () {
+          // Zjisti nové pořadí a ulož do localStorage
           const newOrder = Array.from(list.children)
             .map(tile => tile.getAttribute('data-id'))
             .filter(Boolean);
