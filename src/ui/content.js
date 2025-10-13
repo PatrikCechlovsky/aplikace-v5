@@ -1,19 +1,16 @@
 import { icon } from './icons.js';
 
 // Klíče do localStorage
-const FAV_TILES_KEY = 'favoriteTiles';         // oblíbené ve tvaru ['modul1/tile1', ...]
-const FAV_TILES_ORDER_KEY = 'favoriteTilesOrder'; // pořadí jako ['modul1/tile1', ...]
+const FAV_TILES_KEY = 'favoriteTiles';           // ['modul1/tile1', ...]
+const FAV_TILES_ORDER_KEY = 'favoriteTilesOrder';// ['modul1/tile1', ...]
 
 // Načtení oblíbených
 export function loadFavorites() {
-  try {
-    return JSON.parse(localStorage.getItem(FAV_TILES_KEY) || '[]') || [];
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(FAV_TILES_KEY) || '[]') || []; }
+  catch { return []; }
 }
 
-// Nastavení oblíbenosti (používej v nastavení nebo commonActions)
+// Nastavení oblíbenosti
 export function setFavorite(tileId, value = true) {
   let favs = loadFavorites();
   if (value) {
@@ -22,7 +19,8 @@ export function setFavorite(tileId, value = true) {
     favs = favs.filter(id => id !== tileId);
   }
   localStorage.setItem(FAV_TILES_KEY, JSON.stringify(favs));
-  // Pokud odebereme, musíme i z pořadí
+
+  // údržba pořadí při odebrání
   let order = loadFavoriteOrder();
   if (!value) {
     order = order.filter(id => id !== tileId);
@@ -30,37 +28,30 @@ export function setFavorite(tileId, value = true) {
   }
 }
 
-// Načtení pořadí
+// Načtení a nastavení pořadí
 export function loadFavoriteOrder() {
-  try {
-    return JSON.parse(localStorage.getItem(FAV_TILES_ORDER_KEY) || '[]') || [];
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(FAV_TILES_ORDER_KEY) || '[]') || []; }
+  catch { return []; }
 }
-// Nastavení pořadí
 export function setFavoriteOrder(orderArr) {
   localStorage.setItem(FAV_TILES_ORDER_KEY, JSON.stringify(orderArr));
 }
 
-/**
- * Očistí uložené oblíbené dlaždice podle registru modulů.
- * - odstraní neexistující (smazané/přejmenované) moduly/tiles z favoriteTiles i favoriteTilesOrder
- * - volat po initModules() (kdy už známe registry)
- * @param {Array} modules - Array.from(registry.values())
- */
+// Očista oblíbených po změnách modulů (přidáno)
 export function sanitizeFavorites(modules = []) {
-  // vyrob mapu validních tileId ve tvaru "modId/tileId"
+  const favs = loadFavorites();
+  if (!Array.isArray(favs) || !favs.length) return;
+
   const valid = new Set();
   modules.forEach(m => {
-    (m.tiles || []).forEach(t => valid.add(`${m.id}/${t.id}`));
-    (m.forms || []).forEach(f => valid.add(`${m.id}/${f.id}`));
+    (m.tiles||[]).forEach(t => valid.add(`${m.id}/${t.id}`));
+    (m.forms||[]).forEach(f => valid.add(`${m.id}/${f.id}`));
   });
 
-  const favs = loadFavorites().filter(id => valid.has(id));
-  const order = loadFavoriteOrder().filter(id => valid.has(id));
+  const cleaned = favs.filter(id => valid.has(id));
+  localStorage.setItem(FAV_TILES_KEY, JSON.stringify(cleaned));
 
-  localStorage.setItem(FAV_TILES_KEY, JSON.stringify(favs));
+  const order = loadFavoriteOrder().filter(id => valid.has(id));
   localStorage.setItem(FAV_TILES_ORDER_KEY, JSON.stringify(order));
 }
 
@@ -105,7 +96,6 @@ export function renderDashboardTiles(root, modules = []) {
 
   const favIds = loadFavorites();
   let favOrder = loadFavoriteOrder();
-  // fallback: pokud nemám uložené pořadí, použij pořadí podle favIds
   if (!favOrder.length) favOrder = favIds.slice();
 
   // Map id -> {mod, tile}
@@ -138,7 +128,7 @@ export function renderDashboardTiles(root, modules = []) {
     ${favTiles.length ? `<div class="mt-4 text-xs text-slate-400 text-center italic">Dlaždice lze řadit tažením myší.</div>` : ''}
   `;
 
-  // Drag & drop přes SortableJS
+  // Drag & drop pomocí SortableJS
   if (window.Sortable && favTiles.length) {
     const list = document.getElementById('fav-tiles-list');
     if (list && !list._sortableAttached) {
