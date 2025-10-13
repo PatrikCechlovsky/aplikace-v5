@@ -20,7 +20,6 @@ export function navigateTo(hash) {
     location.hash = hash;
   }
 }
-// zpřístupni pro komponenty jako table.js (volají window.navigateTo)
 window.navigateTo = navigateTo;
 
 // ===== Renderer shim =============================================
