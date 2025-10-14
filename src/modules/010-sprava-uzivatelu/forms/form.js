@@ -4,6 +4,8 @@ import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo, route } from '../../../app.js';
 
+// TODO: Později přidat kontrolu existence uživatele podle emailu a možnost odeslat pozvánku pokud uživatel ještě není pozván (invited = false)
+
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
@@ -65,7 +67,7 @@ export async function render(root) {
 
   // Akce podle režimu
   const actionsByMode = {
-    read: ['edit', 'reject'],                      // Detail: jen Upravit + Zpět
+    read: ['edit', 'reject', 'invite'],                      // Detail: Upravit + Zpět + Pozvat (TODO)
     edit: ['approve', 'attach', 'delete', 'reject'] // Edit: Uložit(zůstat), Přílohy, Smazat, Zpět
   };
   const moduleActions = actionsByMode[mode];
@@ -77,8 +79,15 @@ export async function render(root) {
       onEdit:   () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`),
       onApprove: async () => {
         const values = grabValues(root);
+
+        // TODO: Kontrola existence emailu v databázi a případné nabídnutí pozvánky, pokud uživatel ještě neexistuje
+
         const ok = await handleSave(values, { stay: true });
         if (ok) alert('Uloženo (demo) – zůstávám ve formuláři.');
+      },
+      onInvite: () => {
+        // TODO: Implementovat odeslání pozvánky na email, pokud uživatel není pozván
+        alert('Pozvánka bude odeslána (TODO)');
       },
       onAttach: () => alert('Přílohy (demo)'),
       onDelete: async () => {
