@@ -35,7 +35,19 @@ async function initModules() {
     abs = abs.replace('/src/app/../', '/src/');
     const baseDir = abs.replace(/\/module\.config\.js$/, '');
     const mod = await src();
-    const manifest = mod?.default || (await mod.getManifest?.()) || mod?.manifest || null;
+
+    // Správně získej manifest i přes asynchronní getManifest
+    let manifest = null;
+    if (typeof mod.getManifest === "function") {
+      manifest = await mod.getManifest();
+    } else if (mod?.default && typeof mod.default.getManifest === "function") {
+      manifest = await mod.default.getManifest();
+    } else if (mod?.default && typeof mod.default === "object") {
+      manifest = mod.default;
+    } else if (mod?.manifest) {
+      manifest = mod.manifest;
+    }
+
     if (!manifest || !manifest.id) continue;
     registry.set(manifest.id, { ...manifest, baseDir });
   }
