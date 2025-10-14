@@ -10,17 +10,32 @@ function getHashParams() {
 }
 
 const FIELDS = [
-  { key: 'display_name', label: 'Jméno',        type: 'text',  required: true },
-  { key: 'email',        label: 'E-mail',       type: 'email', required: true },
-  { key: 'phone',        label: 'Telefon',      type: 'text'  },
-  { key: 'mesto',        label: 'Město',        type: 'text'  },
-  { key: 'role',         label: 'Role',         type: 'select', options: ['user','admin'] },
-  { key: 'note',         label: 'Poznámka',     type: 'textarea', fullWidth: true }
+  { key: 'display_name',  label: 'Jméno',        type: 'text',     required: true },
+  { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
+  { key: 'phone',         label: 'Telefon',      type: 'text' },
+  { key: 'street',        label: 'Ulice',        type: 'text' },
+  { key: 'house_number',  label: 'Číslo popisné',type: 'text' },
+  { key: 'city',          label: 'Město',        type: 'text' },
+  { key: 'zip',           label: 'PSČ',          type: 'text' },
+  { key: 'role',          label: 'Role',         type: 'select', options: [
+      { value: 'admin',        label: 'Administrátor' },
+      { value: 'pronajimatel', label: 'Pronajímatel' },
+      { value: 'najemnik',     label: 'Nájemník' },
+      { value: 'user',         label: 'Uživatel' }
+    ], required: true
+  },
+  { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
+  { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' }, // GDPR - nepovinné!
+  { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
+  { key: 'last_login',    label: 'Poslední přihlášení', type: 'date', readOnly: true },
+  { key: 'updated_at',    label: 'Poslední úprava',     type: 'date', readOnly: true },
+  { key: 'updated_by',    label: 'Upravil',             type: 'text', readOnly: true },
+  { key: 'created_at',    label: 'Vytvořen',            type: 'date', readOnly: true }
 ];
 
 export async function render(root) {
   const { id, mode: modeParam } = getHashParams();
-  const mode = (modeParam === 'read') ? 'read' : 'edit'; // default edit
+  const mode = (modeParam === 'read') ? 'read' : 'edit';
 
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home',  label: 'Domů',      href: '#/' },
@@ -28,15 +43,24 @@ export async function render(root) {
     { icon: 'form',  label: 'Formulář' }
   ]);
 
-  // DEMO data – reálné natažení/uložení doplníme
+  // TODO: načíst reálná data z DB podle id
   const data = id ? {
     id,
     display_name: '',
     email: '',
     phone: '',
-    mesto: '',
-    role: 'user',
-    note: ''
+    street: '',
+    house_number: '',
+    city: '',
+    zip: '',
+    role: '',
+    active: true,
+    birth_number: '',
+    note: '',
+    last_login: '', // načíst z DB
+    updated_at: '', // načíst z DB
+    updated_by: '', // načíst z DB
+    created_at: '', // načíst z DB
   } : {};
 
   // Akce podle režimu
@@ -72,11 +96,16 @@ export async function render(root) {
 
   renderForm(root, FIELDS, data, async () => true, {
     readOnly: (mode === 'read'),
-    showSubmit: false, // ← žádné tlačítko dole
+    showSubmit: false,
     layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
     sections: [
-      { id: 'profil', label: 'Profil', fields: ['display_name','email','phone','mesto'] },
-      { id: 'system', label: 'Systém', fields: ['role','note'] },
+      { id: 'profil', label: 'Profil', fields: [
+        'display_name', 'email', 'phone',
+        'street', 'house_number', 'city', 'zip', 'birth_number'
+      ] },
+      { id: 'system', label: 'Systém', fields: [
+        'role', 'active', 'note', 'last_login', 'updated_at', 'updated_by', 'created_at'
+      ] },
     ]
   });
 }
