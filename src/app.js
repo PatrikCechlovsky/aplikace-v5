@@ -139,6 +139,7 @@ window.addEventListener('hashchange', function () {
 (async function start() {
   try {
     await initModules();
+    console.log('Obsah registry:', Array.from(registry.values()));
     renderLayout();
     window.addEventListener('hashchange', route);
     route();
