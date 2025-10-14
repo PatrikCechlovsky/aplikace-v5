@@ -3,6 +3,7 @@ import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo, route } from '../../../app.js';
+import { getProfile } from '../../../db.js'; // Přidán import pro načítání uživatele
 
 // TODO: Později přidat kontrolu existence uživatele podle emailu a možnost odeslat pozvánku pokud uživatel ještě není pozván (invited = false)
 
@@ -39,36 +40,31 @@ export async function render(root) {
   const { id, mode: modeParam } = getHashParams();
   const mode = (modeParam === 'read') ? 'read' : 'edit';
 
+  // Načtení dat uživatele z DB, pokud máme id
+  let data = {};
+  if (id) {
+    const { data: userData, error } = await getProfile(id);
+    if (error) {
+      root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání uživatele: ${error.message}</div>`;
+      return;
+    }
+    data = userData || {};
+  }
+
+  // Jméno do breadcrumbu (jméno, pak email, případně fallback na ID)
+  const jmeno = data.display_name || data.email || id || 'Uživatel';
+
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home',  label: 'Domů',      href: '#/' },
     { icon: 'users', label: 'Uživatelé', href: '#/m/010-sprava-uzivatelu' },
-    { icon: 'form',  label: 'Formulář' }
+    { icon: 'form',  label: 'Formulář' },
+    { icon: 'account', label: jmeno }
   ]);
-
-  // TODO: načíst reálná data z DB podle id
-  const data = id ? {
-    id,
-    display_name: '',
-    email: '',
-    phone: '',
-    street: '',
-    house_number: '',
-    city: '',
-    zip: '',
-    role: '',
-    active: true,
-    birth_number: '',
-    note: '',
-    last_login: '', // načíst z DB
-    updated_at: '', // načíst z DB
-    updated_by: '', // načíst z DB
-    created_at: '', // načíst z DB
-  } : {};
 
   // Akce podle režimu
   const actionsByMode = {
-    read: ['edit', 'reject', 'invite'],                      // Detail: Upravit + Zpět + Pozvat (TODO)
-    edit: ['approve', 'attach', 'delete', 'reject'] // Edit: Uložit(zůstat), Přílohy, Smazat, Zpět
+    read: ['edit', 'reject', 'invite'],
+    edit: ['approve', 'attach', 'delete', 'reject']
   };
   const moduleActions = actionsByMode[mode];
 
@@ -79,9 +75,7 @@ export async function render(root) {
       onEdit:   () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`),
       onApprove: async () => {
         const values = grabValues(root);
-
         // TODO: Kontrola existence emailu v databázi a případné nabídnutí pozvánky, pokud uživatel ještě neexistuje
-
         const ok = await handleSave(values, { stay: true });
         if (ok) alert('Uloženo (demo) – zůstávám ve formuláři.');
       },
