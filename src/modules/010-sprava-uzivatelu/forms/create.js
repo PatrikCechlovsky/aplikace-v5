@@ -3,7 +3,7 @@ import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo } from '../../../app.js';
 import { listRoles } from '../../../db.js';
-import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
+// import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
 const FIELDS = [
   { key: 'display_name', label: 'Jméno',   type: 'text',  required: true },
@@ -60,8 +60,8 @@ export async function render(root) {
   });
 
   // --- Hlídání rozdělané práce ---
-  const formEl = root.querySelector("form");
-  if (formEl) useUnsavedHelper(formEl);
+  // const formEl = root.querySelector("form");
+  // if (formEl) useUnsavedHelper(formEl);
 }
 
 // Helper: sebrat hodnoty z polí (pro akce v headeru)
