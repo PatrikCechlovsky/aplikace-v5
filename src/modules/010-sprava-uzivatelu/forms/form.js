@@ -34,10 +34,11 @@ const FIELDS = [
   { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
   { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
   { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
-  { key: 'last_login',    label: 'Poslední přihlášení', type: 'date', readOnly: true, format: formatCzechDate },
-  { key: 'updated_at',    label: 'Poslední úprava',     type: 'date', readOnly: true, format: formatCzechDate },
-  { key: 'updated_by',    label: 'Upravil',             type: 'text', readOnly: true },
-  { key: 'created_at',    label: 'Vytvořen',            type: 'date', readOnly: true, format: formatCzechDate }
+  // readonly pole jako label (prostý text)
+  { key: 'last_login',    label: 'Poslední přihlášení', type: 'label', readOnly: true, format: formatCzechDate },
+  { key: 'updated_at',    label: 'Poslední úprava',     type: 'label', readOnly: true, format: formatCzechDate },
+  { key: 'updated_by',    label: 'Upravil',             type: 'label', readOnly: true },
+  { key: 'created_at',    label: 'Vytvořen',            type: 'label', readOnly: true, format: formatCzechDate }
 ];
 
 // Hlavní renderovací funkce
