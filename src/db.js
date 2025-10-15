@@ -1,4 +1,3 @@
-// src/db.js – tenká vrstva nad Supabase (profiles + storage + attachments + roles + invite)
 import { supabase } from './supabase.js';
 export { supabase };
 
@@ -15,7 +14,7 @@ export async function getMyProfile() {
   if (!user) return { data: null, error: new Error('Nenalezen přihlášený uživatel') };
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, role, archived')
+    .select('id, email, display_name, role, archived, last_login, updated_at, updated_by, created_at')
     .eq('id', user.id)
     .single();
   return { data, error };
@@ -30,7 +29,7 @@ export async function isAdmin() {
 export async function listProfiles({ q = '' } = {}) {
   let query = supabase
     .from('profiles')
-    .select('id, email, display_name, role, archived')
+    .select('id, email, display_name, role, archived, last_login, updated_at, updated_by, created_at')
     .order('display_name', { ascending: true });
   if (q) query = query.ilike('display_name', `%${q}%`);
   const { data, error } = await query;
@@ -40,7 +39,7 @@ export async function listProfiles({ q = '' } = {}) {
 export async function getProfile(id) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, role, archived')
+    .select('id, email, display_name, role, archived, last_login, updated_at, updated_by, created_at')
     .eq('id', id)
     .single();
   return { data, error };
