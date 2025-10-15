@@ -2,7 +2,7 @@ import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo, route } from '../../../app.js';
-import { getProfile, listRoles } from '../../../db.js';
+import { getProfile, updateProfile, listRoles, archiveProfile } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { showAttachmentsModal } from '../../../ui/attachments.js';
 
@@ -14,12 +14,12 @@ function getHashParams() {
 const FIELDS = [
   { key: 'display_name',  label: 'Jméno',        type: 'text',     required: true },
   { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
-  { key: 'phone',         label: 'Telefon',      type: 'text',     required: true }, // Povinné!
+  { key: 'phone',         label: 'Telefon',      type: 'text',     required: true },
   { key: 'street',        label: 'Ulice',        type: 'text' },
   { key: 'house_number',  label: 'Číslo popisné',type: 'text' },
   { key: 'city',          label: 'Město',        type: 'text' },
   { key: 'zip',           label: 'PSČ',          type: 'text' },
-  { key: 'role',          label: 'Role',         type: 'select', options: [], required: true }, // options budou doplněny
+  { key: 'role',          label: 'Role',         type: 'select', options: [], required: true },
   { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
   { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
   { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
@@ -68,35 +68,81 @@ export async function render(root) {
     { icon: 'account', label: jmeno }
   ]);
 
-  // Akce podle režimu – přidáno tlačítko Přílohy (onAttach)
-  const actionsByMode = {
-    read: ['edit', 'reject', 'invite', 'attach'],
-    edit: ['approve', 'attach', 'delete', 'reject']
-  };
-  const moduleActions = actionsByMode[mode];
+  // Zjisti roli přihlášeného uživatele (implementuj podle svého systému)
+  const myRole = window.currentUserRole || 'user';
+
+  // --- Akce v liště ---
+  const moduleActions = [];
+  const handlers = {};
+
+  // Uložit (disketa)
+  if (mode === 'edit') {
+    moduleActions.push('save');
+    handlers.onSave = async () => {
+      const values = grabValues(root);
+      const { data: updated, error } = await updateProfile(id, values);
+      if (error) {
+        alert('Chyba při ukládání: ' + error.message);
+        return;
+      }
+      alert('Uloženo.');
+      // zůstávám ve formuláři
+    };
+  }
+
+  // Archivovat (jen admin/editor, nikdy běžný user; jen pokud není již archivovaný)
+  if (['admin', 'editor'].includes(myRole) && id && !data.archived) {
+    moduleActions.push('archive');
+    handlers.onArchive = async () => {
+      const hasVazby = await hasActiveVazby(id);
+      if (hasVazby) {
+        alert('Nelze archivovat, existují historické vazby!');
+        return;
+      }
+      await archiveProfile(id);
+      alert('Záznam byl archivován.');
+      navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+    };
+  }
+
+  // Smazat (pouze admin a pokud nejsou historické vazby) - NEVIDITELNÉ pro běžné uživatele!
+  if (myRole === 'admin' && id && !data.archived) {
+    moduleActions.push('delete');
+    handlers.onDelete = async () => {
+      const hasVazby = await hasActiveVazby(id);
+      if (hasVazby) {
+        alert('Nelze smazat, existují historické vazby!');
+        return;
+      }
+      if (!confirm('Opravdu smazat uživatele?')) return;
+      // await smazání záznamu z DB (implementuj dle potřeb)
+      alert('Záznam byl smazán (TODO implementace).');
+      navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+    };
+  }
+
+  // Přílohy
+  moduleActions.push('attach');
+  handlers.onAttach = () => id && showAttachmentsModal({ entity: 'users', entityId: id });
+
+  // Další akce (např. schválení, pozvánka, odmítnutí, refresh)
+  if (mode === 'read') {
+    moduleActions.push('edit');
+    handlers.onEdit = () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`);
+    moduleActions.push('invite');
+    handlers.onInvite = () => alert('Pozvánka bude odeslána (TODO)');
+    moduleActions.push('reject');
+    handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+  }
+  if (mode === 'edit') {
+    moduleActions.push('refresh');
+    handlers.onRefresh = () => route();
+  }
 
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
-    userRole: 'admin',
-    handlers: {
-      onEdit:   () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`),
-      onApprove: async () => {
-        const values = grabValues(root);
-        const ok = await handleSave(values, { stay: true });
-        if (ok) alert('Uloženo (demo) – zůstávám ve formuláři.');
-      },
-      onInvite: () => alert('Pozvánka bude odeslána (TODO)'),
-      onAttach: () => id && showAttachmentsModal({ entity: 'users', entityId: id }),
-      onDelete: async () => {
-        if (!id) return alert('Chybí ID.');
-        if (confirm('Opravdu smazat?')) {
-          alert('Smazáno (demo).');
-          navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-        }
-      },
-      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled'),
-      onRefresh: () => route()
-    }
+    userRole: myRole,
+    handlers
   });
 
   renderForm(root, fieldsWithRoles, data, async () => true, {
@@ -118,6 +164,7 @@ export async function render(root) {
   if (formEl) useUnsavedHelper(formEl);
 }
 
+// Pomocná funkce pro získání hodnot z formuláře
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
@@ -127,10 +174,11 @@ function grabValues(scopeEl) {
   }
   return obj;
 }
-async function handleSave(values, { stay } = { stay: true }) {
-  console.log('[FORM SAVE]', values);
-  // TODO: uložit do DB
-  return true;
+
+// Dummy kontrola vazeb, nahraď dotazem na DB (přílohy, logy, smlouvy ...)
+async function hasActiveVazby(userId) {
+  // TODO: dotaz na DB (přílohy, logy, smlouvy...)
+  return false;
 }
 
 export default { render };
