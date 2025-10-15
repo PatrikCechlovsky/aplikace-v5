@@ -1,6 +1,8 @@
 // src/ui/form.js
 // Univerzální renderer formulářů: kompaktní grid, volitelné záložky (tabs), plně responsivní.
 
+import { emptyStringsToNull } from './utils.js';
+
 export function renderForm(
   root,
   fields = [],
@@ -143,7 +145,9 @@ export function renderForm(
     e.preventDefault();
     if (opt.readOnly) return;
     try {
-      const ok = await onSubmit({ ...data });
+      // převod prázdných stringů na null pro všechny hodnoty
+      const values = emptyStringsToNull({ ...data });
+      const ok = await onSubmit(values);
       if (ok) {
         // nic – řízení si převezme volající (navigate atd.)
       }
