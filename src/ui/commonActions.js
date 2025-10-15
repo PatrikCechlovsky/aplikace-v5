@@ -27,6 +27,9 @@ const CATALOG = {
 
   // oblíbené (renderuj jen pokud existuje handler onStar)
   star:    { key: 'star',    icon: 'star',       label: 'Oblíbené',  title: 'Přidat/odebrat z oblíbených' },
+
+  // HISTORIE změn
+  history: { key: 'history', icon: 'history',    label: 'Historie',  title: 'Zobrazit historii změn' },
 };
 
 // Když nepředáš moduleActions, odvozujeme je z názvů handlerů (onAdd → 'add'…)
