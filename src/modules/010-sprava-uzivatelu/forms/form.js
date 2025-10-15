@@ -1,17 +1,19 @@
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
-import { navigateTo, route } from '../../../app.js';
+import { navigateTo } from '../../../app.js';
 import { getProfile, updateProfile, listRoles, archiveProfile } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { showAttachmentsModal } from '../../../ui/attachments.js';
-import { showHistoryModal } from './history.js'; // NOVÉ!
+import { showHistoryModal } from './history.js';
 
+// Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
 }
 
+// Pomocná funkce pro formátování českého data+času
 function formatCzechDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -19,6 +21,7 @@ function formatCzechDate(dateStr) {
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
 
+// Definice polí formuláře
 const FIELDS = [
   { key: 'display_name',  label: 'Jméno',        type: 'text',     required: true },
   { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
@@ -37,6 +40,7 @@ const FIELDS = [
   { key: 'created_at',    label: 'Vytvořen',            type: 'date', readOnly: true, format: formatCzechDate }
 ];
 
+// Hlavní renderovací funkce
 export async function render(root) {
   const { id, mode: modeParam } = getHashParams();
   const mode = (modeParam === 'read') ? 'read' : 'edit';
@@ -45,11 +49,16 @@ export async function render(root) {
   let data = {};
   if (id) {
     const { data: userData, error } = await getProfile(id);
+    console.log('Načtený uživatel:', userData, 'Chyba:', error);
     if (error) {
       root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání uživatele: ${error.message}</div>`;
       return;
     }
-    data = userData || {};
+    if (!userData) {
+      root.innerHTML = `<div class="p-4 text-red-600">Uživatel nenalezen.</div>`;
+      return;
+    }
+    data = { ...userData };
     // Formátování datumů pro readonly pole
     for (const f of FIELDS) {
       if (f.readOnly && f.format && data[f.key]) {
@@ -134,12 +143,14 @@ export async function render(root) {
   // Historie změn
   handlers.onHistory = () => id && showHistoryModal(id);
 
+  // Tlačítka a akce
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
     userRole: myRole,
     handlers
   });
 
+  // Vykreslení formuláře
   renderForm(root, fieldsWithRoles, data, async () => true, {
     readOnly: (mode === 'read'),
     showSubmit: false,
