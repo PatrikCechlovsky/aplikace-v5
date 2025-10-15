@@ -18,9 +18,9 @@ const FIELDS = [
   { key: 'house_number',  label: 'Číslo popisné',type: 'text' },
   { key: 'city',          label: 'Město',        type: 'text' },
   { key: 'zip',           label: 'PSČ',          type: 'text' },
-  { key: 'role',          label: 'Role',         type: 'select', options: [], required: true }, // options budou dynamicky
+  { key: 'role',          label: 'Role',         type: 'select', options: [], required: true }, // options budou doplněny
   { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
-  { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
+  { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' }, // GDPR - nepovinné!
   { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
   { key: 'last_login',    label: 'Poslední přihlášení', type: 'date', readOnly: true },
   { key: 'updated_at',    label: 'Poslední úprava',     type: 'date', readOnly: true },
@@ -43,7 +43,7 @@ export async function render(root) {
     data = userData || {};
   }
 
-  // Načti seznam rolí z DB
+  // --- Načti role do selectu ---
   let roleOptions = [];
   try {
     const { data: roleList, error } = await listRoles();
@@ -53,7 +53,6 @@ export async function render(root) {
   } catch (e) {
     roleOptions = [];
   }
-  // Doplň možnosti do FIELDS
   const fieldsWithRoles = FIELDS.map(f =>
     f.key === "role" ? { ...f, options: roleOptions } : f
   );
