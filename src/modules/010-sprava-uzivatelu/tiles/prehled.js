@@ -1,15 +1,10 @@
+// Přehled uživatelů — univerzální tabulka + dynamické CommonActions podle výběru řádku
 import { renderTable } from '../../../ui/table.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { listProfiles, listRoles, archiveProfile } from '../../../db.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { navigateTo, route } from '../../../app.js';
-
-// Zde stub, oprav dle své business logiky!
-async function hasActiveVazby(userId) {
-  // TODO: napojit na kontrolu vazeb (např. dotaz na aktivní smlouvy/budovy usera)
-  // return true pokud existují; false pokud neexistují
-  return false;
-}
+import { getUserPermissions } from '../../../security/permissions.js';
 
 let selectedRow = null;
 let showArchived = false;
@@ -23,9 +18,7 @@ export async function render(root) {
   ]);
 
   // Tabulka a filtr v jednom boxu
-  root.innerHTML = `
-    <div id="user-table"></div>
-  `;
+  root.innerHTML = `<div id="user-table"></div>`;
 
   // Načtení uživatelů podle filtru
   const { data: users, error } = await listProfiles();
@@ -49,7 +42,7 @@ export async function render(root) {
       archived: r.archived ? 'Ano' : ''
     }));
 
-  // Sloupce tabulky včetně barevné role a tlačítka Archivovat
+  // Sloupce tabulky včetně barevné role
   const columns = [
     {
       key: 'role',
@@ -76,33 +69,47 @@ export async function render(root) {
     },
     { key: 'display_name', label: 'Jméno', sortable: true, width: '25%' },
     { key: 'email',        label: 'E-mail', sortable: true, width: '25%' },
-    { key: 'archived',     label: 'Archivován', sortable: true, width: '10%' },
-    {
-      key: 'actions',
-      label: 'Akce',
-      width: '13%',
-      render: (row) => {
-        if (row.archived === 'Ano') return '';
-        return `<button class="btn-archive px-2 py-1 rounded border text-xs text-amber-900 bg-amber-100 hover:bg-amber-200" data-id="${row.id}">Archivovat</button>`;
-      }
-    }
+    { key: 'archived',     label: 'Archivován', sortable: true, width: '10%' }
   ];
 
-  // Akce dynamicky podle výběru
+  // Helper pro akční tlačítka – vždy zobraz Archivovat, ale neaktivní pokud nic nevybráno nebo chybí oprávnění
   function drawActions() {
     const ca = document.getElementById('commonactions');
     if (!ca) return;
     const hasSel = !!selectedRow;
+    // ZDE ZÍSKEJ AKTUÁLNÍ ROLI UŽIVATELE (dle tvého session řešení)
+    const userRole = window.currentUserRole || 'user'; // nebo jinak z session/auth
+    const canArchive = getUserPermissions(userRole).includes('archive');
+
     renderCommonActions(ca, {
-      onAdd:       () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
-      ...(hasSel && {
-        onEdit:    () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`),
-        onArchive: () => alert(`Archivace uživatele: ${selectedRow.display_name}`),
-        onAttach:  () => alert(`Přílohy k uživateli: ${selectedRow.display_name}`),
-      }),
-      onRefresh:   () => route()
+      onAdd:    () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
+      onEdit:   hasSel ? () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`) : undefined,
+      onArchive: canArchive ? () => handleArchive(selectedRow) : undefined,
+      onAttach: hasSel ? () => alert(`Přílohy k uživateli: ${selectedRow.display_name}`) : undefined,
+      onRefresh: () => route()
     });
+    // Tlačítko Archivovat bude disabled pokud !hasSel nebo !canArchive (řeší automaticky commonActions)
   }
+
+  // Archivace s kontrolou vazeb (doplníš podle své business logiky)
+  async function handleArchive(row) {
+    if (!row) return;
+    const hasVazby = await hasActiveVazby(row.id);
+    if (hasVazby) {
+      alert('Nelze archivovat, existují aktivní vazby!');
+      return;
+    }
+    await archiveProfile(row.id);
+    selectedRow = null;
+    render(root);
+  }
+
+  // Stub na kontrolu vazeb - nahradíš dle potřeby
+  async function hasActiveVazby(userId) {
+    // TODO: dotaz na DB nebo API
+    return false;
+  }
+
   drawActions();
 
   // --- Vlastní renderTable s custom headerem ---
@@ -132,25 +139,12 @@ export async function render(root) {
     }
   });
 
-  // Delegovaný handler pro tlačítka Archivovat a archivované
+  // Přepínač zobrazit archivované
   root.querySelector('#user-table').addEventListener('change', (e) => {
     if (e.target && e.target.id === 'toggle-archived') {
       showArchived = e.target.checked;
       render(root);
     }
-  });
-
-  root.querySelector('#user-table').addEventListener('click', async (e) => {
-    const btn = e.target.closest('.btn-archive');
-    if (!btn) return;
-    const id = btn.dataset.id;
-    const hasVazby = await hasActiveVazby(id);
-    if (hasVazby) {
-      alert('Nelze archivovat, existují aktivní vazby!');
-      return;
-    }
-    await archiveProfile(id);
-    render(root);
   });
 }
 
