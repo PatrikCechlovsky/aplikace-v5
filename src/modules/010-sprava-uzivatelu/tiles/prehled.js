@@ -30,7 +30,7 @@ export async function render(root) {
   const { data: roles = [] } = await listRoles();
   const roleMap = Object.fromEntries(roles.map(r => [r.slug, r]));
 
-  // Filtrovaná data podle archivace
+  // Připrav data pro tabulku (předávej bool archived i string zobrazení)
   const rows = (users || [])
     .filter(r => showArchived ? true : !r.archived)
     .map(r => ({
@@ -38,7 +38,8 @@ export async function render(root) {
       display_name: r.display_name,
       email: r.email,
       role: r.role,
-      archived: r.archived ? 'Ano' : ''
+      archived: r.archived, // bool pro logiku
+      archivedLabel: r.archived ? 'Ano' : ''
     }));
 
   // Sloupce tabulky včetně barevné role
@@ -68,24 +69,24 @@ export async function render(root) {
     },
     { key: 'display_name', label: 'Jméno', sortable: true, width: '25%' },
     { key: 'email',        label: 'E-mail', sortable: true, width: '25%' },
-    { key: 'archived',     label: 'Archivován', sortable: true, width: '10%' }
+    { key: 'archivedLabel', label: 'Archivován', sortable: true, width: '10%' }
   ];
 
-  // Helper pro akční tlačítka – Archivovat je VŽDY vidět, ale disabled pokud není vybráno nebo chybí právo
+  // Helper pro akční tlačítka – Archivovat je VŽDY vidět, ale disabled pokud není vybráno, nemáš právo, nebo už je archivovaný
   function drawActions() {
     const ca = document.getElementById('commonactions');
     if (!ca) return;
-    const hasSel = !!selectedRow;
-    // ZDE ZÍSKEJ AKTUÁLNÍ ROLI UŽIVATELE (dle tvého session řešení)
-    const userRole = window.currentUserRole || 'user'; // nebo jinak z session/auth
+    const hasSel = !!selectedRow && !selectedRow.archived;
+    // Pokud máš lepší určení role, uprav zde
+    const userRole = window.currentUserRole || 'admin'; // nebo napoj na session!
     const canArchive = getUserPermissions(userRole).includes('archive');
 
-    // Handler je funkce jen pokud je vybráno a má oprávnění, jinak undefined → tlačítko bude disabled
     renderCommonActions(ca, {
       moduleActions: ['add', 'edit', 'archive', 'refresh'],
       handlers: {
         onAdd:    () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
-        onEdit:   hasSel ? () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`) : undefined,
+        onEdit:   !!selectedRow ? () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`) : undefined,
+        // Archivace je možná jen pokud je nearchivovaný uživatel!
         onArchive: canArchive && hasSel ? () => handleArchive(selectedRow) : undefined,
         onRefresh: () => route()
       }
