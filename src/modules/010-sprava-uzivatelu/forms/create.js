@@ -64,7 +64,7 @@ export async function render(root) {
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// Helper: sebrat hodnoty z polí
+// Helper: sebrat hodnoty z polí (pro akce v headeru)
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
