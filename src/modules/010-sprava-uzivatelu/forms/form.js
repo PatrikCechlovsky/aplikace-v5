@@ -113,7 +113,9 @@ export async function render(root) {
   if (mode === 'edit') {
     handlers.onSave = async () => {
       const values = grabValues(root);
+      console.log('Ukládám hodnoty:', values);
       const { data: updated, error } = await updateProfile(id, values);
+      console.log('Výsledek updateProfile:', updated, error);
       if (error) {
         alert('Chyba při ukládání: ' + error.message);
         return;
