@@ -68,16 +68,26 @@ export async function render(root) {
     { icon: 'account', label: jmeno }
   ]);
 
-  // Zjisti roli přihlášeného uživatele (implementuj podle svého systému)
+  // Urči roli přihlášeného uživatele (implementuj dle svého systému)
   const myRole = window.currentUserRole || 'user';
 
   // --- Akce v liště ---
-  const moduleActions = [];
+  const actionsByMode = {
+    read:   ['edit', 'reject', 'invite', 'attach'],
+    edit:   ['save', 'attach', 'archive', 'reject']
+  };
+  const moduleActions = actionsByMode[mode];
   const handlers = {};
+
+  // Editace
+  if (mode === 'read') {
+    handlers.onEdit = () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`);
+    handlers.onInvite = () => alert('Pozvánka bude odeslána (TODO)');
+    handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+  }
 
   // Uložit (disketa)
   if (mode === 'edit') {
-    moduleActions.push('save');
     handlers.onSave = async () => {
       const values = grabValues(root);
       const { data: updated, error } = await updateProfile(id, values);
@@ -88,56 +98,24 @@ export async function render(root) {
       alert('Uloženo.');
       // zůstávám ve formuláři
     };
-  }
-
-  // Archivovat (jen admin/editor, nikdy běžný user; jen pokud není již archivovaný)
-  if (['admin', 'editor'].includes(myRole) && id && !data.archived) {
-    moduleActions.push('archive');
-    handlers.onArchive = async () => {
-      const hasVazby = await hasActiveVazby(id);
-      if (hasVazby) {
-        alert('Nelze archivovat, existují historické vazby!');
-        return;
-      }
-      await archiveProfile(id);
-      alert('Záznam byl archivován.');
-      navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-    };
-  }
-
-  // Smazat (pouze admin a pokud nejsou historické vazby) - NEVIDITELNÉ pro běžné uživatele!
-  if (myRole === 'admin' && id && !data.archived) {
-    moduleActions.push('delete');
-    handlers.onDelete = async () => {
-      const hasVazby = await hasActiveVazby(id);
-      if (hasVazby) {
-        alert('Nelze smazat, existují historické vazby!');
-        return;
-      }
-      if (!confirm('Opravdu smazat uživatele?')) return;
-      // await smazání záznamu z DB (implementuj dle potřeb)
-      alert('Záznam byl smazán (TODO implementace).');
-      navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-    };
+    handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+    // Archivace (jen admin/editor a pokud není již archivovaný)
+    if (['admin', 'editor'].includes(myRole) && id && !data.archived) {
+      handlers.onArchive = async () => {
+        const hasVazby = await hasActiveVazby(id);
+        if (hasVazby) {
+          alert('Nelze archivovat, existují historické vazby!');
+          return;
+        }
+        await archiveProfile(id);
+        alert('Záznam byl archivován.');
+        navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+      };
+    }
   }
 
   // Přílohy
-  moduleActions.push('attach');
   handlers.onAttach = () => id && showAttachmentsModal({ entity: 'users', entityId: id });
-
-  // Další akce (např. schválení, pozvánka, odmítnutí, refresh)
-  if (mode === 'read') {
-    moduleActions.push('edit');
-    handlers.onEdit = () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`);
-    moduleActions.push('invite');
-    handlers.onInvite = () => alert('Pozvánka bude odeslána (TODO)');
-    moduleActions.push('reject');
-    handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-  }
-  if (mode === 'edit') {
-    moduleActions.push('refresh');
-    handlers.onRefresh = () => route();
-  }
 
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
