@@ -13,6 +13,7 @@ async function hasActiveVazby(userId) {
 
 let selectedRow = null;
 let showArchived = false;
+let filterValue = '';
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
@@ -21,13 +22,8 @@ export async function render(root) {
     { icon: 'list',  label: 'Přehled' }
   ]);
 
+  // Tabulka a filtr v jednom boxu
   root.innerHTML = `
-    <div class="mb-2 flex items-center gap-3">
-      <label class="flex items-center gap-1 text-sm cursor-pointer">
-        <input type="checkbox" id="toggle-archived" ${showArchived ? 'checked' : ''}/>
-        Zobrazit archivované
-      </label>
-    </div>
     <div id="user-table"></div>
   `;
 
@@ -109,11 +105,22 @@ export async function render(root) {
   }
   drawActions();
 
+  // --- Vlastní renderTable s custom headerem ---
   renderTable(root.querySelector('#user-table'), {
     columns,
     rows,
     options: {
       moduleId: '010-sprava-uzivatelu',
+      filterValue: filterValue,
+      customHeader: ({ filterInputHtml }) => `
+        <div class="flex items-center gap-4">
+          ${filterInputHtml}
+          <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
+            <input type="checkbox" id="toggle-archived" ${showArchived ? 'checked' : ''}/>
+            Zobrazit archivované
+          </label>
+        </div>
+      `,
       onRowSelect: row => {
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
         drawActions();
@@ -125,18 +132,18 @@ export async function render(root) {
     }
   });
 
-  // Přepínač zobrazit archivované
-  root.querySelector('#toggle-archived').onchange = (e) => {
-    showArchived = e.target.checked;
-    render(root);
-  };
+  // Delegovaný handler pro tlačítka Archivovat a archivované
+  root.querySelector('#user-table').addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'toggle-archived') {
+      showArchived = e.target.checked;
+      render(root);
+    }
+  });
 
-  // Delegovaný handler pro tlačítka Archivovat
   root.querySelector('#user-table').addEventListener('click', async (e) => {
     const btn = e.target.closest('.btn-archive');
     if (!btn) return;
     const id = btn.dataset.id;
-    // Ověření vazeb (napoj na své skutečné pravidlo)
     const hasVazby = await hasActiveVazby(id);
     if (hasVazby) {
       alert('Nelze archivovat, existují aktivní vazby!');
