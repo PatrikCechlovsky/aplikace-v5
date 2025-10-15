@@ -1,7 +1,17 @@
-// Univerzální tabulka s řazením, filtrem (nyní fulltext bez diakritiky), výběrem řádku a bezpečným dblclickem.
+// src/ui/table.js
+// Univerzální tabulka s řazením, filtrem (fulltext bez diakritiky), výběrem řádku a bezpečným dblclickem.
 // columns: [{ key, label, width?, render?(row), sortable?: true, className? }]
 // rows: array objektů
-// options: {... viz původní komentář ...}
+// options: {
+//   filterPlaceholder?,
+//   columnsOrder?: string[],
+//   showFilter?: boolean, filterValue?: string,
+//   customHeader?: function({ filterInputHtml }) => string,
+//   moduleId?: string,
+//   onRowSelect?(row),
+//   onRowDblClick?(row),
+//   selectedRow?: { id: any }       // volitelný počáteční výběr
+// }
 
 function normalize(str) {
   return (str ?? '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -29,15 +39,20 @@ export function renderTable(root, { columns, rows, options = {} }) {
   wrap.className = 'bg-white rounded-2xl border';
   root.appendChild(wrap);
 
-  // HEAD: filtr (volitelný)
+  // HEAD: filtr (volitelný) + podpora customHeader
   const showFilter = typeof options.showFilter === 'undefined' ? true : !!options.showFilter;
-  const head = document.createElement('div');
-  head.className = 'p-3 border-b flex items-center gap-2';
-  head.innerHTML = showFilter ? `
+  const filterInputHtml = showFilter ? `
     <input type="text" id="tblFilter" class="border rounded px-2 py-1 text-sm w-full sm:w-72"
            placeholder="${options.filterPlaceholder || 'Filtrovat…'}"
            value="${escapeHtml(state.filter)}" />
   ` : '';
+  const head = document.createElement('div');
+  head.className = 'p-3 border-b flex items-center gap-2';
+  if (typeof options.customHeader === 'function') {
+    head.innerHTML = options.customHeader({ filterInputHtml });
+  } else {
+    head.innerHTML = filterInputHtml;
+  }
   wrap.appendChild(head);
 
   const scroller = document.createElement('div');
