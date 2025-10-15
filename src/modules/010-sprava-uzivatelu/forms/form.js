@@ -1,27 +1,16 @@
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
-import { navigateTo } from '../../../app.js';
+import { navigateTo, route } from '../../../app.js';
 import { getProfile, listRoles, updateProfile } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { showAttachmentsModal } from '../../../ui/attachments.js';
-import { showHistoryModal } from './history.js';
 
-// Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
 }
 
-// Pomocná funkce pro formátování českého data+času
-function formatCzechDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d)) return '';
-  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
-}
-
-// Definice polí formuláře
 const FIELDS = [
   { key: 'display_name',  label: 'Jméno',        type: 'text',     required: true },
   { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
@@ -34,14 +23,19 @@ const FIELDS = [
   { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
   { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
   { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
-  // readonly pole jako label (prostý text)
   { key: 'last_login',    label: 'Poslední přihlášení', type: 'label', readOnly: true, format: formatCzechDate },
   { key: 'updated_at',    label: 'Poslední úprava',     type: 'label', readOnly: true, format: formatCzechDate },
   { key: 'updated_by',    label: 'Upravil',             type: 'label', readOnly: true },
   { key: 'created_at',    label: 'Vytvořen',            type: 'label', readOnly: true, format: formatCzechDate }
 ];
 
-// Hlavní renderovací funkce
+function formatCzechDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
+}
+
 export async function render(root) {
   const { id, mode: modeParam } = getHashParams();
   const mode = (modeParam === 'read') ? 'read' : 'edit';
@@ -50,17 +44,12 @@ export async function render(root) {
   let data = {};
   if (id) {
     const { data: userData, error } = await getProfile(id);
-    console.log('Načtený uživatel:', userData, 'Chyba:', error);
     if (error) {
       root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání uživatele: ${error.message}</div>`;
       return;
     }
-    if (!userData) {
-      root.innerHTML = `<div class="p-4 text-red-600">Uživatel nenalezen.</div>`;
-      return;
-    }
-    data = { ...userData };
-    // Formátování datumů pro readonly pole
+    data = userData || {};
+    // Formátování datumů pro readonly pole (label)
     for (const f of FIELDS) {
       if (f.readOnly && f.format && data[f.key]) {
         data[f.key] = f.format(data[f.key]);
@@ -92,66 +81,37 @@ export async function render(root) {
     { icon: 'account', label: jmeno }
   ]);
 
-  // Urči roli přihlášeného uživatele (implementuj dle svého systému)
-  const myRole = window.currentUserRole || 'user';
-
-  // --- Akce v liště ---
+  // Akce podle režimu – přidáno tlačítko Přílohy (onAttach)
   const actionsByMode = {
-    read:   ['edit', 'reject', 'invite', 'attach', 'history'],
-    edit:   ['save', 'attach', 'archive', 'reject', 'history']
+    read: ['edit', 'reject', 'invite', 'attach'],
+    edit: ['approve', 'attach', 'delete', 'reject']
   };
   const moduleActions = actionsByMode[mode];
-  const handlers = {};
 
-  // Editace
-  if (mode === 'read') {
-    handlers.onEdit = () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`);
-    handlers.onInvite = () => alert('Pozvánka bude odeslána (TODO)');
-    handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-  }
-
-  // Uložit (disketa)
-  if (mode === 'edit') {
-    handlers.onSave = async () => {
-      const values = grabValues(root);
-      const { data: updated, error } = await updateProfile(id, values);
-      if (error) {
-        alert('Chyba při ukládání: ' + error.message);
-        return;
-      }
-      alert('Uloženo.');
-      // zůstávám ve formuláři
-    };
-    handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-    // Archivace (jen admin/editor a pokud není již archivovaný)
-    if (['admin', 'editor'].includes(myRole) && id && !data.archived) {
-      handlers.onArchive = async () => {
-        const hasVazby = await hasActiveVazby(id);
-        if (hasVazby) {
-          alert('Nelze archivovat, existují historické vazby!');
-          return;
-        }
-        await archiveProfile(id);
-        alert('Záznam byl archivován.');
-        navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
-      };
-    }
-  }
-
-  // Přílohy
-  handlers.onAttach = () => id && showAttachmentsModal({ entity: 'users', entityId: id });
-
-  // Historie změn
-  handlers.onHistory = () => id && showHistoryModal(id);
-
-  // Tlačítka a akce
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
-    userRole: myRole,
-    handlers
+    userRole: 'admin',
+    handlers: {
+      onEdit:   () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${id||''}&mode=edit`),
+      onApprove: async () => {
+        const values = grabValues(root);
+        const ok = await handleSave(values, { stay: true });
+        if (ok) alert('Uloženo.');
+      },
+      onInvite: () => alert('Pozvánka bude odeslána (TODO)'),
+      onAttach: () => id && showAttachmentsModal({ entity: 'users', entityId: id }),
+      onDelete: async () => {
+        if (!id) return alert('Chybí ID.');
+        if (confirm('Opravdu smazat?')) {
+          alert('Smazáno (demo).');
+          navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+        }
+      },
+      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled'),
+      onRefresh: () => route()
+    }
   });
 
-  // Vykreslení formuláře
   renderForm(root, fieldsWithRoles, data, async () => true, {
     readOnly: (mode === 'read'),
     showSubmit: false,
@@ -171,11 +131,10 @@ export async function render(root) {
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// Pomocná funkce pro získání hodnot z formuláře
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
-    if (f.readOnly) continue; // readonly pole nikdy neukládat!
+    if (f.readOnly) continue; // neukládej readonly pole!
     const el = scopeEl.querySelector(`[name="${f.key}"]`);
     if (!el) continue;
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
@@ -183,10 +142,29 @@ function grabValues(scopeEl) {
   return obj;
 }
 
-// Dummy kontrola vazeb, nahraď dotazem na DB (přílohy, logy, smlouvy ...)
-async function hasActiveVazby(userId) {
-  // TODO: dotaz na DB (přílohy, logy, smlouvy...)
-  return false;
+async function handleSave(values, { stay } = { stay: true }) {
+  const { id } = getHashParams();
+  if (!id) {
+    alert('Chybí ID uživatele!');
+    return false;
+  }
+  try {
+    // Výpis do konzole pro ladění:
+    console.log('[FORM SAVE] Odesílám do updateProfile:', values);
+    const { data, error } = await updateProfile(id, values);
+    console.log('[FORM SAVE] Výsledek updateProfile:', data, error);
+    if (error) {
+      alert('Chyba při ukládání: ' + error.message);
+      return false;
+    }
+    if (!stay) {
+      navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
+    }
+    return true;
+  } catch (e) {
+    alert('Chyba při ukládání: ' + e.message);
+    return false;
+  }
 }
 
 export default { render };
