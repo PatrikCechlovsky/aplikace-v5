@@ -6,6 +6,7 @@ import { getProfile, updateProfile, listRoles, archiveProfile } from '../../../d
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { showAttachmentsModal } from '../../../ui/attachments.js';
 import { showHistoryModal } from './history.js';
+import { setUnsaved } from '../../../app.js';
 
 // Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
@@ -121,7 +122,7 @@ export async function render(root) {
         return;
       }
       alert('Uloženo.');
-      // zůstávám ve formuláři
+      setUnsaved(false); // OZNAM APLIKACI, ŽE VŠE JE ULOŽENO
     };
     handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
     // Archivace (jen admin/editor a pokud není již archivovaný)
