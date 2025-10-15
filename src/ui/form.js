@@ -212,6 +212,16 @@ function renderField(cell, f, value, ctx) {
     wrap.appendChild(lab);
   }
 
+  // NOVÁ PODPORA pro "label" (prostý text místo inputu)
+  if (f.type === 'label') {
+    const val = (value == null || value === '') ? '—' : value;
+    const txt = document.createElement('div');
+    txt.className = 'block text-slate-700 bg-slate-50 rounded px-3 py-2 min-h-[2.2em] border border-slate-200';
+    txt.textContent = val;
+    wrap.appendChild(txt);
+    return;
+  }
+
   const common = (el) => {
     el.name = f.key;
     el.id = `f_${f.key}`;
