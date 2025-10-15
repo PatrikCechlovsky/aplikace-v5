@@ -35,10 +35,11 @@ const FIELDS = [
   { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
   { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
   { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
-  { key: 'last_login',    label: 'Poslední přihlášení', type: 'date', readOnly: true, format: formatCzechDate },
-  { key: 'updated_at',    label: 'Poslední úprava',     type: 'date', readOnly: true, format: formatCzechDate },
-  { key: 'updated_by',    label: 'Upravil',             type: 'text', readOnly: true },
-  { key: 'created_at',    label: 'Vytvořen',            type: 'date', readOnly: true, format: formatCzechDate }
+  // readonly pole jako prostý text, s českým formátem
+  { key: 'last_login',    label: 'Poslední přihlášení', type: 'label', readOnly: true, format: formatCzechDate },
+  { key: 'updated_at',    label: 'Poslední úprava',     type: 'label', readOnly: true, format: formatCzechDate },
+  { key: 'updated_by',    label: 'Upravil',             type: 'label', readOnly: true },
+  { key: 'created_at',    label: 'Vytvořen',            type: 'label', readOnly: true, format: formatCzechDate }
 ];
 
 // Hlavní renderovací funkce
@@ -122,7 +123,7 @@ export async function render(root) {
         return;
       }
       alert('Uloženo.');
-      setUnsaved(false); // OZNAM APLIKACI, ŽE VŠE JE ULOŽENO
+      setUnsaved(false); // Oznám aplikaci, že vše je uloženo
     };
     handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
     // Archivace (jen admin/editor a pokud není již archivovaný)
