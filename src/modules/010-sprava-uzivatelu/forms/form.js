@@ -6,11 +6,21 @@ import { getProfile, listRoles, updateProfile } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { showAttachmentsModal } from '../../../ui/attachments.js';
 
+// Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
 }
 
+// Pomocná funkce pro formátování českého data+času
+function formatCzechDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
+}
+
+// Definice polí formuláře
 const FIELDS = [
   { key: 'display_name',  label: 'Jméno',        type: 'text',     required: true },
   { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
@@ -28,13 +38,6 @@ const FIELDS = [
   { key: 'updated_by',    label: 'Upravil',             type: 'label', readOnly: true },
   { key: 'created_at',    label: 'Vytvořen',            type: 'label', readOnly: true, format: formatCzechDate }
 ];
-
-function formatCzechDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d)) return '';
-  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
-}
 
 export async function render(root) {
   const { id, mode: modeParam } = getHashParams();
