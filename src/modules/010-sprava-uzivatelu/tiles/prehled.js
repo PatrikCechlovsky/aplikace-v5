@@ -72,7 +72,7 @@ export async function render(root) {
     { key: 'archived',     label: 'Archivován', sortable: true, width: '10%' }
   ];
 
-  // Helper pro akční tlačítka – vždy zobraz Archivovat, ale neaktivní pokud nic nevybráno nebo chybí oprávnění
+  // Helper pro akční tlačítka – Archivovat je VŽDY vidět, ale disabled pokud není vybráno nebo chybí právo
   function drawActions() {
     const ca = document.getElementById('commonactions');
     if (!ca) return;
@@ -81,14 +81,14 @@ export async function render(root) {
     const userRole = window.currentUserRole || 'user'; // nebo jinak z session/auth
     const canArchive = getUserPermissions(userRole).includes('archive');
 
+    // Handler je funkce jen pokud je vybráno a má oprávnění, jinak undefined → tlačítko bude disabled
     renderCommonActions(ca, {
       onAdd:    () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
       onEdit:   hasSel ? () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`) : undefined,
-      onArchive: canArchive ? () => handleArchive(selectedRow) : undefined,
+      onArchive: canArchive && hasSel ? () => handleArchive(selectedRow) : undefined,
       onAttach: hasSel ? () => alert(`Přílohy k uživateli: ${selectedRow.display_name}`) : undefined,
       onRefresh: () => route()
     });
-    // Tlačítko Archivovat bude disabled pokud !hasSel nebo !canArchive (řeší automaticky commonActions)
   }
 
   // Archivace s kontrolou vazeb (doplníš podle své business logiky)
