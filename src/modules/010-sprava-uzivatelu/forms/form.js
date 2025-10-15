@@ -3,7 +3,7 @@ import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo, route } from '../../../app.js';
 import { getProfile, listRoles } from '../../../db.js';
-import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
+// import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
@@ -114,8 +114,8 @@ export async function render(root) {
   });
 
   // --- Hlídání rozdělané práce ---
-  const formEl = root.querySelector("form");
-  if (formEl) useUnsavedHelper(formEl);
+  // const formEl = root.querySelector("form");
+  // if (formEl) useUnsavedHelper(formEl);
 }
 
 // helpers
