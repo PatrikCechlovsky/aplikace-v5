@@ -17,7 +17,6 @@ export async function render(root) {
     { icon: 'list',  label: 'Přehled' }
   ]);
 
-  // Tabulka a filtr v jednom boxu
   root.innerHTML = `<div id="user-table"></div>`;
 
   // Načtení uživatelů podle filtru
@@ -83,11 +82,13 @@ export async function render(root) {
 
     // Handler je funkce jen pokud je vybráno a má oprávnění, jinak undefined → tlačítko bude disabled
     renderCommonActions(ca, {
-      onAdd:    () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
-      onEdit:   hasSel ? () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`) : undefined,
-      onArchive: canArchive && hasSel ? () => handleArchive(selectedRow) : undefined,
-      onAttach: hasSel ? () => alert(`Přílohy k uživateli: ${selectedRow.display_name}`) : undefined,
-      onRefresh: () => route()
+      moduleActions: ['add', 'edit', 'archive', 'refresh'],
+      handlers: {
+        onAdd:    () => navigateTo('#/m/010-sprava-uzivatelu/f/create'),
+        onEdit:   hasSel ? () => navigateTo(`#/m/010-sprava-uzivatelu/f/form?id=${selectedRow.id}&mode=edit`) : undefined,
+        onArchive: canArchive && hasSel ? () => handleArchive(selectedRow) : undefined,
+        onRefresh: () => route()
+      }
     });
   }
 
