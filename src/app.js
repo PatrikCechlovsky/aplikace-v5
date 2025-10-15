@@ -54,6 +54,17 @@ async function initModules() {
 }
 window.registry = (window.registry instanceof Map) ? window.registry : registry;
 
+// ... všechny importy atd.
+
+export function navigateTo(hash) {
+  if (!hash.startsWith('#')) hash = '#' + hash;
+  if (location.hash === hash) {
+    route(); // vynutit rerender
+  } else {
+    location.hash = hash;
+  }
+}
+
 // ========== Layout – inicializace hlavních částí ==========
 function renderLayout() {
   renderHeaderActions($id('headeractions'));
