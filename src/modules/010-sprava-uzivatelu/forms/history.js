@@ -1,7 +1,7 @@
 // history.js
 // Zobrazí historii změn vybraného uživatele
 
-import { supabase } from '../db.js'; // nebo cesta podle tvého projektu
+import { supabase } from '../../../db.js'; // nebo cesta podle tvého projektu
 
 export async function showHistoryModal(profileId) {
   // Načti historii změn z DB
