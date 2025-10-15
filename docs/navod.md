@@ -31,6 +31,7 @@ Je navržen tak, aby **žádná úprava jádra** (`app.js`, `auth.js`, `/ui/`) n
     commonActions.js  ← lišta akcí (Přidat/Upravit/★/…)
     homebutton.js     ← tlačítko „Domů“
     theme.js          ← přepínač vzhledu
+    unsaved-helper.js ← helper pro hlídání rozpracované práce ve formuláři 🆕
 ```
 
 ---
@@ -80,6 +81,39 @@ Je navržen tak, aby **žádná úprava jádra** (`app.js`, `auth.js`, `/ui/`) n
 - **Ikony (`icons.js`)**
   - všechny emoji/SVG ikony centrálně registrovány.
   - nové ikony přidávej pouze sem.
+
+---
+
+## 🛡 Hlídání rozpracované práce ve formulářích (`unsaved-helper.js`)
+
+Pokud máš ve formuláři pole, která mohou být editována, používej univerzální helper pro hlídání rozpracované práce.  
+Tento helper automaticky upozorní uživatele při odchodu z formuláře bez uložení změn.
+
+**Použití v každém formuláři:**
+1. **Importuj helper na začátek souboru:**
+   ```js
+   import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
+   ```
+2. **Po vykreslení formuláře zavolej na hlavní `<form>` element:**
+   ```js
+   const formEl = root.querySelector('form');
+   if (formEl) useUnsavedHelper(formEl);
+   ```
+3. **To vše!** Helper sám nastaví změněný stav při úpravě pole a po submitu stav vyčistí.
+
+**Ukázka ve formuláři:**
+```js
+export async function render(root) {
+  // ... renderování formuláře ...
+  const formEl = root.querySelector('form');
+  if (formEl) useUnsavedHelper(formEl);
+}
+```
+
+### Proč to používat?
+- Zabráníš ztrátě rozpracovaných údajů při přepnutí sekce nebo zavření okna.
+- Nemusíš psát vlastní logiku pro každý formulář.
+- Funguje univerzálně pro všechny typy formulářů.
 
 ---
 
@@ -138,23 +172,24 @@ export async function render(root) {
 ### Formulář (detail.js)
 ```js
 import { renderForm } from '/src/ui/form.js';
-import { updateProfile, getProfile } from '/src/db.js';
+import { updateProfile, getProfile, listRoles } from '/src/db.js';
+import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 
 export async function render(root, params) {
   const { data } = await getProfile(params?.id);
+  const { data: roles } = await listRoles();
   const fields = [
     { key: 'display_name', label: 'Jméno', type: 'text', required: true },
     { key: 'email', label: 'E-mail', type: 'email' },
-    { key: 'role', label: 'Role', type: 'select', options: [
-        { value: 'admin', label: 'Administrátor' },
-        { value: 'pronajimatel', label: 'Pronajímatel' },
-        { value: 'najemnik', label: 'Nájemník' },
-    ]},
+    { key: 'role', label: 'Role', type: 'select', options: roles?.map(r => ({ value: r.slug, label: r.label })) ?? [] },
   ];
   renderForm(root, fields, data, async (values) => {
     await updateProfile(data.id, values);
     return true;
   });
+  // Hlídání rozpracované práce:
+  const formEl = root.querySelector('form');
+  if (formEl) useUnsavedHelper(formEl);
 }
 ```
 
