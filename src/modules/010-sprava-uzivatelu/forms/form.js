@@ -5,10 +5,18 @@ import { navigateTo, route } from '../../../app.js';
 import { getProfile, updateProfile, listRoles, archiveProfile } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { showAttachmentsModal } from '../../../ui/attachments.js';
+import { showHistoryModal } from './history.js'; // NOVÉ!
 
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
+}
+
+function formatCzechDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
 
 const FIELDS = [
@@ -23,10 +31,10 @@ const FIELDS = [
   { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
   { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
   { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
-  { key: 'last_login',    label: 'Poslední přihlášení', type: 'date', readOnly: true },
-  { key: 'updated_at',    label: 'Poslední úprava',     type: 'date', readOnly: true },
+  { key: 'last_login',    label: 'Poslední přihlášení', type: 'date', readOnly: true, format: formatCzechDate },
+  { key: 'updated_at',    label: 'Poslední úprava',     type: 'date', readOnly: true, format: formatCzechDate },
   { key: 'updated_by',    label: 'Upravil',             type: 'text', readOnly: true },
-  { key: 'created_at',    label: 'Vytvořen',            type: 'date', readOnly: true }
+  { key: 'created_at',    label: 'Vytvořen',            type: 'date', readOnly: true, format: formatCzechDate }
 ];
 
 export async function render(root) {
@@ -42,6 +50,12 @@ export async function render(root) {
       return;
     }
     data = userData || {};
+    // Formátování datumů pro readonly pole
+    for (const f of FIELDS) {
+      if (f.readOnly && f.format && data[f.key]) {
+        data[f.key] = f.format(data[f.key]);
+      }
+    }
   }
 
   // --- Načti role do selectu ---
@@ -73,8 +87,8 @@ export async function render(root) {
 
   // --- Akce v liště ---
   const actionsByMode = {
-    read:   ['edit', 'reject', 'invite', 'attach'],
-    edit:   ['save', 'attach', 'archive', 'reject']
+    read:   ['edit', 'reject', 'invite', 'attach', 'history'],
+    edit:   ['save', 'attach', 'archive', 'reject', 'history']
   };
   const moduleActions = actionsByMode[mode];
   const handlers = {};
@@ -117,6 +131,9 @@ export async function render(root) {
   // Přílohy
   handlers.onAttach = () => id && showAttachmentsModal({ entity: 'users', entityId: id });
 
+  // Historie změn
+  handlers.onHistory = () => id && showHistoryModal(id);
+
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
     userRole: myRole,
@@ -146,6 +163,7 @@ export async function render(root) {
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
+    if (f.readOnly) continue; // readonly pole nikdy neukládat!
     const el = scopeEl.querySelector(`[name="${f.key}"]`);
     if (!el) continue;
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
