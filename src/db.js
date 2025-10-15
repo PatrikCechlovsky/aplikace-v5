@@ -124,3 +124,20 @@ export async function deleteRole(slug) {
   const { error } = await supabase.from('roles').delete().eq('slug', slug);
   return { error };
 }
+// ... ostatní importy a funkce
+
+export async function listAttachments({ entity, entityId, showArchived = false }) {
+  // TODO: dotaz na tabulku attachments podle entity, entity_id a showArchived
+  // Vrátí pole objektů: { id, filename, url, archived }
+  // Ukázkový skeleton:
+  return { data: [] };
+}
+
+export async function uploadAttachment({ entity, entityId, file }) {
+  // TODO: upload file do Supabase Storage + záznam do tabulky attachments
+  // Můžeš použít supabase.storage a .from('attachments')
+}
+
+export async function archiveAttachment(id) {
+  // TODO: nastav archived=true v tabulce attachments podle id
+}
