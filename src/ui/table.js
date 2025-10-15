@@ -1,16 +1,11 @@
-// src/ui/table.js
-// Univerzální tabulka s řazením, filtrem, výběrem řádku a bezpečným dblclickem.
+// Univerzální tabulka s řazením, filtrem (nyní fulltext bez diakritiky), výběrem řádku a bezpečným dblclickem.
 // columns: [{ key, label, width?, render?(row), sortable?: true, className? }]
 // rows: array objektů
-// options: {
-//   filterPlaceholder?,
-//   columnsOrder?: string[],
-//   showFilter?: boolean, filterValue?: string,
-//   moduleId?: string,              // pro defaultní chování dblclicku
-//   onRowSelect?(row),
-//   onRowDblClick?(row),
-//   selectedRow?: { id: any }       // volitelný počáteční výběr
-// }
+// options: {... viz původní komentář ...}
+
+function normalize(str) {
+  return (str ?? '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
 export function renderTable(root, { columns, rows, options = {} }) {
   if (!root) return;
@@ -79,8 +74,10 @@ export function renderTable(root, { columns, rows, options = {} }) {
   function applySortAndFilter(data) {
     let out = data;
     if (state.filter) {
-      const f = state.filter.toLowerCase();
-      out = out.filter(r => cols.some(c => String(r[c.key] ?? '').toLowerCase().includes(f)));
+      const f = normalize(state.filter);
+      out = out.filter(r => cols.some(c => normalize(
+        typeof c.render === 'function' ? c.render(r) : r[c.key]
+      ).includes(f)));
     }
     if (state.sortKey) {
       out = out.slice().sort((r1, r2) => {
