@@ -1,10 +1,9 @@
 // Přehled uživatelů — univerzální tabulka + dynamické CommonActions podle výběru řádku
 import { renderTable } from '../../../ui/table.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
-import { listProfiles } from '../../../db.js';
+import { listProfiles, listRoles } from '../../../db.js';
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { navigateTo, route } from '../../../app.js';
-import rolesConfig from '../forms/role.js'; // Importuj role.js jako jediný zdroj pravdy!
 
 // aktuálně vybraný řádek (kvůli Edit/Archiv/Přílohy)
 let selectedRow = null;
@@ -17,22 +16,27 @@ export async function render(root) {
     { icon: 'list',  label: 'Přehled' }
   ]);
 
-  // Načtení seznamu uživatelů
-  const { data, error } = await listProfiles();
+  // Načti seznam uživatelů
+  const { data: users, error } = await listProfiles();
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message}</div>`;
     return;
   }
-  const rows = (data || []).map(r => ({
+
+  // Načti role z DB (včetně barvy)
+  const { data: roles = [] } = await listRoles();
+
+  // Mapování pro rychlý lookup podle slug
+  const roleMap = Object.fromEntries(roles.map(r => [r.slug, r]));
+
+  // Připrav data pro tabulku
+  const rows = (users || []).map(r => ({
     id: r.id,
     display_name: r.display_name,
     email: r.email,
     role: r.role,
     archived: r.archived ? 'Ano' : ''
   }));
-
-  // Načti pole rolí z role.js (staticky/ESM import), předpoklad: export const ROLES = [...];
-  const roles = rolesConfig.ROLES || [];
 
   // Sloupce tabulky: Role (barevný badge, první), Jméno, E-mail, Archivován
   const columns = [
@@ -42,9 +46,22 @@ export async function render(root) {
       width: '15%',
       sortable: true,
       render: (row) => {
-        const role = roles.find(r => r.slug === row.role);
+        const role = roleMap[row.role];
         if (!role) return `<span>${row.role}</span>`;
-        return `<span style="background:${role.color};color:#222;padding:2px 10px;border-radius:12px;font-size:0.95em;white-space:nowrap">${role.label}</span>`;
+        // Lepší badge: barevné podbarvení, tmavý text, zaoblení, decentní font
+        return `<span style="
+          background:${role.color};
+          color:#222;
+          padding:2px 12px;
+          border-radius:14px;
+          font-size:0.97em;
+          font-weight:600;
+          display:inline-block;
+          min-width:60px;
+          text-align:center;
+          box-shadow:0 1px 3px 0 #0001;
+          letter-spacing:0.01em;
+        ">${role.label}</span>`;
       }
     },
     { key: 'display_name', label: 'Jméno', sortable: true, width: '25%' },
