@@ -4,6 +4,7 @@ import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo, route } from '../../../app.js';
 import { getProfile, listRoles } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
+import { showAttachmentsModal } from '../../../ui/attachments.js';
 
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
@@ -13,14 +14,14 @@ function getHashParams() {
 const FIELDS = [
   { key: 'display_name',  label: 'Jméno',        type: 'text',     required: true },
   { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
-  { key: 'phone',         label: 'Telefon',      type: 'text' },
+  { key: 'phone',         label: 'Telefon',      type: 'text',     required: true }, // Povinné!
   { key: 'street',        label: 'Ulice',        type: 'text' },
   { key: 'house_number',  label: 'Číslo popisné',type: 'text' },
   { key: 'city',          label: 'Město',        type: 'text' },
   { key: 'zip',           label: 'PSČ',          type: 'text' },
   { key: 'role',          label: 'Role',         type: 'select', options: [], required: true }, // options budou doplněny
   { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
-  { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' }, // GDPR - nepovinné!
+  { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
   { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
   { key: 'last_login',    label: 'Poslední přihlášení', type: 'date', readOnly: true },
   { key: 'updated_at',    label: 'Poslední úprava',     type: 'date', readOnly: true },
@@ -67,9 +68,9 @@ export async function render(root) {
     { icon: 'account', label: jmeno }
   ]);
 
-  // Akce podle režimu
+  // Akce podle režimu – přidáno tlačítko Přílohy (onAttach)
   const actionsByMode = {
-    read: ['edit', 'reject', 'invite'],
+    read: ['edit', 'reject', 'invite', 'attach'],
     edit: ['approve', 'attach', 'delete', 'reject']
   };
   const moduleActions = actionsByMode[mode];
@@ -85,7 +86,7 @@ export async function render(root) {
         if (ok) alert('Uloženo (demo) – zůstávám ve formuláři.');
       },
       onInvite: () => alert('Pozvánka bude odeslána (TODO)'),
-      onAttach: () => alert('Přílohy (demo)'),
+      onAttach: () => id && showAttachmentsModal({ entity: 'users', entityId: id }),
       onDelete: async () => {
         if (!id) return alert('Chybí ID.');
         if (confirm('Opravdu smazat?')) {
@@ -113,12 +114,10 @@ export async function render(root) {
     ]
   });
 
-  // --- Hlídání rozdělané práce ---
   const formEl = root.querySelector("form");
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// helpers
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
