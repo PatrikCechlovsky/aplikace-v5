@@ -7,7 +7,6 @@ import { renderSidebar } from './ui/sidebar.js';
 import { setBreadcrumb } from './ui/breadcrumb.js';
 import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
-import { navigateTo } from '../../../app.js';
 import './supabase.js';
 import './auth.js';
 
@@ -121,16 +120,6 @@ export async function route() {
     await renderFn(c, params);
   } catch (err) {
     c.innerHTML = `<div style="color: red;">Chyba načtení modulu: ${err?.message || err}</div>`;
-  }
-}
-
-// ===== Navigace pro moduly =====
-export function navigateTo(hash) {
-  if (!hash.startsWith('#')) hash = '#' + hash;
-  if (location.hash === hash) {
-    route(); // vynutit rerender
-  } else {
-    location.hash = hash;
   }
 }
 
