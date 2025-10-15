@@ -2,7 +2,7 @@ import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo } from '../../../app.js';
-import { getProfile, updateProfile, listRoles, archiveProfile } from '../../../db.js';
+import { getProfile, listRoles, updateProfile } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { showAttachmentsModal } from '../../../ui/attachments.js';
 import { showHistoryModal } from './history.js';
