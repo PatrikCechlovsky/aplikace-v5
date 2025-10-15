@@ -101,7 +101,7 @@ export async function render(root) {
     }
     await archiveProfile(row.id);
     selectedRow = null;
-    render(root);
+    await render(root);
   }
 
   // Stub na kontrolu vazeb - nahradíš dle potřeby
@@ -110,6 +110,7 @@ export async function render(root) {
     return false;
   }
 
+  // Inicializuj lištu akcí při každém vykreslení stránky:
   drawActions();
 
   // --- Vlastní renderTable s custom headerem ---
@@ -130,7 +131,7 @@ export async function render(root) {
       `,
       onRowSelect: row => {
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
-        drawActions();
+        drawActions(); // překresli lištu akcí po výběru řádku!
       },
       onRowDblClick: row => {
         selectedRow = row;
