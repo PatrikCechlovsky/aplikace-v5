@@ -2,7 +2,7 @@ import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo } from '../../../app.js';
-import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
+// import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
 // paleta ~40 barev (střední tóny)
 const PALETTE = [
