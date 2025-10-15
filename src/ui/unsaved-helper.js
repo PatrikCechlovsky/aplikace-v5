@@ -1,18 +1,17 @@
-import { setUnsaved } from "../../app.js";
+import { setUnsaved } from "../app.js";
 
 /**
- * Navěsí na formulář automatické hlídání rozdělané práce.
- * Nastaví čistý stav při načtení a při změně pole označí jako rozpracované.
- * Po úspěšném submitu nastav false.
+ * Automatické hlídání rozdělané práce ve formuláři.
+ * Po změně pole nastaví stav na rozpracováno, po submitu na uloženo.
  */
 export function useUnsavedHelper(form) {
   if (!form) return;
   setUnsaved(false);
 
-  // Jakákoliv změna = rozpracováno
+  // Každá změna v poli = rozpracováno
   form.addEventListener("input", () => setUnsaved(true));
 
-  // Po submitu "vyčisti" stav
+  // Po submitu "vyčisti" stav, zachová původní onsubmit
   const orig = form.onsubmit;
   form.onsubmit = function(e) {
     setUnsaved(false);
