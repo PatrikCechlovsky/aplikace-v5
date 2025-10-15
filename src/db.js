@@ -1,5 +1,6 @@
 // src/db.js – tenká vrstva nad Supabase (profiles + storage + attachments + roles + invite)
 import { supabase } from './supabase.js';
+export { supabase };
 
 // --- Uživatelé (profiles) ---
 export async function getSessionUser() {
