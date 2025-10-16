@@ -1,7 +1,8 @@
-// Univerzální modal pro správu příloh k jakémukoliv záznamu
 import { listAttachments, uploadAttachment, archiveAttachment } from '../db.js';
 
-// Vloží modal do body (pokud tam ještě není)
+// Nová funkce pro změnu popisu přílohy
+import { updateAttachmentDescription } from '../db.js';
+
 function ensureModalRoot() {
   let modal = document.getElementById('attachments-modal');
   if (!modal) {
@@ -12,10 +13,6 @@ function ensureModalRoot() {
   return modal;
 }
 
-/**
- * Otevře modal se správou příloh pro konkrétní entitu.
- * @param { entity: string, entityId: string|number }
- */
 export async function showAttachmentsModal({ entity, entityId }) {
   const root = ensureModalRoot();
   root.innerHTML = `<div class="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
@@ -37,7 +34,6 @@ export async function showAttachmentsModal({ entity, entityId }) {
 
   async function renderList(showArchived = false) {
     root.querySelector('#attachments-list').innerHTML = 'Načítám…';
-    // Načíst přílohy z DB
     const { data: files = [] } = await listAttachments({ entity, entityId, showArchived });
     if (!files.length) {
       root.querySelector('#attachments-list').innerHTML = '<div class="text-slate-400 text-sm">Žádné přílohy.</div>';
@@ -48,16 +44,51 @@ export async function showAttachmentsModal({ entity, entityId }) {
         ${files.map(f => `
           <li class="flex items-center gap-2 mb-2">
             <a href="${f.url}" target="_blank" class="underline">${f.filename}</a>
-            ${f.description ? `<span class="text-xs text-slate-600">(${f.description})</span>` : ''}
+            ${
+              f.editing
+                ? `<input type="text" value="${f.description || ''}" style="width:160px" data-edit-description="${f.id}" class="px-2 py-1 border rounded text-xs"/>
+                   <button data-save-desc="${f.id}" class="px-2 py-1 border rounded text-xs bg-emerald-100">Uložit</button>
+                   <button data-cancel-desc="${f.id}" class="px-2 py-1 border rounded text-xs bg-slate-100">Zpět</button>`
+                : `<span class="text-xs text-slate-600" style="min-width:100px;">${f.description || ''}</span>
+                   <button data-edit-desc="${f.id}" class="px-2 py-1 border rounded text-xs">Upravit popis</button>`
+            }
             ${f.archived ? '<span class="text-xs text-slate-400">(archivováno)</span>' : ''}
             ${!f.archived ? `<button data-id="${f.id}" class="archive-attachment text-xs px-2 py-1 border rounded">Archivovat</button>` : ''}
           </li>
         `).join('')}
       </ul>
     `;
+    // Archive
     root.querySelectorAll('.archive-attachment').forEach(btn => {
       btn.onclick = async () => {
         await archiveAttachment(btn.dataset.id);
+        renderList(root.querySelector('#show-archived-attachments').checked);
+      };
+    });
+
+    // Edit popis
+    root.querySelectorAll('[data-edit-desc]').forEach(btn => {
+      btn.onclick = () => {
+        files.forEach(x => x.editing = (x.id === btn.dataset.editDesc));
+        renderList(root.querySelector('#show-archived-attachments').checked);
+      };
+    });
+
+    // Save popis
+    root.querySelectorAll('[data-save-desc]').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.dataset.saveDesc;
+        const input = root.querySelector(`[data-edit-description="${id}"]`);
+        await updateAttachmentDescription(id, input.value);
+        files.forEach(x => x.editing = false);
+        renderList(root.querySelector('#show-archived-attachments').checked);
+      };
+    });
+
+    // Cancel edit
+    root.querySelectorAll('[data-cancel-desc]').forEach(btn => {
+      btn.onclick = () => {
+        files.forEach(x => x.editing = false);
         renderList(root.querySelector('#show-archived-attachments').checked);
       };
     });
@@ -69,7 +100,6 @@ export async function showAttachmentsModal({ entity, entityId }) {
   root.querySelector('#add-attachment').onclick = () => root.querySelector('#attachment-upload').click();
   root.querySelector('#show-archived-attachments').onchange = (e) => renderList(e.target.checked);
 
-  // Upload s popiskem
   root.querySelector('#attachment-upload').onchange = async (e) => {
     const file = e.target.files[0];
     const description = root.querySelector('#attachment-description')?.value || '';
@@ -79,7 +109,7 @@ export async function showAttachmentsModal({ entity, entityId }) {
       alert('Chyba při nahrávání souboru: ' + result.error.message);
       console.error('Attachment upload error:', result.error);
     }
-    root.querySelector('#attachment-description').value = ''; // Po uploadu vyčisti pole
+    root.querySelector('#attachment-description').value = '';
     renderList(root.querySelector('#show-archived-attachments').checked);
   };
 }
