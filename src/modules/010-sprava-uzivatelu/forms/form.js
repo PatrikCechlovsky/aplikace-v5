@@ -53,7 +53,6 @@ export async function render(root) {
   let data = {};
   if (id) {
     const { data: userData, error } = await getProfile(id);
-    console.log('Načtený uživatel:', userData, 'Chyba:', error);
     if (error) {
       root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání uživatele: ${error.message}</div>`;
       return;
@@ -129,9 +128,7 @@ export async function render(root) {
           window.currentUser.username ||
           window.currentUser.email;
       }
-      console.log('Ukládám hodnoty:', values);
-      const { data: updated, error } = await updateProfile(id, values);
-      console.log('Výsledek updateProfile:', updated, error);
+      const { data: updated, error } = await updateProfile(id, values, window.currentUser);
       if (error) {
         alert('Chyba při ukládání: ' + error.message);
         return;
@@ -177,7 +174,7 @@ export async function render(root) {
           alert('Nelze archivovat, existují historické vazby!');
           return;
         }
-        await archiveProfile(id);
+        await archiveProfile(id, window.currentUser);
         alert('Záznam byl archivován.');
         navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
       };
