@@ -63,14 +63,15 @@ export async function render(root) {
       return;
     }
     data = { ...userData };
-    // Formátování datumů pro readonly pole
+    // Formátování datumů pro readonly pole a nahrazení null za '--'
     for (const f of FIELDS) {
-      if (f.readOnly && f.format && data[f.key]) {
-        data[f.key] = f.format(data[f.key]);
-      }
-      // Pokud je pole null, zobraz "--" pro lepší UX
-      if (f.readOnly && !data[f.key]) {
-        data[f.key] = '--';
+      if (f.readOnly) {
+        if (f.format && data[f.key]) {
+          data[f.key] = f.format(data[f.key]);
+        }
+        if (!data[f.key]) {
+          data[f.key] = '--';
+        }
       }
     }
   }
@@ -140,6 +141,17 @@ export async function render(root) {
       // Po uložení znovu načti data a aktualizuj formulář
       const { data: refreshed } = await getProfile(id);
       if (refreshed) {
+        // Formátuj readonly pole (včetně "--" pro null)
+        for (const f of FIELDS) {
+          if (f.readOnly) {
+            if (f.format && refreshed[f.key]) {
+              refreshed[f.key] = f.format(refreshed[f.key]);
+            }
+            if (!refreshed[f.key]) {
+              refreshed[f.key] = '--';
+            }
+          }
+        }
         renderForm(root, fieldsWithRoles, refreshed, async () => true, {
           readOnly: false,
           showSubmit: false,
