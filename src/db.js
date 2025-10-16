@@ -55,7 +55,7 @@ export async function getProfileHistory(profileId) {
   return { data, error };
 }
 
-// Zápis změn do profiles_history - pro každou změněnou položku zvlášť (tabulka: id, profile_id, field, old_value, new_value, changed_by, changed_at)
+// Zápis změn do profiles_history - pro každou změněnou položku zvlášť
 export async function logProfileHistory(profileId, currentUser, oldData, newData) {
   let changed_by = null;
   if (currentUser) {
@@ -82,11 +82,9 @@ export async function logProfileHistory(profileId, currentUser, oldData, newData
 }
 
 export async function updateProfile(id, payload, currentUser = null) {
-  // Doplníme pole updated_by dle požadavku
   if (currentUser) {
     payload.updated_by = currentUser.display_name || currentUser.username || currentUser.email;
   }
-  // Před změnou načti předchozí data pro logování historie
   const { data: oldProfile } = await getProfile(id);
   const { data, error } = await supabase
     .from('profiles')
@@ -94,7 +92,6 @@ export async function updateProfile(id, payload, currentUser = null) {
     .eq('id', id)
     .select()
     .single();
-  // Ulož změnu do historie, pokud profil existoval a změna proběhla
   if (oldProfile && data) {
     await logProfileHistory(id, currentUser, oldProfile, payload);
   }
@@ -107,7 +104,6 @@ export async function createProfile(payload, currentUser = null) {
     .insert(payload)
     .select()
     .single();
-  // Zalogovat vytvoření profilu
   if (data) {
     await logProfileHistory(data.id, currentUser, {}, payload);
   }
@@ -115,7 +111,6 @@ export async function createProfile(payload, currentUser = null) {
 }
 
 export async function archiveProfile(id, currentUser = null) {
-  // Před změnou načti předchozí data pro logování historie
   const { data: oldProfile } = await getProfile(id);
   const { data, error } = await supabase
     .from('profiles')
@@ -123,7 +118,6 @@ export async function archiveProfile(id, currentUser = null) {
     .eq('id', id)
     .select()
     .single();
-  // Ulož změnu do historie, pokud profil existoval a změna proběhla
   if (oldProfile && data) {
     await logProfileHistory(id, currentUser, oldProfile, { archived: true });
   }
@@ -174,7 +168,8 @@ export async function listAttachments({ entity, entityId, showArchived = false }
   return { data: data || [], error };
 }
 
-export async function uploadAttachment({ entity, entityId, file }) {
+// --- OPRAVENO: Funkce nyní podporuje description/popisek ---
+export async function uploadAttachment({ entity, entityId, file, description = '' }) {
   const folder = `${entity}/${entityId}`;
   // Nahraj soubor do storage
   const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file);
@@ -193,9 +188,10 @@ export async function uploadAttachment({ entity, entityId, file }) {
     entity,
     entity_id: entityId,
     filename: file.name,
-    path: filePath,           // <-- path je vždy vyplněná!
-    url: fileUrl,             // url je veřejná URL nebo fallback na path
+    path: filePath,
+    url: fileUrl,
     archived: false,
+    description, // <-- nový sloupec popis!
     created_at: new Date().toISOString()
   };
   const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
