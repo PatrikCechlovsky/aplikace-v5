@@ -23,10 +23,11 @@ export async function showAttachmentsModal({ entity, entityId }) {
       <button class="absolute top-3 right-3 text-xl" id="close-attachments-modal">&times;</button>
       <h2 class="font-bold text-lg mb-4">Přílohy</h2>
       <div id="attachments-list">Načítám přílohy…</div>
-      <div class="mt-4 flex gap-2">
+      <div class="mt-4 flex gap-2 items-center">
         <input type="file" id="attachment-upload" style="display:none"/>
         <button id="add-attachment" class="px-4 py-2 bg-amber-100 rounded border border-amber-300">Přidat přílohu</button>
-        <label>
+        <input type="text" id="attachment-description" class="px-2 py-1 border rounded" placeholder="Popis přílohy" style="width:200px"/>
+        <label class="ml-2">
           <input type="checkbox" id="show-archived-attachments"/>
           Zobrazit archivované
         </label>
@@ -47,6 +48,7 @@ export async function showAttachmentsModal({ entity, entityId }) {
         ${files.map(f => `
           <li class="flex items-center gap-2 mb-2">
             <a href="${f.url}" target="_blank" class="underline">${f.filename}</a>
+            ${f.description ? `<span class="text-xs text-slate-600">(${f.description})</span>` : ''}
             ${f.archived ? '<span class="text-xs text-slate-400">(archivováno)</span>' : ''}
             ${!f.archived ? `<button data-id="${f.id}" class="archive-attachment text-xs px-2 py-1 border rounded">Archivovat</button>` : ''}
           </li>
@@ -67,17 +69,17 @@ export async function showAttachmentsModal({ entity, entityId }) {
   root.querySelector('#add-attachment').onclick = () => root.querySelector('#attachment-upload').click();
   root.querySelector('#show-archived-attachments').onchange = (e) => renderList(e.target.checked);
 
-  // Upload
+  // Upload s popiskem
   root.querySelector('#attachment-upload').onchange = async (e) => {
     const file = e.target.files[0];
+    const description = root.querySelector('#attachment-description')?.value || '';
     if (!file) return;
-    // --- Debug log: ověření entity, entityId, file ---
-    console.log('UPLOAD DEBUG', { entity, entityId, file });
-    const result = await uploadAttachment({ entity, entityId, file });
+    const result = await uploadAttachment({ entity, entityId, file, description });
     if (result.error) {
       alert('Chyba při nahrávání souboru: ' + result.error.message);
       console.error('Attachment upload error:', result.error);
     }
+    root.querySelector('#attachment-description').value = ''; // Po uploadu vyčisti pole
     renderList(root.querySelector('#show-archived-attachments').checked);
   };
 }
