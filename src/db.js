@@ -14,7 +14,7 @@ export async function getMyProfile() {
   if (!user) return { data: null, error: new Error('Nenalezen přihlášený uživatel') };
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, role, archived, last_login, updated_at, updated_by, created_at')
+    .select('id, email, display_name, phone, role, note, archived, last_login, updated_at, updated_by, created_at, active, street, house_number, city, zip, birth_number')
     .eq('id', user.id)
     .single();
   return { data, error };
@@ -29,7 +29,7 @@ export async function isAdmin() {
 export async function listProfiles({ q = '' } = {}) {
   let query = supabase
     .from('profiles')
-    .select('id, email, display_name, role, archived, last_login, updated_at, updated_by, created_at')
+    .select('id, email, display_name, phone, role, note, archived, last_login, updated_at, updated_by, created_at, active, street, house_number, city, zip, birth_number')
     .order('display_name', { ascending: true });
   if (q) query = query.ilike('display_name', `%${q}%`);
   const { data, error } = await query;
@@ -39,7 +39,7 @@ export async function listProfiles({ q = '' } = {}) {
 export async function getProfile(id) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, display_name, role, archived, last_login, updated_at, updated_by, created_at')
+    .select('id, email, display_name, phone, role, note, archived, last_login, updated_at, updated_by, created_at, active, street, house_number, city, zip, birth_number')
     .eq('id', id)
     .single();
   return { data, error };
