@@ -50,31 +50,47 @@ export async function updateProfile(id, payload, currentUser = null) {
   if (currentUser) {
     payload.updated_by = currentUser.display_name || currentUser.username || currentUser.email;
   }
+  // Před změnou načti předchozí data pro logování historie
+  const { data: oldProfile } = await getProfile(id);
   const { data, error } = await supabase
     .from('profiles')
     .update(payload)
     .eq('id', id)
     .select()
     .single();
+  // Ulož změnu do historie, pokud profil existoval a změna proběhla
+  if (oldProfile && data) {
+    await logProfileHistory(id, currentUser, oldProfile, payload);
+  }
   return { data, error };
 }
 
-export async function createProfile(payload) {
+export async function createProfile(payload, currentUser = null) {
   const { data, error } = await supabase
     .from('profiles')
     .insert(payload)
     .select()
     .single();
+  // Zalogovat vytvoření profilu
+  if (data) {
+    await logProfileHistory(data.id, currentUser, {}, payload);
+  }
   return { data, error };
 }
 
-export async function archiveProfile(id) {
+export async function archiveProfile(id, currentUser = null) {
+  // Před změnou načti předchozí data pro logování historie
+  const { data: oldProfile } = await getProfile(id);
   const { data, error } = await supabase
     .from('profiles')
     .update({ archived: true })
     .eq('id', id)
     .select()
     .single();
+  // Ulož změnu do historie, pokud profil existoval a změna proběhla
+  if (oldProfile && data) {
+    await logProfileHistory(id, currentUser, oldProfile, { archived: true });
+  }
   return { data, error };
 }
 
@@ -87,6 +103,38 @@ export async function inviteUserByEmail({ email, display_name = '', role = 'user
   } catch (err) {
     return { data: null, error: err };
   }
+}
+
+// --- Historie změn (profiles_history) ---
+export async function getProfileHistory(profileId) {
+  const { data, error } = await supabase
+    .from('profiles_history')
+    .select('*')
+    .eq('user_id', profileId)
+    .order('changed_at', { ascending: false });
+  return { data, error };
+}
+export async function logProfileHistory(profileId, currentUser, oldData, newData) {
+  // Urči kdo měnil
+  let changed_by = null;
+  if (currentUser) {
+    changed_by = currentUser.display_name || currentUser.username || currentUser.email;
+  }
+  // Vypočítej změny (jen změněná pole)
+  const changes = {};
+  for (const key of Object.keys(newData)) {
+    if (!Object.prototype.hasOwnProperty.call(oldData, key) || oldData[key] !== newData[key]) {
+      changes[key] = { from: oldData[key], to: newData[key] };
+    }
+  }
+  // Pokud nejsou žádné změny, neukládej
+  if (Object.keys(changes).length === 0) return;
+  await supabase.from('profiles_history').insert({
+    user_id: profileId,
+    changed_by,
+    changed_at: new Date().toISOString(),
+    changes
+  });
 }
 
 // --- Přílohy (univerzální tabulka attachments) ---
@@ -113,23 +161,42 @@ export async function removeAttachmentFromStorage(path) {
 
 // Nové API pro univerzální přílohovou tabulku
 export async function listAttachments({ entity, entityId, showArchived = false }) {
-  // TODO: Uprav dotaz podle struktury své tabulky attachments!
-  // Například:
-  // .from('attachments').select('*').eq('entity', entity).eq('entity_id', entityId)
-  // Pokud showArchived==false, přidej .eq('archived', false)
-  // Výsledkem by mělo být pole: [{id, filename, url, archived, ...}]
-  return { data: [] };
+  let query = supabase
+    .from('attachments')
+    .select('*')
+    .eq('entity', entity)
+    .eq('entity_id', entityId);
+  if (!showArchived) query = query.eq('archived', false);
+  const { data, error } = await query;
+  return { data: data || [], error };
 }
 
 export async function uploadAttachment({ entity, entityId, file }) {
-  // TODO: 
-  // 1) Nahraj soubor do Storage (použij uploadAttachmentToStorage)
-  // 2) Zapiš metadata do tabulky attachments (entity, entity_id, filename, url, archived: false atd.)
-  // 3) Můžeš vracet { data, error }
+  // 1) Nahraj soubor do Storage
+  const folder = `${entity}/${entityId}`;
+  const { data: uploadData, error: uploadError } = await uploadAttachmentToStorage(folder, file);
+  if (uploadError) return { data: null, error: uploadError };
+  // 2) Zapiš metadata do tabulky attachments
+  const fileData = {
+    entity,
+    entity_id: entityId,
+    filename: file.name,
+    url: uploadData?.path ? uploadData.path : '',
+    archived: false,
+    created_at: new Date().toISOString()
+  };
+  const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
+  return { data, error };
 }
 
 export async function archiveAttachment(id) {
-  // TODO: update tabulky attachments, nastav archived=true podle id
+  const { data, error } = await supabase
+    .from('attachments')
+    .update({ archived: true })
+    .eq('id', id)
+    .select()
+    .single();
+  return { data, error };
 }
 
 // --- Roles API ---
