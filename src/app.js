@@ -9,6 +9,7 @@ import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
 import './supabase.js';
 import './auth.js';
+import { getMyProfile } from './db.js'; // <-- přidáno pro uživatele
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -162,6 +163,12 @@ window.addEventListener('hashchange', function () {
 (async function start() {
   try {
     await initModules();
+
+    // ---- Načti profil uživatele a ulož do window.currentUser ----
+    const { data: currentUser, error } = await getMyProfile();
+    window.currentUser = currentUser || null;
+    if (error) console.warn("Nepodařilo se načíst profil uživatele:", error);
+
     console.log('Obsah registry:', Array.from(registry.values()));
     renderLayout();
     window.addEventListener('hashchange', route);
