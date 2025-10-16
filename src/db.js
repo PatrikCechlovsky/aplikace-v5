@@ -59,7 +59,7 @@ export async function getProfileHistory(profileId) {
 export async function logProfileHistory(profileId, currentUser, oldData, newData) {
   let changed_by = null;
   if (currentUser) {
-    changed_by = currentUser.id || currentUser.display_name || currentUser.username || currentUser.email;
+    changed_by = currentUser.display_name || currentUser.username || currentUser.email;
   }
   const changed_at = new Date().toISOString();
 
@@ -144,7 +144,6 @@ export async function inviteUserByEmail({ email, display_name = '', role = 'user
 // --- Přílohy (univerzální tabulka attachments) ---
 const ATTACH_BUCKET = 'attachments';
 
-// Pro starší použití (storage bucket přímo, např. pro "volné" soubory ve složce)
 export async function listStorageAttachments(folder) {
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).list(folder, { limit: 100 });
   return { data: data || [], error };
