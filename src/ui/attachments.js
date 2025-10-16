@@ -71,7 +71,15 @@ export async function showAttachmentsModal({ entity, entityId }) {
   root.querySelector('#attachment-upload').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    await uploadAttachment({ entity, entityId, file });
+    // --- Debug log: ověření entity, entityId, file ---
+    console.log('UPLOAD DEBUG', { entity, entityId, file });
+    const result = await uploadAttachment({ entity, entityId, file });
+    if (result.error) {
+      alert('Chyba při nahrávání souboru: ' + result.error.message);
+      console.error('Attachment upload error:', result.error);
+    }
     renderList(root.querySelector('#show-archived-attachments').checked);
   };
 }
+
+export default { showAttachmentsModal };
