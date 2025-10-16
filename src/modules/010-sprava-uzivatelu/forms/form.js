@@ -117,19 +117,16 @@ export async function render(root) {
     handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
   }
 
- // Uložit (disketa)
-if (mode === 'edit') {
-  handlers.onSave = async () => {
-    const values = grabValues(root);
-    // Nastav pole "updated_by" podle požadavku
-    if (!window.currentUser) {
-      alert("Chybí informace o přihlášeném uživateli, změna nebude zalogována správně!");
-      return;
-    }
-    values.updated_by =
-      window.currentUser.display_name ||
-      window.currentUser.username ||
-      window.currentUser.email;
+  // Uložit (disketa)
+  if (mode === 'edit') {
+    handlers.onSave = async () => {
+      const values = grabValues(root);
+      // Nastav pole "updated_by" podle požadavku
+      if (window.currentUser) {
+        values.updated_by =
+          window.currentUser.display_name ||
+          window.currentUser.username ||
+          window.currentUser.email;
       }
       const { data: updated, error } = await updateProfile(id, values, window.currentUser);
       if (error) {
