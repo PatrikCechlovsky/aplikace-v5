@@ -24,7 +24,9 @@ function formatCzechDate(dateStr) {
 
 // Definice polí formuláře
 const FIELDS = [
-  { key: 'display_name',  label: 'Jméno',        type: 'text',     required: true },
+  { key: 'first_name',    label: 'Jméno',        type: 'text',     required: true },
+  { key: 'last_name',     label: 'Příjmení',     type: 'text',     required: true },
+  { key: 'display_name',  label: 'Uživatelské jméno', type: 'text', required: true },
   { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
   { key: 'phone',         label: 'Telefon',      type: 'text',     required: true },
   { key: 'street',        label: 'Ulice',        type: 'text' },
@@ -84,7 +86,7 @@ export async function render(root) {
   );
 
   // Jméno do breadcrumbu
-  const jmeno = data.display_name || data.email || id || 'Uživatel';
+  const jmeno = data.display_name || data.first_name || data.email || id || 'Uživatel';
 
   setBreadcrumb(document.getElementById('crumb'), [
     { icon: 'home',  label: 'Domů',      href: '#/' },
@@ -115,6 +117,13 @@ export async function render(root) {
   if (mode === 'edit') {
     handlers.onSave = async () => {
       const values = grabValues(root);
+      // Nastav pole "updated_by" podle požadavku
+      if (window.currentUser) {
+        values.updated_by =
+          window.currentUser.display_name ||
+          window.currentUser.username ||
+          window.currentUser.email;
+      }
       console.log('Ukládám hodnoty:', values);
       const { data: updated, error } = await updateProfile(id, values);
       console.log('Výsledek updateProfile:', updated, error);
@@ -161,7 +170,7 @@ export async function render(root) {
     layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
     sections: [
       { id: 'profil', label: 'Profil', fields: [
-        'display_name', 'email', 'phone',
+        'first_name', 'last_name', 'display_name', 'email', 'phone',
         'street', 'house_number', 'city', 'zip', 'birth_number'
       ] },
       { id: 'system', label: 'Systém', fields: [
