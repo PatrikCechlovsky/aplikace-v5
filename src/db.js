@@ -50,29 +50,35 @@ export async function getProfileHistory(profileId) {
   const { data, error } = await supabase
     .from('profiles_history')
     .select('*')
-    .eq('user_id', profileId) // nebo .eq('profile_id', profileId) podle tvojí DB!
+    .eq('profile_id', profileId)
     .order('changed_at', { ascending: false });
   return { data, error };
 }
 
+// Zápis změn do profiles_history - pro každou změněnou položku zvlášť (tabulka: id, profile_id, field, old_value, new_value, changed_by, changed_at)
 export async function logProfileHistory(profileId, currentUser, oldData, newData) {
   let changed_by = null;
   if (currentUser) {
-    changed_by = currentUser.display_name || currentUser.username || currentUser.email;
+    changed_by = currentUser.id || currentUser.display_name || currentUser.username || currentUser.email;
   }
-  const changes = {};
+  const changed_at = new Date().toISOString();
+
+  const inserts = [];
   for (const key of Object.keys(newData)) {
     if (!Object.prototype.hasOwnProperty.call(oldData, key) || oldData[key] !== newData[key]) {
-      changes[key] = { from: oldData[key], to: newData[key] };
+      inserts.push({
+        profile_id: profileId,
+        field: key,
+        old_value: oldData[key] == null ? null : String(oldData[key]),
+        new_value: newData[key] == null ? null : String(newData[key]),
+        changed_by,
+        changed_at
+      });
     }
   }
-  if (Object.keys(changes).length === 0) return;
-  await supabase.from('profiles_history').insert({
-    user_id: profileId, // nebo profile_id podle tvojí DB!
-    changed_by,
-    changed_at: new Date().toISOString(),
-    changes
-  });
+  if (inserts.length) {
+    await supabase.from('profiles_history').insert(inserts);
+  }
 }
 
 export async function updateProfile(id, payload, currentUser = null) {
