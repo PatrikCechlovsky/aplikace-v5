@@ -47,6 +47,9 @@
     <script type="module">
       import { supabase } from './src/supabase.js';
 
+      // Pokud máš vlastní updateProfile, importuj ho:
+      // import { updateProfile } from './src/db.js';
+
       const authBox   = document.getElementById('authBox');
       const appBox    = document.getElementById('appBox');
       const userEmail = document.getElementById('userEmail');
@@ -78,8 +81,23 @@
         msg.textContent = 'Přihlašuji…';
         const email = (document.getElementById('email').value || '').trim();
         const pass  = (document.getElementById('pass').value  || '').trim();
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
         msg.textContent = error ? ('Chyba: ' + error.message) : 'OK';
+
+        // Pokud login OK, nastav last_login v Supabase
+        if (data?.user) {
+          try {
+            // Pokud máš updateProfile funkci, použij:
+            // await updateProfile(data.user.id, { last_login: new Date().toISOString() });
+            // Pokud ne, použij přímo supabase (funguje stejně):
+            await supabase
+              .from('profiles')
+              .update({ last_login: new Date().toISOString() })
+              .eq('id', data.user.id);
+          } catch (e) {
+            console.warn("Nepodařilo se zapsat last_login:", e);
+          }
+        }
       });
 
       // Registrace
