@@ -154,7 +154,7 @@ export async function uploadAttachmentToStorage(folder, file) {
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).upload(path, file, {
     cacheControl: '3600', upsert: false
   });
-  return { data, error };
+  return { data, error, path };
 }
 
 export async function removeAttachmentFromStorage(path) {
@@ -175,13 +175,20 @@ export async function listAttachments({ entity, entityId, showArchived = false }
 
 export async function uploadAttachment({ entity, entityId, file }) {
   const folder = `${entity}/${entityId}`;
-  const { data: uploadData, error: uploadError } = await uploadAttachmentToStorage(folder, file);
-  if (uploadError) return { data: null, error: uploadError };
+  // Nahraj nejprve soubor do storage
+  const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file);
+  if (uploadError || !uploadData) return { data: null, error: uploadError || new Error('Upload failed') };
+
+  // Správné doplnění path a url
+  const filePath = uploadData?.path || path || `${folder}/${Date.now()}_${file.name}`;
+  const fileUrl = filePath; // případně můžeš vygenerovat veřejnou URL
+
   const fileData = {
     entity,
     entity_id: entityId,
     filename: file.name,
-    url: uploadData?.path ? uploadData.path : '',
+    path: filePath,           // <-- OPRAVA: path musí být vyplněná!
+    url: fileUrl,             // můžeš použít storage public URL zde, pokud chceš
     archived: false,
     created_at: new Date().toISOString()
   };
