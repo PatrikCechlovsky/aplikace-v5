@@ -47,7 +47,7 @@ export async function showHistoryModal(profileId) {
           <th style="text-align:left;">Pole</th>
           <th style="text-align:left;">Původní hodnota</th>
           <th style="text-align:left;">Nová hodnota</th>
-          <th style="text-align:left;">Změnil</th>
+          <th style="text-align:left;">Upravil</th>
           <th style="text-align:left;">Kdy</th>
         </tr>
       </thead>
