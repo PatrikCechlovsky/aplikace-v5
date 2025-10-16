@@ -45,6 +45,36 @@ export async function getProfile(id) {
   return { data, error };
 }
 
+// --- Historie změn (profiles_history) ---
+export async function getProfileHistory(profileId) {
+  const { data, error } = await supabase
+    .from('profiles_history')
+    .select('*')
+    .eq('user_id', profileId) // nebo .eq('profile_id', profileId) podle tvojí DB!
+    .order('changed_at', { ascending: false });
+  return { data, error };
+}
+
+export async function logProfileHistory(profileId, currentUser, oldData, newData) {
+  let changed_by = null;
+  if (currentUser) {
+    changed_by = currentUser.display_name || currentUser.username || currentUser.email;
+  }
+  const changes = {};
+  for (const key of Object.keys(newData)) {
+    if (!Object.prototype.hasOwnProperty.call(oldData, key) || oldData[key] !== newData[key]) {
+      changes[key] = { from: oldData[key], to: newData[key] };
+    }
+  }
+  if (Object.keys(changes).length === 0) return;
+  await supabase.from('profiles_history').insert({
+    user_id: profileId, // nebo profile_id podle tvojí DB!
+    changed_by,
+    changed_at: new Date().toISOString(),
+    changes
+  });
+}
+
 export async function updateProfile(id, payload, currentUser = null) {
   // Doplníme pole updated_by dle požadavku
   if (currentUser) {
@@ -105,38 +135,6 @@ export async function inviteUserByEmail({ email, display_name = '', role = 'user
   }
 }
 
-// --- Historie změn (profiles_history) ---
-export async function getProfileHistory(profileId) {
-  const { data, error } = await supabase
-    .from('profiles_history')
-    .select('*')
-    .eq('user_id', profileId)
-    .order('changed_at', { ascending: false });
-  return { data, error };
-}
-export async function logProfileHistory(profileId, currentUser, oldData, newData) {
-  // Urči kdo měnil
-  let changed_by = null;
-  if (currentUser) {
-    changed_by = currentUser.display_name || currentUser.username || currentUser.email;
-  }
-  // Vypočítej změny (jen změněná pole)
-  const changes = {};
-  for (const key of Object.keys(newData)) {
-    if (!Object.prototype.hasOwnProperty.call(oldData, key) || oldData[key] !== newData[key]) {
-      changes[key] = { from: oldData[key], to: newData[key] };
-    }
-  }
-  // Pokud nejsou žádné změny, neukládej
-  if (Object.keys(changes).length === 0) return;
-  await supabase.from('profiles_history').insert({
-    user_id: profileId,
-    changed_by,
-    changed_at: new Date().toISOString(),
-    changes
-  });
-}
-
 // --- Přílohy (univerzální tabulka attachments) ---
 const ATTACH_BUCKET = 'attachments';
 
@@ -159,7 +157,6 @@ export async function removeAttachmentFromStorage(path) {
   return { data, error };
 }
 
-// Nové API pro univerzální přílohovou tabulku
 export async function listAttachments({ entity, entityId, showArchived = false }) {
   let query = supabase
     .from('attachments')
@@ -172,11 +169,9 @@ export async function listAttachments({ entity, entityId, showArchived = false }
 }
 
 export async function uploadAttachment({ entity, entityId, file }) {
-  // 1) Nahraj soubor do Storage
   const folder = `${entity}/${entityId}`;
   const { data: uploadData, error: uploadError } = await uploadAttachmentToStorage(folder, file);
   if (uploadError) return { data: null, error: uploadError };
-  // 2) Zapiš metadata do tabulky attachments
   const fileData = {
     entity,
     entity_id: entityId,
