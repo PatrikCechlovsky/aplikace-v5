@@ -154,7 +154,8 @@ export async function uploadAttachmentToStorage(folder, file) {
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).upload(path, file, {
     cacheControl: '3600', upsert: false
   });
-  return { data, error };
+  // Vždy vracej i path, nezáleží na tom, jestli storage API ji vrátí
+  return { data, error, path };
 }
 
 export async function removeAttachmentFromStorage(path) {
@@ -175,32 +176,25 @@ export async function listAttachments({ entity, entityId, showArchived = false }
 
 export async function uploadAttachment({ entity, entityId, file }) {
   const folder = `${entity}/${entityId}`;
-  const { data: uploadData, error: uploadError } = await uploadAttachmentToStorage(folder, file);
+  // Nahraj soubor do storage
+  const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file);
   if (uploadError) return { data: null, error: uploadError };
-  const filePath = uploadData?.path || `${folder}/${Date.now()}_${file.name}`;
-  const fileData = {
-    entity,
-    entity_id: entityId,
-    filename: file.name,
-    path: filePath,                   // <-- OPRAVA: path musí být vyplněná!
-    url: filePath,                    // můžeš zde generovat public URL, pokud chceš
-    archived: false,
-    created_at: new Date().toISOString()
-  };
-  const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
-  return { data, error };
-}
 
-  // Správné doplnění path a url
-  const filePath = uploadData?.path || path || `${folder}/${Date.now()}_${file.name}`;
-  const fileUrl = filePath; // případně můžeš vygenerovat veřejnou URL
+  // Zjisti cestu k souboru: Storage API někdy vrací path v data, někdy ne
+  const filePath = (uploadData && uploadData.path) ? uploadData.path : path;
+  if (!filePath) {
+    return { data: null, error: new Error('Soubor nahrán do storage, ale nebyla získána cesta k souboru (path)') };
+  }
+  // Pro url můžeš použít publicUrl, pokud je bucket public
+  const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(filePath);
+  const fileUrl = publicUrlData?.publicUrl || filePath;
 
   const fileData = {
     entity,
     entity_id: entityId,
     filename: file.name,
-    path: filePath,           // <-- OPRAVA: path musí být vyplněná!
-    url: fileUrl,             // můžeš použít storage public URL zde, pokud chceš
+    path: filePath,           // <-- path je vždy vyplněná!
+    url: fileUrl,             // url je veřejná URL nebo fallback na path
     archived: false,
     created_at: new Date().toISOString()
   };
