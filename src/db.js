@@ -154,7 +154,7 @@ export async function uploadAttachmentToStorage(folder, file) {
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).upload(path, file, {
     cacheControl: '3600', upsert: false
   });
-  return { data, error, path };
+  return { data, error };
 }
 
 export async function removeAttachmentFromStorage(path) {
@@ -175,9 +175,21 @@ export async function listAttachments({ entity, entityId, showArchived = false }
 
 export async function uploadAttachment({ entity, entityId, file }) {
   const folder = `${entity}/${entityId}`;
-  // Nahraj nejprve soubor do storage
-  const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file);
-  if (uploadError || !uploadData) return { data: null, error: uploadError || new Error('Upload failed') };
+  const { data: uploadData, error: uploadError } = await uploadAttachmentToStorage(folder, file);
+  if (uploadError) return { data: null, error: uploadError };
+  const filePath = uploadData?.path || `${folder}/${Date.now()}_${file.name}`;
+  const fileData = {
+    entity,
+    entity_id: entityId,
+    filename: file.name,
+    path: filePath,                   // <-- OPRAVA: path musí být vyplněná!
+    url: filePath,                    // můžeš zde generovat public URL, pokud chceš
+    archived: false,
+    created_at: new Date().toISOString()
+  };
+  const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
+  return { data, error };
+}
 
   // Správné doplnění path a url
   const filePath = uploadData?.path || path || `${folder}/${Date.now()}_${file.name}`;
