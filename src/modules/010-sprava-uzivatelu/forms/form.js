@@ -68,6 +68,10 @@ export async function render(root) {
       if (f.readOnly && f.format && data[f.key]) {
         data[f.key] = f.format(data[f.key]);
       }
+      // Pokud je pole null, zobraz "--" pro lepší UX
+      if (f.readOnly && !data[f.key]) {
+        data[f.key] = '--';
+      }
     }
   }
 
@@ -133,6 +137,24 @@ export async function render(root) {
       }
       alert('Uloženo.');
       setUnsaved(false); // Oznám aplikaci, že vše je uloženo
+      // Po uložení znovu načti data a aktualizuj formulář
+      const { data: refreshed } = await getProfile(id);
+      if (refreshed) {
+        renderForm(root, fieldsWithRoles, refreshed, async () => true, {
+          readOnly: false,
+          showSubmit: false,
+          layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
+          sections: [
+            { id: 'profil', label: 'Profil', fields: [
+              'first_name', 'last_name', 'display_name', 'email', 'phone',
+              'street', 'house_number', 'city', 'zip', 'birth_number'
+            ] },
+            { id: 'system', label: 'Systém', fields: [
+              'role', 'active', 'note', 'last_login', 'updated_at', 'updated_by', 'created_at'
+            ] },
+          ]
+        });
+      }
     };
     handlers.onReject = () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled');
     // Archivace (jen admin/editor a pokud není již archivovaný)
