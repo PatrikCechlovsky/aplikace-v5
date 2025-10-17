@@ -6,11 +6,8 @@ import { navigateTo } from '../../../app.js';
 import { listRoles, inviteUserByEmail } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
-/**
- * Create / Invite page
- * Ensures an icon-only common actions toolbar is visible (positioned top-right like form.js).
- * If the page template doesn't provide #commonactions, we create one and position it so it's visible.
- */
+// Pozvánka (create/invite) — konzistentně s ostatními moduly voláme renderCommonActions
+// bez úprav commonActions.js. Ikona se bere z icons.js podle klíče 'invite'.
 
 const FIELDS = [
   { key: 'display_name', label: 'Uživatelské jméno', type: 'text', required: true },
@@ -26,7 +23,7 @@ export async function render(root) {
     { icon: 'add',   label: 'Nový / Pozvat' }
   ]);
 
-  // --- Načti role do selectu ---
+  // načti role pro select
   let roleOptions = [];
   try {
     const { data: roleList, error } = await listRoles();
@@ -36,37 +33,11 @@ export async function render(root) {
   } catch (e) {
     roleOptions = [];
   }
-  const fieldsWithRoles = FIELDS.map(f =>
-    f.key === 'role' ? { ...f, options: roleOptions } : f
-  );
+  const fieldsWithRoles = FIELDS.map(f => f.key === 'role' ? { ...f, options: roleOptions } : f);
 
-  // Ensure root is positioned so absolute toolbar can anchor to it
-  if (root && getComputedStyle(root).position === 'static') {
-    root.style.position = 'relative';
-  }
-
-  // Ensure commonactions container exists and is visible top-right (icon-only toolbar)
-  let commonEl = document.getElementById('commonactions');
-  if (!commonEl) {
-    commonEl = document.createElement('div');
-    commonEl.id = 'commonactions';
-    // inline positioning so toolbar appears in top-right (matches form.js layout)
-    commonEl.style.position = 'absolute';
-    commonEl.style.top = '12px';
-    commonEl.style.right = '12px';
-    commonEl.style.zIndex = '60';
-    // keep layout flow: prepend to root so it's visually near page header
-    root.prepend(commonEl);
-  } else {
-    // make sure it's visible / positioned similarly
-    commonEl.style.position = commonEl.style.position || 'absolute';
-    commonEl.style.top = commonEl.style.top || '12px';
-    commonEl.style.right = commonEl.style.right || '12px';
-    commonEl.style.zIndex = commonEl.style.zIndex || '60';
-  }
-
-  // --- Handlers: onInvite will make the invite icon active (commonActions enables button when handler present) ---
+  // --- Handlery pro commonActions ---
   const handlers = {
+    // onInvite udělá tlačítko "Pozvat" aktivním v commonActions (ikonka 📨)
     onInvite: async () => {
       const values = grabValues(root);
       const role = values.role || 'user';
@@ -101,14 +72,16 @@ export async function render(root) {
     onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
   };
 
-  // Render icon-only toolbar (commonActions will render icons; no text)
-  renderCommonActions(commonEl, {
+  // --- Vykresli ikonový toolbar stejně jako ostatní moduly (bez dalšího DOM hacku) ---
+  // Důležité: renderCommonActions očekává v DOM element s id="commonactions" (stejně jako form.js / tiles.js).
+  // Pokud ho vaše šablona nevytváří, vložte element <div id="commonactions"></div> do layoutu stránky.
+  renderCommonActions(document.getElementById('commonactions'), {
     moduleActions: ['invite', 'reject'],
-    userRole: window.currentUserRole || 'admin', // for testing, default to admin so icon shows
+    userRole: window.currentUserRole || 'admin', // pro test: admin, v produkci použij skutečnou roli
     handlers
   });
 
-  // Render the form (no submit button; actions live in toolbar)
+  // --- Vykresli formulář (bez submit tlačítka) ---
   const initial = { role: 'user' };
   renderForm(root, fieldsWithRoles, initial, async () => true, {
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
@@ -120,7 +93,7 @@ export async function render(root) {
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// Helper: collect form values
+// Pomocná funkce na sběr hodnot z formuláře
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
