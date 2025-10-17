@@ -1,4 +1,4 @@
-// src/app.js (upraveno: volání dynamického načtení permissions pro roli)
+// ========== Imports – hlavní stavební části aplikace ==========
 import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
 import { renderHomeButton } from './ui/homebutton.js';
@@ -9,8 +9,8 @@ import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
 import './supabase.js';
 import './auth.js';
-import { getMyProfile } from './db.js';
-import { loadPermissionsForRole, registerPermissionsLoader } from './security/permissions.js'; // NEW
+import { getMyProfile, getRolePermissions } from './db.js';
+import { loadPermissionsForRole, registerPermissionsLoader } from './security/permissions.js';
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -170,6 +170,17 @@ window.addEventListener('hashchange', function () {
     window.currentUser = currentUser || null;
     window.currentUserRole = currentUser?.role || 'user';
 
+    // --- REGISTER: loader using db.getRolePermissions (if available)
+    registerPermissionsLoader(async (role) => {
+      try {
+        const { data, error } = await getRolePermissions(role);
+        if (!error && Array.isArray(data)) return data;
+        return null; // signal to fallback to static ROLE_PERMISSIONS
+      } catch (e) {
+        return null;
+      }
+    });
+
     // --- DYNAMIC: pokusit se načíst aktuální permissions pro roli (loader/DB)
     try {
       await loadPermissionsForRole(window.currentUserRole);
@@ -190,10 +201,12 @@ window.addEventListener('hashchange', function () {
   }
 })();
 
-// Optional: example of registering a custom loader (uncomment and implement in your env)
-// import { fetchRolePermissionsFromServer } from './db.js'
-// registerPermissionsLoader(async (role) => {
-//   const { data, error } = await fetchRolePermissionsFromServer(role);
-//   if (!error && Array.isArray(data)) return data;
-//   return null;
-// });
+/*
+Optional: example of registering a custom loader (uncomment and implement in your env)
+import { fetchRolePermissionsFromServer } from './db.js'
+registerPermissionsLoader(async (role) => {
+  const { data, error } = await fetchRolePermissionsFromServer(role);
+  if (!error && Array.isArray(data)) return data;
+  return null;
+});
+*/
