@@ -1,9 +1,11 @@
-// src/db.js — upravená verze: upload -> temp upload -> finalize metadata,
-// možnost cancel (smazat temp soubor), update metadata, unarchive
+// src/db.js — kompletní, kompatibilní verze s attachments (temp upload + finalize),
+// sanitizací názvů, update metadat, archive/unarchive, profiles + history a role helpers.
 import { supabase } from './supabase.js';
 export { supabase };
 
-// --- Uživatelé (profiles) ---
+// ----------------------
+// --- Users / Profiles
+// ----------------------
 export async function getSessionUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) return { user: null, error };
@@ -28,13 +30,129 @@ export async function isAdmin() {
   return data?.role === 'admin';
 }
 
-// (ostatní profile funkce beze změn - zkráceno pro přehlednost; ponechte své existující implementace)
+export async function listProfiles({ q = '' } = {}) {
+  let query = supabase
+    .from('profiles')
+    .select('id, email, display_name, username, first_name, last_name, phone, role, note, archived, last_login, updated_at, updated_by, created_at, active, street, house_number, city, zip, birth_number')
+    .order('display_name', { ascending: true });
+  if (q) query = query.ilike('display_name', `%${q}%`);
+  const { data, error } = await query;
+  return { data: data || [], error };
+}
 
-// --- Přílohy (attachments) ---
+export async function getProfile(id) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, display_name, username, first_name, last_name, phone, role, note, archived, last_login, updated_at, updated_by, created_at, active, street, house_number, city, zip, birth_number')
+    .eq('id', id)
+    .single();
+  return { data, error };
+}
+
+// ----------------------
+// --- Profile history (profiles_history)
+// ----------------------
+export async function getProfileHistory(profileId) {
+  const { data, error } = await supabase
+    .from('profiles_history')
+    .select('*')
+    .eq('profile_id', profileId)
+    .order('changed_at', { ascending: false });
+  return { data, error };
+}
+
+function _toStringOrNull(v) {
+  return v == null ? null : String(v);
+}
+
+export async function logProfileHistory(profileId, currentUser, oldData, newData) {
+  let changed_by = null;
+  if (currentUser) {
+    changed_by = currentUser.display_name || currentUser.username || currentUser.email;
+  }
+  const changed_at = new Date().toISOString();
+
+  const inserts = [];
+  for (const key of Object.keys(newData)) {
+    if (!Object.prototype.hasOwnProperty.call(oldData, key) || oldData[key] !== newData[key]) {
+      inserts.push({
+        profile_id: profileId,
+        field: key,
+        old_value: _toStringOrNull(oldData[key]),
+        new_value: _toStringOrNull(newData[key]),
+        changed_by,
+        changed_at
+      });
+    }
+  }
+  if (inserts.length) {
+    const { data, error } = await supabase.from('profiles_history').insert(inserts);
+    return { data, error };
+  }
+  return { data: null, error: null };
+}
+
+export async function updateProfile(id, payload, currentUser = null) {
+  if (currentUser) {
+    payload.updated_by = currentUser.display_name || currentUser.username || currentUser.email;
+  }
+  const { data: oldProfile } = await getProfile(id);
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .single();
+  if (oldProfile && data) {
+    await logProfileHistory(id, currentUser, oldProfile, payload);
+  }
+  return { data, error };
+}
+
+export async function createProfile(payload, currentUser = null) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert(payload)
+    .select()
+    .single();
+  if (data) {
+    await logProfileHistory(data.id, currentUser, {}, payload);
+  }
+  return { data, error };
+}
+
+export async function archiveProfile(id, currentUser = null) {
+  const { data: oldProfile } = await getProfile(id);
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ archived: true })
+    .eq('id', id)
+    .select()
+    .single();
+  if (oldProfile && data) {
+    await logProfileHistory(id, currentUser, oldProfile, { archived: true });
+  }
+  return { data, error };
+}
+
+export async function inviteUserByEmail({ email, display_name = '', role = 'user' }) {
+  try {
+    const { data, error } = await supabase.functions.invoke('invite-user', {
+      body: { email, display_name, role }
+    });
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// ----------------------
+// --- Attachments (storage + metadata)
+// ----------------------
 const ATTACH_BUCKET = 'attachments';
 
 /**
- * validateFilename: kontrola povolených znaků (bez diakritiky)
+ * validateFilename: povolené znaky pro storage key test (ASCII, bez mezer)
  * povolené znaky: A-Za-z0-9 . _ -
  */
 export function validateFilename(name) {
@@ -56,8 +174,9 @@ export function sanitizeFilename(name) {
 }
 
 /**
- * uploadAttachmentToStorage(folder, file, { autoSanitize })
- * - nahraje soubor do storage a vrátí path (klíč) i případné data z API
+ * uploadAttachmentToStorage(folder, file, options)
+ * - autoSanitize (true by default) will sanitize filename if invalid
+ * - returns { data, error, path }
  */
 export async function uploadAttachmentToStorage(folder, file, { autoSanitize = true } = {}) {
   if (!file || !file.name) {
@@ -87,25 +206,41 @@ export async function uploadAttachmentToStorage(folder, file, { autoSanitize = t
 }
 
 /**
- * createTempUpload(folder, file, options)
- * - nahraje soubor do storage (sanitized key) a vrátí path + public url + originalName
- * - tato funkce se používá pro "upload první, pak metadata"
+ * createTempUpload(folder, file, { autoSanitize = true })
+ * - uploads file (sanitized path) and returns path + publicUrl (or signedUrl fallback) + originalName
  */
 export async function createTempUpload(folder, file, { autoSanitize = true } = {}) {
   const { data, error, path } = await uploadAttachmentToStorage(folder, file, { autoSanitize });
+  // debug log helpful for troubleshooting
+  // console.log('createTempUpload -> upload result', { data, error, path });
+
   if (error || !path) return { data: null, error: error || new Error('Upload failed') };
 
-  const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(path);
-  const publicUrl = publicUrlData?.publicUrl || path;
+  // try public url first
+  try {
+    const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(path);
+    const publicUrl = publicUrlData?.publicUrl || null;
+    if (publicUrl) {
+      return { data: { path, publicUrl, originalName: file.name }, error: null };
+    }
+  } catch (err) {
+    // ignore and try signed url
+  }
 
-  return {
-    data: { path, publicUrl, originalName: file.name },
-    error: null
-  };
+  // fallback: create signed url (short-lived)
+  try {
+    const { data: signedData, error: signedErr } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(path, 60);
+    if (signedErr) {
+      return { data: { path, publicUrl: null, originalName: file.name }, error: null };
+    }
+    return { data: { path, publicUrl: signedData?.signedUrl || null, originalName: file.name }, error: null };
+  } catch (err) {
+    return { data: { path, publicUrl: null, originalName: file.name }, error: null };
+  }
 }
 
 /**
- * cancelTemporaryUpload(path) - pokud uživatel zruší vkládání, smaže se temp soubor ze storage
+ * cancelTemporaryUpload(path) - delete a file from storage (used when user cancels finalize)
  */
 export async function cancelTemporaryUpload(path) {
   if (!path) return { data: null, error: new Error('No path provided') };
@@ -115,16 +250,28 @@ export async function cancelTemporaryUpload(path) {
 
 /**
  * createAttachmentFromUpload({ entity, entityId, path, filename, description })
- * - uloží do tabulky attachments metadata a odkaz na již nahraný soubor (path)
- * - filename = display name (může obsahovat diakritiku); path zůstává sanitizovaný storage key
+ * - create metadata record in attachments table referencing already uploaded storage path
+ * - filename is display name (can contain diacritics)
  */
 export async function createAttachmentFromUpload({ entity, entityId, path, filename, description = '' }) {
   if (!path) return { data: null, error: new Error('No path provided') };
   if (!filename || !filename.trim()) return { data: null, error: new Error('Filename (display name) is required') };
   if (description == null) description = '';
 
-  const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(path);
-  const url = publicUrlData?.publicUrl || path;
+  // build a public/signed url for metadata display
+  let url = path;
+  try {
+    const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(path);
+    url = publicUrlData?.publicUrl || path;
+    // if publicUrl not available, create signed url as preview maybe
+    if (!url) {
+      const { data: signedData } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(path, 60);
+      url = signedData?.signedUrl || path;
+    }
+  } catch (err) {
+    // fallback to path
+    url = path;
+  }
 
   const fileData = {
     entity,
@@ -142,7 +289,66 @@ export async function createAttachmentFromUpload({ entity, entityId, path, filen
 }
 
 /**
- * listAttachments - vrátí záznamy z tabulky attachments (metadata)
+ * Legacy helper: uploadAttachment(...) - upload and immediately create metadata
+ * Kept for backward compatibility with older UI callers.
+ */
+export async function uploadAttachment({ entity, entityId, file, description = '', autoSanitize = true }) {
+  const folder = `${entity}/${entityId}`;
+  const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file, { autoSanitize });
+  if (uploadError) return { data: null, error: uploadError };
+
+  const filePath = (uploadData && uploadData.path) ? uploadData.path : path;
+  if (!filePath) {
+    return { data: null, error: new Error('Soubor nahrán do storage, ale nebyla získána cesta k souboru (path)') };
+  }
+
+  // get url (public or signed)
+  let fileUrl = filePath;
+  try {
+    const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(filePath);
+    fileUrl = publicUrlData?.publicUrl || filePath;
+    if (!publicUrlData?.publicUrl) {
+      const { data: signedData } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(filePath, 60);
+      fileUrl = signedData?.signedUrl || filePath;
+    }
+  } catch (err) {
+    fileUrl = filePath;
+  }
+
+  const fileData = {
+    entity,
+    entity_id: entityId,
+    filename: file.name,
+    path: filePath,
+    url: fileUrl,
+    archived: false,
+    description,
+    created_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
+  return { data, error };
+}
+
+/**
+ * listStorageAttachments(folder) - list objects from storage bucket (not DB)
+ */
+export async function listStorageAttachments(folder) {
+  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).list(folder, { limit: 100 });
+  return { data: data || [], error };
+}
+
+/**
+ * removeAttachmentFromStorage(path) - delete given path from storage
+ */
+export async function removeAttachmentFromStorage(path) {
+  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).remove([path]);
+  return { data, error };
+}
+
+/**
+ * listAttachments({entity, entityId, showArchived})
+ * - read metadata records from attachments table
  */
 export async function listAttachments({ entity, entityId, showArchived = false }) {
   let query = supabase
@@ -156,7 +362,7 @@ export async function listAttachments({ entity, entityId, showArchived = false }
 }
 
 /**
- * archiveAttachment / unarchiveAttachment
+ * archive / unarchive
  */
 export async function archiveAttachment(id) {
   const { data, error } = await supabase
@@ -167,6 +373,7 @@ export async function archiveAttachment(id) {
     .single();
   return { data, error };
 }
+
 export async function unarchiveAttachment(id) {
   const { data, error } = await supabase
     .from('attachments')
@@ -179,7 +386,7 @@ export async function unarchiveAttachment(id) {
 
 /**
  * updateAttachmentMetadata(id, { filename, description })
- * - aktualizuje pouze metadata v DB (ne storage path)
+ * - updates only DB metadata (display filename and description), does NOT rename storage object
  */
 export async function updateAttachmentMetadata(id, { filename, description }) {
   const payload = {};
@@ -196,18 +403,13 @@ export async function updateAttachmentMetadata(id, { filename, description }) {
   return { data, error };
 }
 
-// pro zpětnou kompatibilitu
 export async function updateAttachmentDescription(id, description) {
   return await updateAttachmentMetadata(id, { description });
 }
 
-// removeAttachmentFromStorage (pokud potřebuješ manuálně mazat)
-export async function removeAttachmentFromStorage(path) {
-  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).remove([path]);
-  return { data, error };
-}
-
-// --- Roles API (ponechám beze změny) ---
+// ----------------------
+// --- Roles API
+// ----------------------
 export async function listRoles() {
   const { data, error } = await supabase
     .from('roles')
@@ -215,6 +417,7 @@ export async function listRoles() {
     .order('label', { ascending: true });
   return { data, error };
 }
+
 export async function upsertRole({ slug, label, color, is_system = false }) {
   const { data, error } = await supabase
     .from('roles')
@@ -222,6 +425,7 @@ export async function upsertRole({ slug, label, color, is_system = false }) {
     .select();
   return { data, error };
 }
+
 export async function deleteRole(slug) {
   const { error } = await supabase.from('roles').delete().eq('slug', slug);
   return { error };
