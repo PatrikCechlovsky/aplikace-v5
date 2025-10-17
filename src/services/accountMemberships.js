@@ -6,8 +6,13 @@
 // - getMembership(id), getRoleForProfileOnAccount(accountId,profileId)
 // - listMembershipsByProfile(profileId)
 // Loguje změny do entity_history (pokud tabulka existuje).
+// Opravy: validace UUID vstupů před voláním DB, lepší chybové zprávy.
 
 import { supabase } from '../supabase.js';
+
+function isUuid(v) {
+  return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/.test(v);
+}
 
 /** Helper: write entity history rows into entity_history (if table exists) */
 async function writeEntityHistory(entityType, entityId, changes = [], changedBy = null) {
@@ -31,7 +36,7 @@ async function writeEntityHistory(entityType, entityId, changes = [], changedBy 
 
 /** listAccountMembers(accountId) -> { data: [members], error } */
 export async function listAccountMembers(accountId) {
-  if (!accountId) return { data: [], error: new Error('Missing accountId') };
+  if (!isUuid(accountId)) return { data: [], error: new Error('Missing or invalid accountId') };
   try {
     const { data, error } = await supabase
       .from('account_memberships')
@@ -46,7 +51,7 @@ export async function listAccountMembers(accountId) {
 
 /** getMembership(id) */
 export async function getMembership(id) {
-  if (!id) return { data: null, error: new Error('Missing id') };
+  if (!isUuid(id)) return { data: null, error: new Error('Missing or invalid id') };
   try {
     const { data, error } = await supabase.from('account_memberships').select('*').eq('id', id).single();
     return { data, error };
@@ -57,7 +62,7 @@ export async function getMembership(id) {
 
 /** getRoleForProfileOnAccount(accountId, profileId) -> { role: string|null, error } */
 export async function getRoleForProfileOnAccount(accountId, profileId) {
-  if (!accountId || !profileId) return { role: null, error: new Error('Missing params') };
+  if (!isUuid(accountId) || !isUuid(profileId)) return { role: null, error: new Error('Missing or invalid params') };
   try {
     const { data, error } = await supabase
       .from('account_memberships')
@@ -78,7 +83,9 @@ export async function getRoleForProfileOnAccount(accountId, profileId) {
  * assignRoleToAccount(accountId, profileId, roleSlug, assignedBy)
  */
 export async function assignRoleToAccount(accountId, profileId, roleSlug, assignedBy = null) {
-  if (!accountId || !profileId || !roleSlug) return { data: null, error: new Error('Missing params') };
+  if (!isUuid(accountId) || !isUuid(profileId) || typeof roleSlug !== 'string') {
+    return { data: null, error: new Error('Missing or invalid params') };
+  }
   try {
     // check existing
     const { data: existing, error: e1 } = await supabase
@@ -136,7 +143,7 @@ export async function assignRoleToAccount(accountId, profileId, roleSlug, assign
 
 /** removeMembership(id) - soft deactivate (is_active = false) */
 export async function removeMembership(id, changedBy = null) {
-  if (!id) return { data: null, error: new Error('Missing id') };
+  if (!isUuid(id)) return { data: null, error: new Error('Missing or invalid id') };
   try {
     const { data: old, error: e1 } = await getMembership(id);
     if (e1) return { data: null, error: e1 };
@@ -163,7 +170,7 @@ export async function removeMembership(id, changedBy = null) {
 
 /** listMembershipsByProfile(profileId) */
 export async function listMembershipsByProfile(profileId) {
-  if (!profileId) return { data: [], error: new Error('Missing profileId') };
+  if (!isUuid(profileId)) return { data: [], error: new Error('Missing or invalid profileId') };
   try {
     const { data, error } = await supabase
       .from('account_memberships')
