@@ -1,3 +1,4 @@
+// src/db.js — upravená verze s validation/sanitization strategií a podporou popisku
 import { supabase } from './supabase.js';
 export { supabase };
 
@@ -55,7 +56,6 @@ export async function getProfileHistory(profileId) {
   return { data, error };
 }
 
-// Zápis změn do profiles_history - pro každou změněnou položku zvlášť
 export async function logProfileHistory(profileId, currentUser, oldData, newData) {
   let changed_by = null;
   if (currentUser) {
@@ -69,8 +69,8 @@ export async function logProfileHistory(profileId, currentUser, oldData, newData
       inserts.push({
         profile_id: profileId,
         field: key,
-        old_value: oldData[key] == null ? null : String(oldData[key]),
-        new_value: newData[key] == null ? null : String(newData[key]),
+        old_value: old_data_to_string(oldData[key]),
+        new_value: new_data_to_string(newData[key]),
         changed_by,
         changed_at
       });
@@ -79,6 +79,13 @@ export async function logProfileHistory(profileId, currentUser, oldData, newData
   if (inserts.length) {
     await supabase.from('profiles_history').insert(inserts);
   }
+}
+
+function old_data_to_string(v) {
+  return v == null ? null : String(v);
+}
+function new_data_to_string(v) {
+  return v == null ? null : String(v);
 }
 
 export async function updateProfile(id, payload, currentUser = null) {
@@ -138,23 +145,79 @@ export async function inviteUserByEmail({ email, display_name = '', role = 'user
 // --- Přílohy (univerzální tabulka attachments) ---
 const ATTACH_BUCKET = 'attachments';
 
-export async function listStorageAttachments(folder) {
-  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).list(folder, { limit: 100 });
-  return { data: data || [], error };
+/**
+ * validateFilename:
+ * - kontroluje, zda název souboru obsahuje pouze povolené znaky (bez diakritiky)
+ * - povolené znaky: A-Za-z0-9 . _ -
+ * - pokud vrátí false, uživatel by měl přejmenovat soubor nebo lze použít autoSanitize
+ */
+export function validateFilename(name) {
+  if (!name || typeof name !== 'string') return false;
+  // odstraníme vedoucí a koncové mezery
+  const n = name.trim();
+  // normalize a odstranění kombinujících diakritických znaků při testu (ale ne měníme originální hodnotu)
+  const ascii = n.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+  // povolené znaky v basename (bez adresářů) jsou písmena, čísla, tečka, pomlčka, podtržítko a mezeru není povolena
+  return /^[A-Za-z0-9.\-_]+$/.test(ascii);
 }
 
-export async function uploadAttachmentToStorage(folder, file) {
-  const path = `${folder}/${Date.now()}_${file.name}`;
-  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).upload(path, file, {
-    cacheControl: '3600', upsert: false
-  });
-  // Vždy vracej i path, nezáleží na tom, jestli storage API ji vrátí
-  return { data, error, path };
+/**
+ * sanitizeFilename:
+ * - odstraní diakritiku a nahradí nepovolené znaky podtržítkem
+ * - použij, když chceš automaticky upravit jméno místo vyžadovat přejmenování uživatelem
+ */
+export function sanitizeFilename(name) {
+  if (!name || typeof name !== 'string') return 'file';
+  // odstraníme cesty, pokud někdo posílá full path by mistake
+  const base = name.split(/[/\\]+/).pop();
+  const ascii = base.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+  // nahraď nepovolené znaky podtržítkem
+  const safe = ascii.replace(/[^A-Za-z0-9.\-_]/g, '_').replace(/_+/g, '_');
+  // ořež na rozumnou délku (např. 200)
+  return safe.slice(0, 200) || 'file';
+}
+
+/**
+ * uploadAttachmentToStorage(folder, file, options)
+ * - options.autoSanitize: pokud true, upraví název souboru místo vrácení chyby
+ * - pokud autoSanitize=false (výchozí) a název obsahuje nepovolené znaky, vrátí chybu instructing to rename
+ */
+export async function uploadAttachmentToStorage(folder, file, { autoSanitize = false } = {}) {
+  if (!file || !file.name) {
+    return { data: null, error: new Error('No file provided') };
+  }
+
+  let filename = file.name.trim();
+
+  if (!validateFilename(filename)) {
+    if (autoSanitize) {
+      filename = sanitizeFilename(filename);
+    } else {
+      return { data: null, error: new Error(`Invalid filename: "${file.name}". Zkuste přejmenovat soubor bez mezer, diakritiky nebo speciálních znaků (nebo povolit automatickou sanitizaci).`) };
+    }
+  }
+
+  const path = `${folder}/${Date.now()}_${filename}`;
+  try {
+    const { data, error } = await supabase.storage.from(ATTACH_BUCKET).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+    // Vždy vracej i path jako fallback
+    return { data, error, path };
+  } catch (err) {
+    return { data: null, error: err };
+  }
 }
 
 export async function removeAttachmentFromStorage(path) {
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).remove([path]);
   return { data, error };
+}
+
+export async function listStorageAttachments(folder) {
+  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).list(folder, { limit: 100 });
+  return { data: data || [], error };
 }
 
 export async function listAttachments({ entity, entityId, showArchived = false }) {
@@ -168,19 +231,22 @@ export async function listAttachments({ entity, entityId, showArchived = false }
   return { data: data || [], error };
 }
 
-// --- OPRAVENO: Funkce nyní podporuje description/popisek ---
-export async function uploadAttachment({ entity, entityId, file, description = '' }) {
+/**
+ * uploadAttachment({entity, entityId, file, description = '', autoSanitize = false})
+ * - pokud filename není validní a autoSanitize=false vrátí error, aby uživatel přejmenoval soubor
+ * - pokud autoSanitize=true, provede sanitizaci názvu automaticky
+ */
+export async function uploadAttachment({ entity, entityId, file, description = '', autoSanitize = false }) {
   const folder = `${entity}/${entityId}`;
-  // Nahraj soubor do storage
-  const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file);
+  const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file, { autoSanitize });
   if (uploadError) return { data: null, error: uploadError };
 
-  // Zjisti cestu k souboru: Storage API někdy vrací path v data, někdy ne
   const filePath = (uploadData && uploadData.path) ? uploadData.path : path;
   if (!filePath) {
     return { data: null, error: new Error('Soubor nahrán do storage, ale nebyla získána cesta k souboru (path)') };
   }
-  // Pro url můžeš použít publicUrl, pokud je bucket public
+
+  // Získat veřejnou URL pokud bucket public
   const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(filePath);
   const fileUrl = publicUrlData?.publicUrl || filePath;
 
@@ -191,12 +257,14 @@ export async function uploadAttachment({ entity, entityId, file, description = '
     path: filePath,
     url: fileUrl,
     archived: false,
-    description, // <-- nový sloupec popis!
+    description,
     created_at: new Date().toISOString()
   };
+
   const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
   return { data, error };
 }
+
 export async function archiveAttachment(id) {
   const { data, error } = await supabase
     .from('attachments')
@@ -205,8 +273,11 @@ export async function archiveAttachment(id) {
     .select()
     .single();
   return { data, error };
-
 }
+
+/**
+ * updateAttachmentDescription — aktualizuje popisek (description) přílohy
+ */
 export async function updateAttachmentDescription(id, description) {
   const { data, error } = await supabase
     .from('attachments')
@@ -216,6 +287,7 @@ export async function updateAttachmentDescription(id, description) {
     .single();
   return { data, error };
 }
+
 // --- Roles API ---
 export async function listRoles() {
   const { data, error } = await supabase
