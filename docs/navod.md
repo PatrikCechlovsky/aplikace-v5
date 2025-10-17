@@ -201,6 +201,31 @@ export async function render(root, params) {
 - Před commitem vždy spusť: **vizuální kontrolu + konzoli**.
 - 1 commit = 1 logická změna.
 - Deploy na Vercel probíhá automaticky po commitu.
+---
+---markdown
+## Workflow — jak pracovat s AI (one-step režim)
+
+Krátce a prakticky: vždy děláme pouze JEDEN konkrétní krok najednou.
+1) AI ti pošle přesný soubor nebo přesný SQL příkaz (JEDEN krok).  
+2) Ty vložíš / commitneš / spustíš TEN SOUBOR nebo TEN SQL příkaz.  
+3) Otevřeš dev console a spustíš JEDEN krátký testovací snippet (poskytnutý AI), zkopíruješ výsledky do chatu.  
+4) AI vyhodnotí výstup a pošle další jediný krok.
+
+Checklist pro testování nových servisů (payments / accountMemberships)
+- Po vložení souborů commitni a pusni do repa.  
+- V browser konzoli spusť test snippet (AI poskytne přesný snippet), např.:
+  - vytvoří test účet (upsertPaymentAccount)
+  - přiřadí roli (assignRoleToAccount)
+  - načte členy (listAccountMembers)
+- Interpretace console:
+  - pokud vidíš data objekt s id → OK (záznam vytvořen),
+  - pokud vidíš 400 Bad Request → zkopíruj přesnou chybu do chatu (AI opraví jediným patchem),
+  - pokud vidíš 404 → znamená chybějící tabulku/view (AI přidá SQL).
+- Po úspěšném testu pokračujeme dalším krokem (UI napojení).
+
+Poznámka o komunikaci s AI:
+- AI nebude klást spoustu otázek najednou. Dostaneš vždy jediný krok (soubor, SQL nebo krátký příkaz).  
+- Pokud chceš jiný režim (PR přímo, nebo abych commitoval za tebe), napiš jednou větu s owner/repo.
 
 ---
 
