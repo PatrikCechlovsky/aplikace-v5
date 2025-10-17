@@ -11,7 +11,7 @@ const FIELDS = [
   { key: 'phone',        label: 'Telefon',     type: 'text' },
   { key: 'role',         label: 'Role',        type: 'select', options: [], required: true },
   // Checkbox: archived => checked = archivováno (inaktivní). If unchecked => user active.
-  { key: 'archived',     label: 'Archivní',    type: 'checkbox' }
+  // { key: 'archived',     label: 'Archivní',    type: 'checkbox' }
 ];
 
 export async function render(root) {
