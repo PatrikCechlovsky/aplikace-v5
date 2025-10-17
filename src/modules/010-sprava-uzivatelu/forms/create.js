@@ -6,9 +6,7 @@ import { navigateTo } from '../../../app.js';
 import { listRoles, inviteUserByEmail } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
-// Pozvánka (create/invite) — konzistentně s ostatními moduly voláme renderCommonActions
-// bez úprav commonActions.js. Ikona se bere z icons.js podle klíče 'invite'.
-
+// Pozvánka — volá renderCommonActions stejně jako form.js/tiles.js
 const FIELDS = [
   { key: 'display_name', label: 'Uživatelské jméno', type: 'text', required: true },
   { key: 'email',        label: 'E-mail',           type: 'email', required: true, placeholder: 'user@example.com' },
@@ -23,7 +21,7 @@ export async function render(root) {
     { icon: 'add',   label: 'Nový / Pozvat' }
   ]);
 
-  // načti role pro select
+  // --- načti role pro select ---
   let roleOptions = [];
   try {
     const { data: roleList, error } = await listRoles();
@@ -35,9 +33,8 @@ export async function render(root) {
   }
   const fieldsWithRoles = FIELDS.map(f => f.key === 'role' ? { ...f, options: roleOptions } : f);
 
-  // --- Handlery pro commonActions ---
+  // --- definice handlerů pro commonActions (onInvite aktivuje ikonku invite) ---
   const handlers = {
-    // onInvite udělá tlačítko "Pozvat" aktivním v commonActions (ikonka 📨)
     onInvite: async () => {
       const values = grabValues(root);
       const role = values.role || 'user';
@@ -72,16 +69,26 @@ export async function render(root) {
     onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
   };
 
-  // --- Vykresli ikonový toolbar stejně jako ostatní moduly (bez dalšího DOM hacku) ---
-  // Důležité: renderCommonActions očekává v DOM element s id="commonactions" (stejně jako form.js / tiles.js).
-  // Pokud ho vaše šablona nevytváří, vložte element <div id="commonactions"></div> do layoutu stránky.
-  renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['invite', 'reject'],
-    userRole: window.currentUserRole || 'admin', // pro test: admin, v produkci použij skutečnou roli
-    handlers
-  });
+  // --- jaké akce chceme v toolbaru (stejně jako form.js) ---
+  const moduleActions = ['invite', 'reject'];
 
-  // --- Vykresli formulář (bez submit tlačítka) ---
+  // Debug: vypiš do konzole, co se posílá do renderCommonActions (pomůže zjistit, proč něco chybí)
+  console.log('create.render: moduleActions=', moduleActions, 'userRole=', window.currentUserRole, 'handlersKeys=', Object.keys(handlers));
+
+  // Kontrola existence containeru (neměnit ho, jen varování pro debug)
+  const commonEl = document.getElementById('commonactions');
+  if (!commonEl) {
+    console.warn('create.render: element #commonactions nenalezen. CommonActions nebude vykreslen. Přidejte <div id="commonactions"></div> do layoutu.');
+  } else {
+    // Volání renderCommonActions bez jakýchkoliv DOM hacků — necháme commonActions dělat svoji práci
+    renderCommonActions(commonEl, {
+      moduleActions,
+      userRole: window.currentUserRole || 'admin', // pro rychlý test použij admin, v produkci použij reálnou roli
+      handlers
+    });
+  }
+
+  // --- vykreslení formuláře ---
   const initial = { role: 'user' };
   renderForm(root, fieldsWithRoles, initial, async () => true, {
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
@@ -93,7 +100,7 @@ export async function render(root) {
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// Pomocná funkce na sběr hodnot z formuláře
+// Pomocná funkce pro čtení hodnot z formuláře
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
