@@ -218,5 +218,38 @@ export async function render(root, params) {
 
 ---
 
+## TODO / Backlog (z konverzace)
+Níže je souhrn otevřených úkolů vycházejících z naší konverzace. Položky jsou seřazeny přibližně podle priority — můžeš je rovnou vložit do Issues / projekt boardu.
+
+### Vysoká priorita
+- [ ] Implementovat Import/Export (MVP) pro "Profiles" (Uživatelé)
+  - CSV export (stáhnout z listProfiles()).
+  - CSV import (client-side) s parsingem, validací, náhledem (preview) a per-row volbou: Skip / Overwrite / Create.
+  - Validace polí: email (syntaktika + duplicity), role (musí existovat), povinná pole, color hex.
+  - Limit velikosti souboru a povolení operace pouze pro adminy.
+- [ ] Ověřit dynamické permissions (loadPermissionsForRole)
+  - Zajistit, že `ACTIONS_CONFIG` a `ROLE_PERMISSIONS` jsou konzistentní.
+  - Ošetřit fallback, když DB loader nic nevrátí.
+
+### Střední priorita
+- [ ] Dokončit a otestovat modul "Role & barvy"
+  - Testovat chování: zámek slug pokud je role používána (countProfilesByRole).
+  - Ověřit, že delete je blokován pro používané role.
+  - Doladit dark-mode kontrast pro paletu barev.
+- [ ] Přidat mapování polí pro import (pokročilé) — fáze B.
+
+### Nízká priorita / UX drobnosti
+- [ ] Zvýraznit primární tlačítko "Uložit" v commonActions.
+- [ ] Přidat animaci outline u palet při výběru.
+- [ ] Rozšířit import/export i pro další entity (roles, attachments).
+- [ ] Audit log pro importy (kdo importoval, kdy, jaké změny).
+
+### Poznámky
+- Formát CSV pro Profiles: `id,display_name,email,first_name,last_name,phone,role,archived,note,street,house_number,city,zip,birth_number`
+- Doporučená default politika pro konflikty: Skip (uživatel ve preview zvolí Overwrite, pokud chce).
+- Import v MVP bude client-side; pro velké soubory později plánovat backend job/queue.
+
+---
+
 **Autor / Správce:** ChatGPT (asistent projektu)  
-**Aktualizováno:** 2025-10-14
+**Aktualizováno:** 2025-10-17
