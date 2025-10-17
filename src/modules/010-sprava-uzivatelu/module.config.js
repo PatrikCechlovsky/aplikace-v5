@@ -1,39 +1,22 @@
-// src/modules/010-sprava-uzivatelu/module.config.js
-export default {
-  id: '010-sprava-uzivatelu',
-  title: 'Uživatelé',
-  icon: 'users',
-  baseDir: '/src/modules/010-sprava-uzivatelu',
+// Manifest musí být vrácen funkcí getManifest().
+// app.js si sama spočítá baseDir a podle id importuje tiles/<id>.js nebo forms/<id>.js.
+// Tzn. do manifestu NEpatří baseDir ani renderer funkce.
 
-  defaultTitle: 'Přehled',
+export async function getManifest() {
+  return {
+    id: '010-sprava-uzivatelu',
+    title: 'Uživatelé',
+    icon: 'users',
+    defaultTile: 'prehled', // POZOR: defaultTile (ne defaultTitle)
+    tiles: [
+      { id: 'prehled', title: 'Přehled', icon: 'list' },
+    ],
+    forms: [
+      { id: 'form',   title: 'Formulář',      icon: 'form' },
+      { id: 'create', title: 'Nový / Pozvat', icon: 'add'  },
+      { id: 'role',   title: 'Role & barvy',  icon: 'settings' },
+    ],
+  };
+}
 
-  tiles: [
-    {
-      id: 'prehled',
-      title: 'Přehled',
-      icon: 'list',
-      renderer: () => import('./tiles/prehled.js'),
-    },
-  ],
-
-  forms: [
-    {
-      id: 'form',
-      title: 'Formulář',
-      icon: 'form',
-      renderer: () => import('./forms/form.js'),
-    },
-    {
-      id: 'create',
-      title: 'Nový / Pozvat',
-      icon: 'add',
-      renderer: () => import('./forms/create.js'),
-    },
-    {
-      id: 'role',
-      title: 'Role & barvy',
-      icon: 'settings',
-      renderer: () => import('./forms/role.js'),
-    },
-  ],
-};
+export default { getManifest };

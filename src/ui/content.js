@@ -43,6 +43,24 @@ export function setFavoriteOrder(orderArr) {
   localStorage.setItem(FAV_TILES_ORDER_KEY, JSON.stringify(orderArr));
 }
 
+// Nově: očista oblíbených po změnách modulů
+export function sanitizeFavorites(modules = []) {
+  const favs = loadFavorites();
+  if (!Array.isArray(favs) || !favs.length) return;
+
+  const valid = new Set();
+  modules.forEach(m => {
+    (m.tiles||[]).forEach(t => valid.add(`${m.id}/${t.id}`));
+    (m.forms||[]).forEach(f => valid.add(`${m.id}/${f.id}`));
+  });
+
+  const cleaned = favs.filter(id => valid.has(id));
+  localStorage.setItem(FAV_TILES_KEY, JSON.stringify(cleaned));
+
+  const order = loadFavoriteOrder().filter(id => valid.has(id));
+  localStorage.setItem(FAV_TILES_ORDER_KEY, JSON.stringify(order));
+}
+
 // Pomocná funkce pro typ tile
 function tileType(mod, tile) {
   if (mod.tiles?.some(t => t.id === tile.id)) return 'Seznam';
@@ -68,7 +86,7 @@ function renderTile(mod, tile) {
         <a href="#/m/${mod.id}/t/${tile.id}" class="w-full h-full block" title="Otevřít"></a>
       </div>
       <div class="absolute top-3 right-3 z-10 opacity-40 pointer-events-none group-hover:opacity-60 select-none">
-        <svg width="18" height="18" fill="currentColor" class="inline text-blue-300" viewBox="0 0 20 20"><path d="M7 4a3 3 0 1 1 6 0v1h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1V4zm2 0a1 1 0 1 1 2 0v1h-2V4zm-3 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1z"/></svg>
+        <svg width="18" height="18" fill="currentColor" class="inline text-blue-300" viewBox="0 0 20 20"><path d="M7 4a3 3 0 1 1 6 0v1h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 0-1-1h1V4zm2 0a1 1 0 1 1 2 0v1h-2V4zm-3 3v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1z"/></svg>
       </div>
     </div>
   `;
@@ -126,7 +144,7 @@ export function renderDashboardTiles(root, modules = []) {
         ghostClass: 'bg-blue-50',
         handle: '.tile-draggable', // celá dlaždice je "handle"
         draggable: '.tile-draggable',
-        onEnd: function (evt) {
+        onEnd: function () {
           // Zjisti nové pořadí a ulož do localStorage
           const newOrder = Array.from(list.children)
             .map(tile => tile.getAttribute('data-id'))

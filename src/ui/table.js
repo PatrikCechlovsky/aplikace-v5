@@ -1,16 +1,21 @@
 // src/ui/table.js
-// Univerzální tabulka s řazením, filtrem, výběrem řádku a bezpečným dblclickem.
+// Univerzální tabulka s řazením, filtrem (fulltext bez diakritiky), výběrem řádku a bezpečným dblclickem.
 // columns: [{ key, label, width?, render?(row), sortable?: true, className? }]
 // rows: array objektů
 // options: {
 //   filterPlaceholder?,
 //   columnsOrder?: string[],
 //   showFilter?: boolean, filterValue?: string,
-//   moduleId?: string,              // pro defaultní chování dblclicku
+//   customHeader?: function({ filterInputHtml }) => string,
+//   moduleId?: string,
 //   onRowSelect?(row),
 //   onRowDblClick?(row),
 //   selectedRow?: { id: any }       // volitelný počáteční výběr
 // }
+
+function normalize(str) {
+  return (str ?? '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
 export function renderTable(root, { columns, rows, options = {} }) {
   if (!root) return;
@@ -34,15 +39,20 @@ export function renderTable(root, { columns, rows, options = {} }) {
   wrap.className = 'bg-white rounded-2xl border';
   root.appendChild(wrap);
 
-  // HEAD: filtr (volitelný)
+  // HEAD: filtr (volitelný) + podpora customHeader
   const showFilter = typeof options.showFilter === 'undefined' ? true : !!options.showFilter;
-  const head = document.createElement('div');
-  head.className = 'p-3 border-b flex items-center gap-2';
-  head.innerHTML = showFilter ? `
+  const filterInputHtml = showFilter ? `
     <input type="text" id="tblFilter" class="border rounded px-2 py-1 text-sm w-full sm:w-72"
            placeholder="${options.filterPlaceholder || 'Filtrovat…'}"
            value="${escapeHtml(state.filter)}" />
   ` : '';
+  const head = document.createElement('div');
+  head.className = 'p-3 border-b flex items-center gap-2';
+  if (typeof options.customHeader === 'function') {
+    head.innerHTML = options.customHeader({ filterInputHtml });
+  } else {
+    head.innerHTML = filterInputHtml;
+  }
   wrap.appendChild(head);
 
   const scroller = document.createElement('div');
@@ -79,8 +89,10 @@ export function renderTable(root, { columns, rows, options = {} }) {
   function applySortAndFilter(data) {
     let out = data;
     if (state.filter) {
-      const f = state.filter.toLowerCase();
-      out = out.filter(r => cols.some(c => String(r[c.key] ?? '').toLowerCase().includes(f)));
+      const f = normalize(state.filter);
+      out = out.filter(r => cols.some(c => normalize(
+        typeof c.render === 'function' ? c.render(r) : r[c.key]
+      ).includes(f)));
     }
     if (state.sortKey) {
       out = out.slice().sort((r1, r2) => {

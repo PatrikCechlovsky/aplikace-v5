@@ -57,6 +57,9 @@ export const ICONS = {
 
   // PREFERENCES
   star: '⭐️',
+
+  // HISTORY / ZMĚNY
+  history: '⏳', // historie změn / čas
 };
 
 // Aliasy – pohodlnější klíče na totéž

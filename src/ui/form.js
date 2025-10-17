@@ -1,5 +1,20 @@
 // src/ui/form.js
-// Univerzální renderer formulářů: kompaktní grid, volitelné záložky (tabs), plně responsivní.
+// Univerzální renderer formulářů: kompaktní grid, záložky, plně responsivní.
+// Ošetřuje převod "" na null a vynechává auditní pole při submitu.
+
+import { emptyStringsToNull } from './utils.js';
+
+const AUDIT_FIELDS = [
+  'created_at', 'updated_at', 'last_login', 'updated_by'
+];
+
+function filterSaveFields(obj) {
+  const out = {};
+  for (const key in obj) {
+    if (!AUDIT_FIELDS.includes(key)) out[key] = obj[key];
+  }
+  return out;
+}
 
 export function renderForm(
   root,
@@ -12,26 +27,24 @@ export function renderForm(
 
   const opt = {
     readOnly: !!options.readOnly || options.mode === 'read',
-    showSubmit: options.showSubmit !== false,      // default true
+    showSubmit: options.showSubmit !== false,
     submitLabel: options.submitLabel || 'Uložit',
-    // layout
     layout: {
       columns: { base: 1, md: 2, xl: 2, ...(options.layout?.columns || {}) },
-      density: options.layout?.density || 'compact', // 'compact' | 'normal'
+      density: options.layout?.density || 'compact',
     },
-    // záložky: [{ id, label, icon?, fields: ['email','name',...] }]
     sections: Array.isArray(options.sections) ? options.sections : null,
   };
 
   const data = { ...(initialData || {}) };
 
-  // === PŘÍPRAVA DOM ===
+  // === DOM ===
   root.innerHTML = '';
   const card = document.createElement('div');
   card.className = 'bg-white rounded-2xl border p-4 md:p-6 max-w-5xl mx-auto';
   root.appendChild(card);
 
-  // Záhlaví tabs (jen když máme sekce)
+  // Tabs
   let tabsBar = null;
   let activeSectionId = null;
   if (opt.sections && opt.sections.length > 1) {
@@ -50,9 +63,7 @@ export function renderForm(
       btn.className = tabBtnClass(sec.id === activeSectionId);
       btn.textContent = sec.label;
       btn.dataset.tab = sec.id;
-      btn.addEventListener('click', () => {
-        setActiveSection(sec.id);
-      });
+      btn.addEventListener('click', () => setActiveSection(sec.id));
       ul.appendChild(btn);
     });
   }
@@ -75,7 +86,6 @@ export function renderForm(
     const secWrap = document.createElement('div');
     secWrap.dataset.section = sec.id;
 
-    // Titulek sekce (pokud se nevykreslují tabs a sekce má label)
     if ((!tabsBar) && sec.label) {
       const h = document.createElement('div');
       h.className = 'text-sm font-semibold text-slate-700 mb-2';
@@ -83,12 +93,10 @@ export function renderForm(
       secWrap.appendChild(h);
     }
 
-    // Grid wrapper
     const grid = document.createElement('div');
     grid.className = gridClass(opt.layout);
     secWrap.appendChild(grid);
 
-    // pro každý field, který do sekce patří
     const keysInSec = new Set(sec.fields || []);
     const fieldsInSection = keysInSec.size
       ? fields.filter(f => keysInSec.has(f.key))
@@ -96,16 +104,13 @@ export function renderForm(
 
     fieldsInSection.forEach(f => {
       const cell = document.createElement('div');
-      // colspan (span=2) → přes dva sloupce na md+
-      if (f.fullWidth || f.span === 2) {
-        cell.className = 'md:col-span-2';
-      }
+      if (f.fullWidth || f.span === 2) cell.className = 'md:col-span-2';
       grid.appendChild(cell);
 
       renderField(cell, f, data[f.key], {
         readOnly: opt.readOnly,
         density: opt.layout.density,
-        onChange: (val) => { data[f.key] = val; }
+        onChange: val => { data[f.key] = val; }
       });
     });
 
@@ -113,7 +118,7 @@ export function renderForm(
     sectionEls.set(sec.id, secWrap);
   });
 
-  // Submit row (volitelné; pro případy bez CommonActions)
+  // Submit row
   if (opt.showSubmit && !opt.readOnly) {
     const actions = document.createElement('div');
     actions.className = 'pt-2 mt-2 border-t flex gap-2';
@@ -143,9 +148,12 @@ export function renderForm(
     e.preventDefault();
     if (opt.readOnly) return;
     try {
-      const ok = await onSubmit({ ...data });
+      // převod "" na null, odstranění auditních polí
+      let values = emptyStringsToNull({ ...data });
+      values = filterSaveFields(values);
+      const ok = await onSubmit(values);
       if (ok) {
-        // nic – řízení si převezme volající (navigate atd.)
+        // řízení si převezme volající
       }
     } catch (err) {
       console.error('[FORM SUBMIT ERROR]', err);
@@ -153,19 +161,14 @@ export function renderForm(
     }
   });
 
-  // Aktivace první sekce u tabs
-  if (tabsBar) {
-    setActiveSection(activeSectionId);
-  }
+  if (tabsBar) setActiveSection(activeSectionId);
 
-  // ===== helpers =====
+  // === helpers ===
   function setActiveSection(id) {
     activeSectionId = id;
-    // toggle body
     for (const [secId, el] of sectionEls.entries()) {
       el.style.display = (secId === id) ? '' : 'none';
     }
-    // toggle tabs
     tabsBar.querySelectorAll('button[data-tab]').forEach(b => {
       b.className = tabBtnClass(b.dataset.tab === id);
     });
@@ -174,7 +177,6 @@ export function renderForm(
 
 function gridClass(layout) {
   const cols = layout.columns || { base: 1, md: 2, xl: 2 };
-  // Tailwind grid col classes
   const parts = ['grid gap-3 md:gap-4'];
   const mdCols = cols.md || 1;
   const xlCols = cols.xl || mdCols;
@@ -208,6 +210,16 @@ function renderField(cell, f, value, ctx) {
     lab.textContent = f.label + (f.required ? ' *' : '');
     lab.htmlFor = `f_${f.key}`;
     wrap.appendChild(lab);
+  }
+
+  // NOVÁ PODPORA pro "label" (prostý text místo inputu)
+  if (f.type === 'label') {
+    const val = (value == null || value === '') ? '—' : value;
+    const txt = document.createElement('div');
+    txt.className = 'block text-slate-700 bg-slate-50 rounded px-3 py-2 min-h-[2.2em] border border-slate-200';
+    txt.textContent = val;
+    wrap.appendChild(txt);
+    return;
   }
 
   const common = (el) => {
@@ -288,7 +300,6 @@ function baseInputClass(ctx, f, el) {
     'focus:outline-none focus:ring-2 focus:ring-slate-300',
     'disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed'
   ];
-  // text inputs
   if (el.tagName === 'INPUT' && el.type !== 'checkbox' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
     base.push(dense ? 'px-3 py-1.5 text-sm' : 'px-3 py-2');
   }

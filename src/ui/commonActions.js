@@ -27,6 +27,9 @@ const CATALOG = {
 
   // oblíbené (renderuj jen pokud existuje handler onStar)
   star:    { key: 'star',    icon: 'star',       label: 'Oblíbené',  title: 'Přidat/odebrat z oblíbených' },
+
+  // HISTORIE změn
+  history: { key: 'history', icon: 'history',    label: 'Historie',  title: 'Zobrazit historii změn' },
 };
 
 // Když nepředáš moduleActions, odvozujeme je z názvů handlerů (onAdd → 'add'…)
@@ -88,6 +91,28 @@ export function renderCommonActions(
   if (typeof handlers.onStar === 'function') {
     acts = acts.concat([{ ...CATALOG.star, title: isStarred ? 'Odebrat z oblíbených' : 'Přidat do oblíbených' }]);
   }
+
+  // 4.5) defaultní inteligentní řazení (intuitivní pořadí)
+  // - uložit / potvrdit první
+  // - akutní / editace / přidat blízko začátku
+  // - pomocné (history, attach, refresh) uprostřed
+  // - nebezpečné akce (archive, delete) později
+  // - "zpět / zavřít" (reject/exit) vždy poslední
+  const PREFERRED_ORDER = [
+    'save', 'approve', 'add', 'edit', 'invite', 'send', 'attach', 'history',
+    'refresh', 'search', 'print', 'export', 'import', 'archive', 'delete',
+    'reject', 'exit', 'star', 'detail'
+  ];
+  const LAST_KEYS = new Set(['reject', 'exit']);
+
+  function orderIndex(key) {
+    if (LAST_KEYS.has(key)) return 1000; // force to end
+    const idx = PREFERRED_ORDER.indexOf(key);
+    if (idx === -1) return 500; // unknown actions land in middle
+    return idx;
+  }
+
+  acts.sort((a, b) => orderIndex(a.key) - orderIndex(b.key));
 
   if (!acts.length) {
     root.innerHTML = `<div class="text-slate-400 text-sm italic p-2">Žádné dostupné akce</div>`;

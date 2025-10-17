@@ -1,6 +1,7 @@
 // src/ui/headerActions.js
 import { icon } from './icons.js';
 import { hardLogout, getUserSafe } from '../auth.js';
+import { getMyProfile } from '../db.js';
 
 export async function renderHeaderActions(root) {
   if (!root) return;
@@ -9,17 +10,25 @@ export async function renderHeaderActions(root) {
   const box = document.createElement('div');
   box.className = 'flex items-center gap-3';
 
-  // Volitelně: pozdrav / identifikace uživatele
+  // Zobraz jméno, nebo e-mail přihlášeného uživatele
   try {
-    const user = await getUserSafe();
-    if (user?.email) {
+    let display = '';
+    const prof = await getMyProfile().catch(() => null);
+    if (prof && prof.data && prof.data.display_name) {
+      display = prof.data.display_name;
+    } else {
+      const user = await getUserSafe();
+      if (user?.email) display = user.email;
+    }
+    if (display) {
       const hello = document.createElement('span');
       hello.className = 'text-slate-600 text-sm hidden sm:inline';
-      hello.textContent = user.email;
+      hello.textContent = display;
       box.appendChild(hello);
     }
   } catch (_) {}
 
+  // utility
   const mkIconBtn = (title, key, onClick) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -30,7 +39,7 @@ export async function renderHeaderActions(root) {
     return b;
   };
 
-  // Ikony vpravo
+  // akční ikonky
   box.appendChild(mkIconBtn('Hledat', 'search', () => {
     window.dispatchEvent(new CustomEvent('openSearch'));
   }));
@@ -38,7 +47,6 @@ export async function renderHeaderActions(root) {
     window.dispatchEvent(new CustomEvent('openNotifications'));
   }));
   box.appendChild(mkIconBtn('Můj účet', 'account', () => {
-    // můžeš později přesměrovat na vlastní modul účtu
     alert('Můj účet (placeholder)');
   }));
 

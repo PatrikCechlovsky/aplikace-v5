@@ -17,6 +17,13 @@ export function renderSidebar(root, modules = [], opts = {}) {
   let openModId = null;
 
   function render() {
+    // Získat aktivní tile/form z hash
+    const hash = location.hash || '';
+    const match = hash.match(/^#\/m\/([^/]+)\/([tf])\/([^/?]+)/);
+    const activeMod = match ? match[1] : null;
+    const activeKind = match ? match[2] : null; // 't' nebo 'f'
+    const activeSection = match ? match[3] : null; // id sekce
+
     root.innerHTML = `
       <div class="${panelClass} transition-colors duration-300">
         <nav>
@@ -26,6 +33,31 @@ export function renderSidebar(root, modules = [], opts = {}) {
               const activeModuleClass = isOpen
                 ? 'bg-blue-50 border border-blue-300 text-blue-900 shadow-sm'
                 : 'hover:bg-blue-100';
+
+              // Tiles & forms s aktivní třídou
+              const tileLinks = (m.tiles || []).map(t => {
+                const isActive = m.id === activeMod && activeKind === 't' && t.id === activeSection;
+                return `
+                  <a href="#/m/${m.id}/t/${t.id}"
+                    class="block text-sm rounded px-2 py-1 transition font-medium
+                      ${isActive ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'}"
+                  >
+                    ${icon(t.icon || 'list')} ${t.title}
+                  </a>
+                `;
+              }).join('');
+
+              const formLinks = (m.forms || []).map(f => {
+                const isActive = m.id === activeMod && activeKind === 'f' && f.id === activeSection;
+                return `
+                  <a href="#/m/${m.id}/f/${f.id}"
+                    class="block text-sm rounded px-2 py-1 transition font-medium
+                      ${isActive ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'}"
+                  >
+                    ${icon(f.icon || 'form')} ${f.title}
+                  </a>
+                `;
+              }).join('');
 
               return `
                 <li>
@@ -41,22 +73,8 @@ export function renderSidebar(root, modules = [], opts = {}) {
                     <span>${m.title}</span>
                   </button>
                   <div class="${isOpen ? '' : 'hidden'} ml-8 mt-1 mb-2">
-                    ${(m.tiles || []).map(t => `
-                      <a href="#/m/${m.id}/t/${t.id}"
-                        class="block text-sm rounded px-2 py-1 transition font-medium
-                          text-slate-600 hover:bg-blue-50 hover:text-blue-900"
-                      >
-                        ${icon(t.icon || 'list')} ${t.title}
-                      </a>
-                    `).join('')}
-                    ${(m.forms || []).map(f => `
-                      <a href="#/m/${m.id}/f/${f.id}"
-                        class="block text-sm rounded px-2 py-1 transition font-medium
-                          text-slate-600 hover:bg-blue-50 hover:text-blue-900"
-                      >
-                        ${icon(f.icon || 'form')} ${f.title}
-                      </a>
-                    `).join('')}
+                    ${tileLinks}
+                    ${formLinks}
                   </div>
                 </li>
               `;
@@ -97,8 +115,6 @@ export function renderSidebar(root, modules = [], opts = {}) {
     });
 
     // Zvýraznění aktivního modulu (jen pokud je rozbalený)
-    const hash = location.hash || '';
-    const activeMod = (/#\/m\/([^\/]+)/.exec(hash) || [])[1];
     root.querySelectorAll('button[data-mod]').forEach(btn => {
       btn.classList.toggle('ring-2', btn.dataset.mod === activeMod);
     });
@@ -111,6 +127,8 @@ export function renderSidebar(root, modules = [], opts = {}) {
     if (m && openModId !== m) {
       openModId = m;
       render();
+    } else {
+      render(); // vždy renderuj, protože může změnit i aktivní sekci
     }
   }
 
@@ -123,6 +141,6 @@ export function renderSidebar(root, modules = [], opts = {}) {
   // První render (vše zavřené)
   render();
 
-  // Poslouchej změnu url pro otevření správného modulu
+  // Poslouchej změnu url pro otevření správného modulu nebo sekce
   window.addEventListener('hashchange', openFromHash);
 }

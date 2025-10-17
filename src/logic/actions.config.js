@@ -106,6 +106,32 @@ export const ACTIONS_CONFIG = [
     color: 'red',
     requiresPermission: 'can_reject',
     handler: 'rejectItem'
+  },
+
+  // --- DOPLNĚNÉ položky používané v UI ---
+  {
+    key: 'save',
+    label: 'Uložit',
+    icon: 'save',
+    color: 'green',
+    requiresPermission: 'can_save',
+    handler: 'saveItem'
+  },
+  {
+    key: 'invite',
+    label: 'Pozvat',
+    icon: 'invite',
+    color: 'blue',
+    requiresPermission: 'can_invite',
+    handler: 'inviteUser'
+  },
+  {
+    key: 'history',
+    label: 'Historie',
+    icon: 'history',
+    color: 'gray',
+    requiresPermission: 'can_history',
+    handler: 'showHistory'
   }
 ];
 
