@@ -1,5 +1,14 @@
-// Univerzální modal pro správu příloh k jakémukoliv záznamu
-import { listAttachments, uploadAttachment, archiveAttachment, unarchiveAttachment, updateAttachmentMetadata } from '../db.js';
+// src/ui/attachments.js — upravené UI: upload -> temp upload -> vyplnit název a popisek -> uložit,
+// single-selection, tlačítka Upravit / Archivovat fungují pro vybraný řádek
+import {
+  listAttachments,
+  createTempUpload,
+  cancelTemporaryUpload,
+  createAttachmentFromUpload,
+  updateAttachmentMetadata,
+  archiveAttachment,
+  unarchiveAttachment
+} from '../db.js';
 
 // Vloží modal do body (pokud tam ještě není)
 function ensureModalRoot() {
@@ -12,183 +21,273 @@ function ensureModalRoot() {
   return modal;
 }
 
-/**
- * Otevře modal se správou příloh pro konkrétní entitu.
- * Umožňuje:
- * - upravit název souboru před uploadem
- * - volit automatickou sanitizaci názvu (auto-přejmenovat)
- * - zadat popisek před uploadem
- * - editovat metadata (název + popisek) u existujících položek
- * - archivovat i od-archivovat položky
- */
 export async function showAttachmentsModal({ entity, entityId }) {
   const root = ensureModalRoot();
   root.innerHTML = `<div class="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
-    <div class="bg-white rounded-xl p-6 w-full max-w-xl relative shadow-xl">
+    <div class="bg-white rounded-xl p-6 w-full max-w-2xl relative shadow-xl">
       <button class="absolute top-3 right-3 text-xl" id="close-attachments-modal">&times;</button>
       <h2 class="font-bold text-lg mb-4">Přílohy</h2>
       <div id="attachments-list">Načítám přílohy…</div>
+
+      <!-- upload area -->
       <div class="mt-4 flex gap-2 items-center">
         <input type="file" id="attachment-upload" style="display:none"/>
         <button id="add-attachment" class="px-4 py-2 bg-amber-100 rounded border border-amber-300">Přidat přílohu</button>
-        <input type="text" id="attachment-filename" class="px-2 py-1 border rounded" placeholder="Název souboru (před uploadem)" style="width:260px"/>
-        <input type="text" id="attachment-description" class="px-2 py-1 border rounded" placeholder="Popis přílohy" style="width:220px"/>
+
+        <!-- Dočasné políčko pro název a popisek, vyplní se až po vybrání souboru -->
+        <input type="text" id="attachment-displayname" class="px-2 py-1 border rounded" placeholder="Název (po nahrání)" style="width:280px; display:none"/>
+        <input type="text" id="attachment-description" class="px-2 py-1 border rounded" placeholder="Popis přílohy (po nahrání)" style="width:260px; display:none"/>
+        <button id="save-temp-attachment" class="px-3 py-1 bg-emerald-100 border rounded text-sm" style="display:none" disabled>Uložit</button>
+        <button id="cancel-temp-attachment" class="px-3 py-1 bg-slate-100 border rounded text-sm" style="display:none">Zrušit</button>
+
         <label title="Pokud povolíte, aplikace automaticky upraví název souboru (odstraní diakritiku a nahradí nepovolené znaky).">
-          <input type="checkbox" id="attachment-autosan" />
+          <input type="checkbox" id="attachment-autosan" checked />
           Auto-přejmenovat
         </label>
-        <label class="ml-2">
+
+        <label class="ml-4">
           <input type="checkbox" id="show-archived-attachments"/>
           Zobrazit archivované
         </label>
       </div>
+
+      <!-- single action toolbar -->
+      <div class="mt-3 flex gap-2">
+        <button id="edit-selected" class="px-3 py-1 border rounded" disabled>Upravit</button>
+        <button id="archive-selected" class="px-3 py-1 border rounded" disabled>Archivovat</button>
+      </div>
     </div>
   </div>`;
 
+  let selectedId = null;
+  let tempUpload = null; // { path, publicUrl, originalName }
+
+  // RENDER LIST
   async function renderList(showArchived = false) {
     root.querySelector('#attachments-list').innerHTML = 'Načítám…';
     const { data: files = [] } = await listAttachments({ entity, entityId, showArchived });
+
     if (!files.length) {
       root.querySelector('#attachments-list').innerHTML = '<div class="text-slate-400 text-sm">Žádné přílohy.</div>';
+      selectedId = null;
+      updateToolbar();
       return;
     }
 
     root.querySelector('#attachments-list').innerHTML = `
       <ul>
         ${files.map(f => `
-          <li class="flex items-center gap-2 mb-2" data-id="${f.id}">
-            <a href="${f.url}" target="_blank" class="underline">${f.filename}</a>
-            <span class="attachment-desc text-xs text-slate-600" style="min-width:180px;">${f.description || ''}</span>
-            <button class="edit-desc-btn text-xs px-2 py-1 border rounded" data-action="edit">Upravit</button>
-            <button class="archive-attachment text-xs px-2 py-1 border rounded" data-action="${f.archived ? 'unarchive' : 'archive'}">${f.archived ? 'Obnovit' : 'Archivovat'}</button>
-            ${f.archived ? '<span class="text-xs text-slate-400">(archivováno)</span>' : ''}
+          <li class="attachment-row flex items-center gap-3 mb-2 p-2 rounded cursor-pointer ${f.id === selectedId ? 'bg-slate-100' : ''}" data-id="${f.id}" data-archived="${f.archived}">
+            <div style="min-width:220px;">
+              <a href="${f.url}" target="_blank" class="underline attachment-link">${f.filename}</a>
+            </div>
+            <div class="text-xs text-slate-600" style="flex:1">${f.description || ''}</div>
+            ${f.archived ? '<div class="text-xs text-slate-400">(archivováno)</div>' : ''}
           </li>
         `).join('')}
       </ul>
     `;
 
-    // Delegované handlery pro každý li[data-id]
-    root.querySelectorAll('li[data-id]').forEach(li => {
-      const id = li.getAttribute('data-id');
-      const editBtn = li.querySelector('[data-action="edit"]');
-      const archiveBtn = li.querySelector('[data-action="archive"], [data-action="unarchive"]');
-      const descSpan = li.querySelector('.attachment-desc');
-
-      if (archiveBtn) {
-        archiveBtn.onclick = async () => {
-          if (archiveBtn.getAttribute('data-action') === 'archive') {
-            await archiveAttachment(id);
-          } else {
-            await unarchiveAttachment(id);
-          }
-          renderList(root.querySelector('#show-archived-attachments').checked);
-        };
-      }
-
-      if (editBtn && descSpan) {
-        editBtn.onclick = () => {
-          const currentDesc = descSpan.textContent || '';
-          const currentName = li.querySelector('a')?.textContent || '';
-          // vytvoř pole pro úpravy
-          const nameInput = document.createElement('input');
-          nameInput.type = 'text';
-          nameInput.value = currentName;
-          nameInput.className = 'px-2 py-1 border rounded text-xs';
-          nameInput.style.width = '220px';
-
-          const descInput = document.createElement('input');
-          descInput.type = 'text';
-          descInput.value = currentDesc;
-          descInput.className = 'px-2 py-1 border rounded text-xs';
-          descInput.style.width = '220px';
-
-          const save = document.createElement('button');
-          save.textContent = 'Uložit';
-          save.className = 'px-2 py-1 border rounded text-xs bg-emerald-100';
-          const cancel = document.createElement('button');
-          cancel.textContent = 'Zpět';
-          cancel.className = 'px-2 py-1 border rounded text-xs bg-slate-100';
-
-          // schovej původní prvky
-          descSpan.style.display = 'none';
-          li.querySelector('a').style.display = 'none';
-          editBtn.style.display = 'none';
-
-          // vlož nové prvky
-          li.insertBefore(nameInput, archiveBtn);
-          li.insertBefore(descInput, archiveBtn);
-          li.insertBefore(save, archiveBtn);
-          li.insertBefore(cancel, archiveBtn);
-
-          cancel.onclick = () => {
-            nameInput.remove();
-            descInput.remove();
-            save.remove();
-            cancel.remove();
-            descSpan.style.display = '';
-            li.querySelector('a').style.display = '';
-            editBtn.style.display = '';
-          };
-
-          save.onclick = async () => {
-            const newName = nameInput.value?.trim() || '';
-            const newDesc = descInput.value?.trim() || '';
-            // Zavolat updateAttachmentMetadata (pouze metadata v DB)
-            const res = await updateAttachmentMetadata(id, { filename: newName, description: newDesc });
-            if (res.error) {
-              alert('Chyba při ukládání: ' + (res.error.message || res.error));
-              console.error(res.error);
-              return;
-            }
-            renderList(root.querySelector('#show-archived-attachments').checked);
-          };
-        };
-      }
+    // attach click handlers to rows for selection
+    root.querySelectorAll('.attachment-row').forEach(li => {
+      li.onclick = () => {
+        const id = li.getAttribute('data-id');
+        if (selectedId === id) selectedId = null;
+        else selectedId = id;
+        // re-render selection highlighting
+        root.querySelectorAll('.attachment-row').forEach(r => r.classList.remove('bg-slate-100'));
+        if (selectedId) {
+          const el = root.querySelector(`.attachment-row[data-id="${selectedId}"]`);
+          if (el) el.classList.add('bg-slate-100');
+        }
+        updateToolbar();
+      };
     });
+
+    updateToolbar(files);
   }
 
-  renderList();
+  function updateToolbar(files = null) {
+    const editBtn = root.querySelector('#edit-selected');
+    const archiveBtn = root.querySelector('#archive-selected');
 
-  root.querySelector('#close-attachments-modal').onclick = () => { root.innerHTML = ''; };
+    if (!selectedId) {
+      editBtn.disabled = true;
+      archiveBtn.disabled = true;
+      editBtn.textContent = 'Upravit';
+      archiveBtn.textContent = 'Archivovat';
+      return;
+    }
+
+    // find selected item's archived status
+    if (!files) {
+      // fetch briefly
+      listAttachments({ entity, entityId, showArchived: root.querySelector('#show-archived-attachments').checked }).then(res => {
+        const f = res.data?.find(x => String(x.id) === String(selectedId));
+        const isArchived = !!f?.archived;
+        editBtn.disabled = false;
+        archiveBtn.disabled = false;
+        archiveBtn.textContent = isArchived ? 'Obnovit' : 'Archivovat';
+      });
+    } else {
+      const f = files.find(x => String(x.id) === String(selectedId));
+      const isArchived = !!f?.archived;
+      editBtn.disabled = false;
+      archiveBtn.disabled = false;
+      archiveBtn.textContent = isArchived ? 'Obnovit' : 'Archivovat';
+    }
+  }
+
+  // EDIT selected: opens a small inline form replacing the row content
+  root.querySelector('#edit-selected').onclick = async () => {
+    if (!selectedId) return;
+    // load current metadata for selected row
+    const { data: files = [] } = await listAttachments({ entity, entityId, showArchived: root.querySelector('#show-archived-attachments').checked });
+    const row = files.find(x => String(x.id) === String(selectedId));
+    if (!row) return;
+    // find element
+    const li = root.querySelector(`.attachment-row[data-id="${selectedId}"]`);
+    if (!li) return;
+    // hide content and insert form
+    li.innerHTML = '';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = row.filename || '';
+    nameInput.className = 'px-2 py-1 border rounded';
+    nameInput.style.width = '260px';
+
+    const descInput = document.createElement('input');
+    descInput.type = 'text';
+    descInput.value = row.description || '';
+    descInput.className = 'px-2 py-1 border rounded';
+    descInput.style.width = '320px';
+
+    const save = document.createElement('button');
+    save.textContent = 'Uložit';
+    save.className = 'px-2 py-1 border rounded bg-emerald-100 ml-2';
+    const cancel = document.createElement('button');
+    cancel.textContent = 'Zpět';
+    cancel.className = 'px-2 py-1 border rounded ml-2';
+
+    li.appendChild(nameInput);
+    li.appendChild(descInput);
+    li.appendChild(save);
+    li.appendChild(cancel);
+
+    cancel.onclick = () => renderList(root.querySelector('#show-archived-attachments').checked);
+    save.onclick = async () => {
+      const res = await updateAttachmentMetadata(selectedId, { filename: nameInput.value.trim(), description: descInput.value.trim() });
+      if (res.error) {
+        alert('Chyba při ukládání: ' + (res.error.message || res.error));
+        console.error(res.error);
+        return;
+      }
+      await renderList(root.querySelector('#show-archived-attachments').checked);
+    };
+  };
+
+  // ARCHIVE / UNARCHIVE selected
+  root.querySelector('#archive-selected').onclick = async () => {
+    if (!selectedId) return;
+    // find selected row to know archived flag
+    const { data: files = [] } = await listAttachments({ entity, entityId, showArchived: true });
+    const row = files.find(x => String(x.id) === String(selectedId));
+    if (!row) return;
+    if (row.archived) await unarchiveAttachment(selectedId);
+    else await archiveAttachment(selectedId);
+    selectedId = null;
+    await renderList(root.querySelector('#show-archived-attachments').checked);
+  };
+
+  // Add / upload handlers
   root.querySelector('#add-attachment').onclick = () => root.querySelector('#attachment-upload').click();
-  root.querySelector('#show-archived-attachments').onchange = (e) => renderList(e.target.checked);
 
-  // Upload: použije uživatelem zadaný název (pokud vyplněn) nebo původní název souboru
   root.querySelector('#attachment-upload').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // použít upravený název před uploadem (pokud vyplněn)
-    const desiredName = root.querySelector('#attachment-filename')?.value?.trim();
-    const description = root.querySelector('#attachment-description')?.value?.trim() || '';
     const autoSan = !!root.querySelector('#attachment-autosan')?.checked;
+    // upload to storage first (sanitized key)
+    const folder = `${entity}/${entityId}`;
+    const res = await createTempUpload(folder, file, { autoSanitize: autoSan });
+    if (res.error) {
+      alert('Chyba při nahrávání souboru: ' + (res.error.message || res.error));
+      console.error('Temp upload error:', res.error);
+      return;
+    }
+    tempUpload = res.data; // { path, publicUrl, originalName }
 
-    // Jestli chceš poslat upravený název do storage, musíme vytvořit nový Blob/File s upraveným jménem.
-    // V JS lze zkopírovat file do nového File s jiným name:
-    let fileToUpload = file;
-    if (desiredName) {
-      try {
-        // zachovat typ a data, ale s novým názvem
-        fileToUpload = new File([file], desiredName, { type: file.type });
-      } catch (err) {
-        // V některých prostředích (staré prohlížeče) nemusí File constructor fungovat — fallback na původní file
-        console.warn('Nepodařilo se vytvořit File s novým jménem, použije se původní.', err);
-        fileToUpload = file;
+    // show temp fields
+    const disp = root.querySelector('#attachment-displayname');
+    const desc = root.querySelector('#attachment-description');
+    const saveBtn = root.querySelector('#save-temp-attachment');
+    const cancelBtn = root.querySelector('#cancel-temp-attachment');
+
+    disp.style.display = '';
+    desc.style.display = '';
+    saveBtn.style.display = '';
+    cancelBtn.style.display = '';
+
+    // prefill display name (original name without extension)
+    const orig = tempUpload.originalName || file.name;
+    const dotIdx = orig.lastIndexOf('.');
+    const baseName = dotIdx > 0 ? orig.slice(0, dotIdx) : orig;
+    disp.value = baseName;
+    desc.value = '';
+
+    // require both fields
+    function validateSaveForm() {
+      saveBtn.disabled = !(disp.value.trim() && desc.value.trim());
+    }
+    disp.oninput = validateSaveForm;
+    desc.oninput = validateSaveForm;
+    validateSaveForm();
+
+    // save -> finalize metadata into DB
+    saveBtn.onclick = async () => {
+      const filename = disp.value.trim();
+      const description = desc.value.trim();
+      // call createAttachmentFromUpload
+      const finalize = await createAttachmentFromUpload({ entity, entityId, path: tempUpload.path, filename, description });
+      if (finalize.error) {
+        alert('Chyba při ukládání metadat: ' + (finalize.error.message || finalize.error));
+        console.error(finalize.error);
+        return;
       }
-    }
+      // cleanup temp UI
+      tempUpload = null;
+      disp.style.display = 'none';
+      desc.style.display = 'none';
+      saveBtn.style.display = 'none';
+      cancelBtn.style.display = 'none';
+      disp.value = '';
+      desc.value = '';
+      // refresh list
+      await renderList(root.querySelector('#show-archived-attachments').checked);
+    };
 
-    const result = await uploadAttachment({ entity, entityId, file: fileToUpload, description, autoSanitize: autoSan });
-    if (result.error) {
-      alert('Chyba při nahrávání souboru: ' + result.error.message);
-      console.error('Attachment upload error:', result.error);
-    } else {
-      // vyčistit políčka
-      root.querySelector('#attachment-filename').value = '';
-      root.querySelector('#attachment-description').value = '';
-      root.querySelector('#attachment-autosan').checked = false;
-    }
-    renderList(root.querySelector('#show-archived-attachments').checked);
+    // cancel -> delete temp file from storage
+    cancelBtn.onclick = async () => {
+      if (tempUpload && tempUpload.path) {
+        await cancelTemporaryUpload(tempUpload.path);
+      }
+      tempUpload = null;
+      disp.style.display = 'none';
+      desc.style.display = 'none';
+      saveBtn.style.display = 'none';
+      cancelBtn.style.display = 'none';
+      disp.value = '';
+      desc.value = '';
+      // refresh list (no change expected)
+      await renderList(root.querySelector('#show-archived-attachments').checked);
+    };
   };
+
+  root.querySelector('#show-archived-attachments').onchange = (e) => renderList(e.target.checked);
+  root.querySelector('#close-attachments-modal').onclick = () => { root.innerHTML = ''; };
+
+  // initial render
+  await renderList();
 }
 
 export default { showAttachmentsModal };
