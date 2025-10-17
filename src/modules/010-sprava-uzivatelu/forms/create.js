@@ -6,7 +6,6 @@ import { navigateTo } from '../../../app.js';
 import { listRoles, inviteUserByEmail } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
-// Pozvánka — volá renderCommonActions stejně jako form.js/tiles.js
 const FIELDS = [
   { key: 'display_name', label: 'Uživatelské jméno', type: 'text', required: true },
   { key: 'email',        label: 'E-mail',           type: 'email', required: true, placeholder: 'user@example.com' },
@@ -21,7 +20,7 @@ export async function render(root) {
     { icon: 'add',   label: 'Nový / Pozvat' }
   ]);
 
-  // --- načti role pro select ---
+  // načti role pro select
   let roleOptions = [];
   try {
     const { data: roleList, error } = await listRoles();
@@ -33,12 +32,11 @@ export async function render(root) {
   }
   const fieldsWithRoles = FIELDS.map(f => f.key === 'role' ? { ...f, options: roleOptions } : f);
 
-  // --- definice handlerů pro commonActions (onInvite aktivuje ikonku invite) ---
+  // Handlery pro commonActions (nutné pro aktivní tlačítka)
   const handlers = {
     onInvite: async () => {
       const values = grabValues(root);
       const role = values.role || 'user';
-
       if (!values.display_name || !values.display_name.trim()) {
         alert('Vyplňte prosím Uživatelské jméno.');
         return;
@@ -47,7 +45,6 @@ export async function render(root) {
         alert('Vyplňte prosím e-mail.');
         return;
       }
-
       try {
         const { data, error } = await inviteUserByEmail({
           email: values.email.trim(),
@@ -69,26 +66,24 @@ export async function render(root) {
     onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
   };
 
-  // --- jaké akce chceme v toolbaru (stejně jako form.js) ---
   const moduleActions = ['invite', 'reject'];
 
-  // Debug: vypiš do konzole, co se posílá do renderCommonActions (pomůže zjistit, proč něco chybí)
-  console.log('create.render: moduleActions=', moduleActions, 'userRole=', window.currentUserRole, 'handlersKeys=', Object.keys(handlers));
+  // debug info — pomůže rychle zjistit, proč se něco nezobrazuje
+  console.log('create.render: moduleActions=', moduleActions, 'userRole=', window.currentUserRole, 'handlers=', Object.keys(handlers));
 
-  // Kontrola existence containeru (neměnit ho, jen varování pro debug)
+  // zavoláme renderer akcí — stejný vzor jako form.js/tiles.js
   const commonEl = document.getElementById('commonactions');
   if (!commonEl) {
-    console.warn('create.render: element #commonactions nenalezen. CommonActions nebude vykreslen. Přidejte <div id="commonactions"></div> do layoutu.');
+    console.warn('create.render: #commonactions not found — add <div id="commonactions"></div> to your layout.');
   } else {
-    // Volání renderCommonActions bez jakýchkoliv DOM hacků — necháme commonActions dělat svoji práci
     renderCommonActions(commonEl, {
       moduleActions,
-      userRole: window.currentUserRole || 'admin', // pro rychlý test použij admin, v produkci použij reálnou roli
+      userRole: window.currentUserRole || 'admin', // fallback pro testování; v produkci nastav window.currentUserRole po přihlášení
       handlers
     });
   }
 
-  // --- vykreslení formuláře ---
+  // vykresli form
   const initial = { role: 'user' };
   renderForm(root, fieldsWithRoles, initial, async () => true, {
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
@@ -100,7 +95,6 @@ export async function render(root) {
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// Pomocná funkce pro čtení hodnot z formuláře
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
