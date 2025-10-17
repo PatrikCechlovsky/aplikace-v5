@@ -1,7 +1,7 @@
 // modules/020/f/form.js
-// Compat fix v2: default export je DOM form element (má addEventListener),
-// zároveň exportujeme render jako named export a přiřazujeme jej i do form.render
-// aby byly pokryté různé způsoby importu/volání v appce.
+// Compat fix v3: default export je DOM form element + named export render,
+// a navíc explicitně exportujeme addEventListener/removeEventListener/dispatchEvent
+// aby volající, kteří dělají `const m = await import('...'); m.addEventListener(...)` fungovali.
 
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
@@ -14,7 +14,7 @@ function isUuid(v) { return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-
 // create actual DOM form element so legacy callers can call .addEventListener on default import
 const form = document.createElement('form');
 form.className = 'module-020-form-root';
-form.style.display = 'none'; // module renders into provided root, keep this hidden
+form.style.display = 'none'; // module renders into provided root
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
@@ -305,8 +305,14 @@ export async function render(root) {
   renderProfile();
 }
 
-// attach render to the form element for backward compatibility with code that expects default export to have render
+// attach render to the form element for backward compatibility
 form.render = render;
 
-// export default as the DOM element so legacy imports like `const form = await import('...')` or default import return an object with addEventListener
+// Named helper exports so callers who import the module namespace can call these directly:
+// e.g. const m = await import('...'); m.addEventListener(...)
+export function addEventListener(...args) { return form.addEventListener(...args); }
+export function removeEventListener(...args) { return form.removeEventListener(...args); }
+export function dispatchEvent(...args) { return form.dispatchEvent(...args); }
+
+// default export is the DOM element (so default import gives an element with addEventListener)
 export default form;
