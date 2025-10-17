@@ -1,4 +1,4 @@
-// src/db.js — upravená verze s validation/sanitization strategií a podporou popisku
+// src/db.js — upravená verze s validation/sanitization strategií a podporou popisku a aktualizace metadat
 import { supabase } from './supabase.js';
 export { supabase };
 
@@ -149,38 +149,30 @@ const ATTACH_BUCKET = 'attachments';
  * validateFilename:
  * - kontroluje, zda název souboru obsahuje pouze povolené znaky (bez diakritiky)
  * - povolené znaky: A-Za-z0-9 . _ -
- * - pokud vrátí false, uživatel by měl přejmenovat soubor nebo lze použít autoSanitize
  */
 export function validateFilename(name) {
   if (!name || typeof name !== 'string') return false;
-  // odstraníme vedoucí a koncové mezery
   const n = name.trim();
-  // normalize a odstranění kombinujících diakritických znaků při testu (ale ne měníme originální hodnotu)
   const ascii = n.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
-  // povolené znaky v basename (bez adresářů) jsou písmena, čísla, tečka, pomlčka, podtržítko a mezeru není povolena
   return /^[A-Za-z0-9.\-_]+$/.test(ascii);
 }
 
 /**
  * sanitizeFilename:
  * - odstraní diakritiku a nahradí nepovolené znaky podtržítkem
- * - použij, když chceš automaticky upravit jméno místo vyžadovat přejmenování uživatelem
  */
 export function sanitizeFilename(name) {
   if (!name || typeof name !== 'string') return 'file';
-  // odstraníme cesty, pokud někdo posílá full path by mistake
   const base = name.split(/[/\\]+/).pop();
   const ascii = base.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
-  // nahraď nepovolené znaky podtržítkem
   const safe = ascii.replace(/[^A-Za-z0-9.\-_]/g, '_').replace(/_+/g, '_');
-  // ořež na rozumnou délku (např. 200)
   return safe.slice(0, 200) || 'file';
 }
 
 /**
  * uploadAttachmentToStorage(folder, file, options)
  * - options.autoSanitize: pokud true, upraví název souboru místo vrácení chyby
- * - pokud autoSanitize=false (výchozí) a název obsahuje nepovolené znaky, vrátí chybu instructing to rename
+ * - pokud autoSanitize=false (výchozí) a název obsahuje nepovolené znaky, vrátí chybu (user musí přejmenovat)
  */
 export async function uploadAttachmentToStorage(folder, file, { autoSanitize = false } = {}) {
   if (!file || !file.name) {
@@ -203,7 +195,6 @@ export async function uploadAttachmentToStorage(folder, file, { autoSanitize = f
       cacheControl: '3600',
       upsert: false
     });
-    // Vždy vracej i path jako fallback
     return { data, error, path };
   } catch (err) {
     return { data: null, error: err };
@@ -246,7 +237,6 @@ export async function uploadAttachment({ entity, entityId, file, description = '
     return { data: null, error: new Error('Soubor nahrán do storage, ale nebyla získána cesta k souboru (path)') };
   }
 
-  // Získat veřejnou URL pokud bucket public
   const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(filePath);
   const fileUrl = publicUrlData?.publicUrl || filePath;
 
@@ -275,17 +265,37 @@ export async function archiveAttachment(id) {
   return { data, error };
 }
 
-/**
- * updateAttachmentDescription — aktualizuje popisek (description) přílohy
- */
-export async function updateAttachmentDescription(id, description) {
+// Nová funkce: od-archivovat (vrátit do aktivních)
+export async function unarchiveAttachment(id) {
   const { data, error } = await supabase
     .from('attachments')
-    .update({ description })
+    .update({ archived: false })
     .eq('id', id)
     .select()
     .single();
   return { data, error };
+}
+
+// Nová funkce: aktualizovat metadata (filename/display-name a description) v DB
+// Poznámka: toto NEPŘEJMENOVÁVÁ objekt ve storage, pouze metadata v tabulce attachments
+export async function updateAttachmentMetadata(id, { filename, description }) {
+  const payload = {};
+  if (typeof filename === 'string') payload.filename = filename;
+  if (typeof description === 'string') payload.description = description;
+  if (!Object.keys(payload).length) return { data: null, error: new Error('No metadata to update') };
+
+  const { data, error } = await supabase
+    .from('attachments')
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .single();
+  return { data, error };
+}
+
+// Pro zpětnou kompatibilitu — jednoduchá funkce na update pouze popisku
+export async function updateAttachmentDescription(id, description) {
+  return await updateAttachmentMetadata(id, { description });
 }
 
 // --- Roles API ---
