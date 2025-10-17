@@ -1,33 +1,22 @@
 // modules/020/f/form.js
-// Můj účet — formulář + účty (rozšíření: zobrazit roli uživatele pro každý účet a nastavit preferovaný účet)
+// Můj účet — formulář upravený podle požadavku:
+// - role uživatele zobrazená nad jménem
+// - záložka Účty: dvouřádkový horizontální formulář (Popisek | Banka) a (Číslo účtu | Měna | IBAN) + seznam účtů dole
+// - banka vybíraná z tabulky public.bank_codes
+// - měna povinná (CZK/EUR/USD), popisek povinný, IBAN nepovinné
+// - při zobrazení účtu se ukáže "číslo / kód banky – název banky"
+// - zachovány akce: Add, Save, Delete, Set preferred
+//
+// Použij: nahraď existující modules/020/f/form.js tímto souborem, commitni a spusť aplikaci.
+// Pak otevři Můj účet → Účty a otestuj přidání/úpravu účtu.
 
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
-import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo } from '../../../app.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
-const PROFILE_FIELDS = [
-  { key: 'first_name', label: 'Jméno', type: 'text', required: true },
-  { key: 'last_name',  label: 'Příjmení', type: 'text', required: true },
-  { key: 'display_name', label: 'Uživatelské jméno', type: 'text', required: true },
-  { key: 'email', label: 'E-mail', type: 'email', required: true },
-  { key: 'phone', label: 'Telefon', type: 'text' },
-  { key: 'street', label: 'Ulice', type: 'text' },
-  { key: 'house_number', label: 'Číslo popisné', type: 'text' },
-  { key: 'city', label: 'Město', type: 'text' },
-  { key: 'zip', label: 'PSČ', type: 'text' }
-];
-
-const PAYMENT_FIELDS = [
-  { key: 'label', label: 'Popisek', type: 'text', required: true },
-  { key: 'bank_name', label: 'Banka', type: 'text' },
-  { key: 'account_number', label: 'Číslo účtu / IBAN', type: 'text', required: true },
-  { key: 'currency', label: 'Měna', type: 'text', placeholder: 'CZK' },
-  { key: 'is_primary', label: 'Hlavní', type: 'checkbox' }
-];
-
 function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+function isUuid(v) { return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/.test(v); }
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
@@ -35,33 +24,23 @@ export async function render(root) {
     { icon: 'account', label: 'Můj účet' }
   ]);
 
-  // lazy services
-  let getMyProfile, updateProfile, listPaymentAccounts, upsertPaymentAccount, deletePaymentAccount;
-  let accountMemberships;
-  try {
-    const svc = await import('../../../db.js'); // fallback to central db
-    getMyProfile = svc.getMyProfile || svc.getProfile;
-    updateProfile = svc.updateProfile || svc.upsertProfile;
-    listPaymentAccounts = svc.listPaymentAccounts;
-    upsertPaymentAccount = svc.upsertPaymentAccount;
-    deletePaymentAccount = svc.deletePaymentAccount;
-    // try to load per-module services if present
-    accountMemberships = (await import('/src/services/accountMemberships.js')).default || (await import('../../../services/accountMemberships.js')).default;
-  } catch (e) {
-    // try other path
-    try {
-      accountMemberships = (await import('/src/services/accountMemberships.js')).default;
-    } catch (e2) {
-      accountMemberships = null;
-    }
-  }
+  // load core services with safe fallbacks
+  let db = null;
+  let payments = null;
+  let accountMemberships = null;
+  let supabase = null;
 
-  // safe fallbacks
-  listPaymentAccounts ||= async () => ({ data: [], error: null });
-  upsertPaymentAccount ||= async () => ({ data: null, error: new Error('upsertPaymentAccount not implemented') });
-  deletePaymentAccount ||= async () => ({ data: null, error: new Error('deletePaymentAccount not implemented') });
-  getMyProfile ||= async () => ({ data: null, error: new Error('getMyProfile not implemented') });
-  updateProfile ||= async () => ({ data: null, error: new Error('updateProfile not implemented') });
+  try { db = await import('/src/db.js'); } catch(e){ db = null; }
+  try { payments = await import('/src/services/payments.js'); payments = payments.default || payments; } catch(e){ payments = null; }
+  try { accountMemberships = await import('/src/services/accountMemberships.js'); accountMemberships = accountMemberships.default || accountMemberships; } catch(e){ accountMemberships = null; }
+  try { supabase = (await import('/src/supabase.js')).supabase; } catch(e){ supabase = null; }
+
+  // fallback helpers if db lacks methods
+  const getMyProfile = (db && (db.getMyProfile || db.getProfile)) ? (db.getMyProfile || db.getProfile) : (async () => ({ data: null, error: new Error('getMyProfile not available') }));
+  const updateProfile = (db && (db.updateProfile || db.upsertProfile)) ? (db.updateProfile || db.upsertProfile) : (async () => ({ data: null, error: new Error('updateProfile not available') }));
+  const listPaymentAccounts = payments && payments.listPaymentAccounts ? payments.listPaymentAccounts : (async () => ({ data: [], error: null }));
+  const upsertPaymentAccount = payments && payments.upsertPaymentAccount ? payments.upsertPaymentAccount : (async () => ({ data: null, error: new Error('upsertPaymentAccount not implemented') }));
+  const deletePaymentAccount = payments && payments.deletePaymentAccount ? payments.deletePaymentAccount : (async () => ({ data: null, error: new Error('deletePaymentAccount not implemented') }));
 
   // container
   root.innerHTML = '';
@@ -69,47 +48,72 @@ export async function render(root) {
   container.className = 'max-w-5xl mx-auto';
   root.appendChild(container);
 
-  // load profile
-  const { data: profileData, error: profErr } = await getMyProfile();
-  const profile = profileData || {};
-  const initialProfile = {
-    first_name: profile.first_name || '',
-    last_name: profile.last_name || '',
-    display_name: profile.display_name || '',
-    email: profile.email || '',
-    phone: profile.phone || '',
-    street: profile.street || '',
-    house_number: profile.house_number || '',
-    city: profile.city || '',
-    zip: profile.zip || ''
-  };
+  // header card with tabs
+  const card = document.createElement('div');
+  card.className = 'bg-white rounded-2xl border p-4 md:p-6';
+  container.appendChild(card);
 
-  // top UI: tabs
-  const topCard = document.createElement('div');
-  topCard.className = 'bg-white rounded-2xl border p-4 md:p-6';
-  container.appendChild(topCard);
-  const tabs = document.createElement('div'); tabs.className = 'flex gap-2 mb-4';
+  const tabs = document.createElement('div');
+  tabs.className = 'flex gap-2 mb-4';
   const btnProfile = document.createElement('button'); btnProfile.type='button'; btnProfile.textContent='Profil'; btnProfile.className='px-3 py-1 border rounded bg-slate-50';
   const btnAccounts = document.createElement('button'); btnAccounts.type='button'; btnAccounts.textContent='Účty'; btnAccounts.className='px-3 py-1 border rounded';
-  tabs.appendChild(btnProfile); tabs.appendChild(btnAccounts); topCard.appendChild(tabs);
+  tabs.appendChild(btnProfile); tabs.appendChild(btnAccounts);
+  card.appendChild(tabs);
 
-  const contentArea = document.createElement('div'); topCard.appendChild(contentArea);
+  const contentArea = document.createElement('div'); card.appendChild(contentArea);
 
-  // render profile form
-  async function renderProfile() {
+  // load profile
+  const { data: profileData } = await getMyProfile();
+  const profile = profileData || {};
+  // determine overall role for display (fall back to window.currentUserRole or 'user')
+  const globalRole = profile.role || window.currentUserRole || (window.currentUser && window.currentUser.role) || 'user';
+
+  // render profile tab (with role badge above name fields)
+  function renderProfile() {
     contentArea.innerHTML = '';
-    const rootProfile = document.createElement('div');
-    contentArea.appendChild(rootProfile);
 
-    renderForm(rootProfile, PROFILE_FIELDS, initialProfile, async () => true, { showSubmit: false, layout: { columns: { base:1, md:2 }, density: 'compact' } });
-    const formEl = rootProfile.querySelector('form'); if (formEl) useUnsavedHelper(formEl);
+    // role badge on top
+    const roleRow = document.createElement('div');
+    roleRow.className = 'mb-4';
+    roleRow.innerHTML = `<div class="text-sm text-slate-600">Role</div><div class="mt-1 inline-block px-3 py-1 rounded-md bg-indigo-50 text-indigo-700 font-medium">${escapeHtml(String(globalRole))}</div>`;
+    contentArea.appendChild(roleRow);
 
+    // form grid (two columns)
+    const formGrid = document.createElement('div');
+    formGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+    contentArea.appendChild(formGrid);
+
+    const fields = [
+      { key: 'first_name', label: 'Jméno *', value: profile.first_name || '' },
+      { key: 'last_name', label: 'Příjmení *', value: profile.last_name || '' },
+      { key: 'display_name', label: 'Uživatelské jméno *', value: profile.display_name || '' },
+      { key: 'email', label: 'E-mail *', value: profile.email || '' },
+      { key: 'phone', label: 'Telefon', value: profile.phone || '' },
+      { key: 'street', label: 'Ulice', value: profile.street || '' },
+      { key: 'house_number', label: 'Číslo popisné', value: profile.house_number || '' },
+      { key: 'city', label: 'Město', value: profile.city || '' },
+      { key: 'zip', label: 'PSČ', value: profile.zip || '' }
+    ];
+
+    fields.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.className = 'flex flex-col';
+      wrap.innerHTML = `<label class="text-xs text-slate-600 mb-1">${escapeHtml(f.label)}</label>
+        <input name="${escapeHtml(f.key)}" value="${escapeHtml(f.value)}" class="border rounded px-3 py-2 bg-white" />`;
+      formGrid.appendChild(wrap);
+    });
+
+    // common actions (save, cancel)
     renderCommonActions(document.getElementById('commonactions'), {
       moduleActions: ['save','reject'],
       userRole: window.currentUserRole || 'user',
       handlers: {
         onSave: async () => {
-          const vals = grabValues(rootProfile, PROFILE_FIELDS);
+          const vals = {};
+          fields.forEach(f => {
+            const el = contentArea.querySelector(`[name="${f.key}"]`);
+            if (el) vals[f.key] = el.value;
+          });
           if (!vals.first_name || !vals.last_name || !vals.email) return alert('Vyplňte jméno, příjmení a e-mail.');
           const { data, error } = await updateProfile(profile.id, vals);
           if (error) return alert('Chyba při ukládání: ' + (error.message || error));
@@ -118,152 +122,201 @@ export async function render(root) {
         onReject: () => navigateTo('#/')
       }
     });
+
+    // unsaved helper for form fields
+    useUnsavedHelper(contentArea.querySelectorAll('input'));
   }
 
-  // render accounts area
-  let accounts = [], selectedAccount = null;
+  // ACCOUNTS tab rendering
+  let bankCodes = [];
+  async function loadBankCodes() {
+    // try services: payments.listBankCodes or query bank_codes table directly via supabase
+    if (payments && typeof payments.listBankCodes === 'function') {
+      try {
+        const res = await payments.listBankCodes();
+        bankCodes = res.data || [];
+        return;
+      } catch(e){}
+    }
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('bank_codes').select('code,name').order('name', { ascending: true });
+        if (!error) bankCodes = data || [];
+      } catch(e){}
+    }
+  }
+
+  let accounts = [];
+  let selectedAccount = null;
+
   async function loadAccounts() {
     const { data, error } = await listPaymentAccounts({ profileId: profile.id });
-    accounts = data || [];
+    accounts = (data && Array.isArray(data)) ? data : [];
     renderAccounts();
   }
 
-  async function renderAccounts() {
+  function renderAccounts() {
     contentArea.innerHTML = '';
-    const wrap = document.createElement('div'); wrap.className = 'grid md:grid-cols-2 gap-4';
+    const wrap = document.createElement('div');
+    wrap.className = 'grid md:grid-cols-2 gap-4';
     contentArea.appendChild(wrap);
 
-    // left: list
-    const left = document.createElement('div'); left.className = 'border rounded p-3 bg-slate-50'; wrap.appendChild(left);
+    // Left: list of accounts (box)
+    const left = document.createElement('div');
+    left.className = 'border rounded p-3 bg-slate-50 min-h-[220px]';
     if (!accounts.length) {
       left.innerHTML = '<div class="text-slate-500 p-3">Žádné účty.</div>';
     } else {
-      const table = document.createElement('table'); table.className='min-w-full text-sm';
-      table.innerHTML = `
-        <thead class="bg-white"><tr><th class="px-3 py-2">Popisek</th><th class="px-3 py-2">Účet</th><th class="px-3 py-2">Role</th><th class="px-3 py-2">Preferovaný</th></tr></thead>
-        <tbody>
-          ${accounts.map(a => `
-            <tr class="border-t row-acc" data-id="${a.id}">
-              <td class="px-3 py-2">${escapeHtml(a.label || '')}</td>
-              <td class="px-3 py-2">${escapeHtml(a.account_number || '')}${a.is_primary ? ' • primární' : ''}</td>
-              <td class="px-3 py-2" data-role-for="${a.id}">—</td>
-              <td class="px-3 py-2">${profile.preferred_payment_account_id === a.id ? '<strong>✓</strong>' : '<button class="set-pref">Nastavit</button>'}</td>
-            </tr>
-          `).join('')}
-        </tbody>`;
-      left.appendChild(table);
+      const listEl = document.createElement('div'); listEl.className = 'space-y-2';
+      accounts.forEach(a => {
+        const bankName = (bankCodes.find(b => b.code === a.bank_code)?.name) || '';
+        const labelHtml = `<div class="font-medium">${escapeHtml(a.label || '')} ${a.is_primary ? '<span class="text-xs text-slate-500">• primární</span>' : ''}</div>`;
+        const acctHtml = `<div class="text-xs text-slate-500">${escapeHtml(a.account_number || '')}${a.bank_code ? ' / ' + escapeHtml(a.bank_code) : ''}${bankName ? ' — ' + escapeHtml(bankName) : ''}</div>`;
+        const row = document.createElement('div');
+        row.className = 'p-2 bg-white border rounded cursor-pointer hover:bg-slate-50 flex justify-between items-center';
+        row.innerHTML = `<div>${labelHtml}${acctHtml}</div><div><button data-id="${a.id}" class="btn-edit text-xs px-2 py-1 border rounded">Upravit</button></div>`;
+        listEl.appendChild(row);
 
-      // bind events
-      table.querySelectorAll('tr.row-acc').forEach(tr => {
-        tr.addEventListener('click', async () => {
-          const id = tr.getAttribute('data-id');
-          const acc = accounts.find(x => x.id === id);
-          selectedAccount = acc;
-          renderAccountForm(acc);
+        row.querySelector('.btn-edit').addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          selectedAccount = a;
+          renderAccountForm(a);
         });
       });
-
-      // bind set preferred buttons
-      table.querySelectorAll('button.set-pref').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const tr = btn.closest('tr');
-          const id = tr.getAttribute('data-id');
-          await setPreferredAccount(id);
-          await reloadProfile();
-          await loadAccounts(); // re-render to show checkmark
-        });
-      });
-
-      // load role badges for each account (call service)
-      if (accountMemberships && typeof accountMemberships.getRoleForProfileOnAccount === 'function') {
-        for (const a of accounts) {
-          try {
-            const res = await accountMemberships.getRoleForProfileOnAccount(a.id, profile.id);
-            const role = res?.role ?? null;
-            const td = table.querySelector(`td[data-role-for="${a.id}"]`);
-            td.innerHTML = role ? `<span class="px-2 py-1 rounded text-xs bg-slate-100">${escapeHtml(role)}</span>` : '<span class="text-slate-400">—</span>';
-          } catch (e) {
-            // ignore
-          }
-        }
-      }
+      left.appendChild(listEl);
     }
+    wrap.appendChild(left);
 
-    // right: new/edit account form (default empty)
-    const right = document.createElement('div'); right.className='bg-white border rounded p-3'; wrap.appendChild(right);
-    renderAccountForm(null, right);
+    // Right: account form (two-row horizontal form)
+    const right = document.createElement('div'); right.className='bg-white border rounded p-3';
+    wrap.appendChild(right);
+    renderAccountForm(selectedAccount, right);
   }
 
-  function renderAccountForm(account = null, container = null) {
-    const host = container || contentArea.querySelector('.bg-white.border.rounded.p-3') || document.createElement('div');
-    if (!container) host.innerHTML = '';
-    const initial = account ? { ...account } : { label: '', bank_name: '', account_number: '', currency: 'CZK', is_primary: false };
-    renderForm(host, PAYMENT_FIELDS, initial, async () => true, { showSubmit: false, layout: { columns: { base:1 }, density: 'compact' } });
-    const formEl = host.querySelector('form'); if (formEl) useUnsavedHelper(formEl);
+  function renderAccountForm(account = null, host = null) {
+    const container = host || contentArea.querySelector('.bg-white.border.rounded.p-3');
+    if (!container) return;
+    container.innerHTML = '';
 
-    renderCommonActions(document.getElementById('commonactions'), {
-      moduleActions: ['add','save','delete','reject'],
-      userRole: window.currentUserRole || 'user',
-      handlers: {
-        onAdd: () => {
-          renderAccountForm(null, host);
-        },
-        onSave: async () => {
-          const vals = grabValues(host, PAYMENT_FIELDS);
-          if (!vals.label || !vals.account_number) return alert('Vyplňte popisek a číslo účtu.');
-          const payload = { ...vals, profile_id: profile.id };
-          if (account && account.id) payload.id = account.id;
-          const { data, error } = await upsertPaymentAccount(payload, window.currentUser);
-          if (error) return alert('Chyba při ukládání účtu: ' + (error.message || error));
-          // pokud uživatel označil is_primary, můžeme nabídnout nastavit jako preferovaný
-          await loadAccounts();
-          alert('Účet uložen.');
-        },
-        onDelete: async () => {
-          if (!account || !account.id) return alert('Vyber účet ke smazání.');
-          if (!confirm('Smazat účet?')) return;
-          const { data, error } = await deletePaymentAccount(account.id, window.currentUser);
-          if (error) return alert('Chyba při mazání: ' + (error.message || error));
-          selectedAccount = null;
-          await loadAccounts();
-        },
-        onReject: () => navigateTo('#/')
-      }
+    const acc = account ? { ...account } : { label: '', bank_code: '', account_number: '', iban: '', currency: 'CZK', is_primary: false };
+
+    // form layout (two rows)
+    container.innerHTML = `
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Popisek *</label>
+            <input name="acc_label" value="${escapeHtml(acc.label)}" class="border rounded px-3 py-2 w-full" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Banka *</label>
+            <select name="acc_bank" class="border rounded px-3 py-2 w-full">
+              <option value="">— vyber —</option>
+              ${bankCodes.map(b => `<option value="${escapeHtml(b.code)}" ${b.code === acc.bank_code ? 'selected' : ''}>${escapeHtml(b.code)} — ${escapeHtml(b.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Číslo účtu *</label>
+            <input name="acc_number" value="${escapeHtml(acc.account_number)}" class="border rounded px-3 py-2 w-full" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Měna *</label>
+            <select name="acc_currency" class="border rounded px-3 py-2 w-full">
+              <option value="CZK" ${acc.currency === 'CZK' ? 'selected' : ''}>CZK</option>
+              <option value="EUR" ${acc.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+              <option value="USD" ${acc.currency === 'USD' ? 'selected' : ''}>USD</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">IBAN (nepovinné)</label>
+            <input name="acc_iban" value="${escapeHtml(acc.iban)}" class="border rounded px-3 py-2 w-full" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <label class="inline-flex items-center gap-2"><input type="checkbox" name="acc_primary" ${acc.is_primary ? 'checked' : ''}/> Hlavní</label>
+          <button class="btn-save ml-auto px-3 py-1 border rounded bg-indigo-50 text-indigo-700">Uložit</button>
+          ${account ? '<button class="btn-delete px-3 py-1 border rounded text-red-600">Smazat</button>' : ''}
+          <button class="btn-add px-3 py-1 border rounded">Nový</button>
+        </div>
+
+        <div class="pt-3 border-t text-xs text-slate-500">Seznam účtů najdeš vlevo. Klikni na "Upravit" pro editaci.</div>
+      </div>
+    `;
+
+    // attach unsaved helper
+    useUnsavedHelper(container.querySelectorAll('input, select'));
+
+    // handlers
+    const btnSave = container.querySelector('.btn-save');
+    const btnAdd = container.querySelector('.btn-add');
+    const btnDelete = container.querySelector('.btn-delete');
+
+    btnAdd.addEventListener('click', (e) => {
+      e.preventDefault();
+      selectedAccount = null;
+      renderAccountForm(null, container);
     });
+
+    btnSave.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const payload = {
+        label: container.querySelector('[name="acc_label"]').value.trim(),
+        bank_code: container.querySelector('[name="acc_bank"]').value,
+        account_number: container.querySelector('[name="acc_number"]').value.trim(),
+        iban: container.querySelector('[name="acc_iban"]').value.trim() || null,
+        currency: container.querySelector('[name="acc_currency"]').value,
+        is_primary: !!container.querySelector('[name="acc_primary"]').checked,
+        profile_id: profile.id
+      };
+      if (!payload.label || !payload.account_number || !payload.bank_code || !payload.currency) {
+        return alert('Vyplňte prosím povinná pole: Popisek, Banka, Číslo účtu a Měna.');
+      }
+      if (account && account.id) payload.id = account.id;
+
+      const { data, error } = await upsertPaymentAccount(payload, window.currentUser);
+      if (error) return alert('Chyba při ukládání účtu: ' + (error.message || error));
+      // reload accounts and re-render
+      await loadAccounts();
+      alert('Účet uložen.');
+    });
+
+    if (btnDelete) {
+      btnDelete.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!account || !account.id) return alert('Vyberte účet k odstranění.');
+        if (!confirm('Opravdu smazat účet?')) return;
+        const { data, error } = await deletePaymentAccount(account.id, window.currentUser);
+        if (error) return alert('Chyba při mazání: ' + (error.message || error));
+        selectedAccount = null;
+        await loadAccounts();
+      });
+    }
   }
 
+  // set preferred account from left list: handled in list UI via edit or separate button
   async function setPreferredAccount(accountId) {
     if (!profile.id) return alert('Profil neznámý');
     const payload = { preferred_payment_account_id: accountId };
     const { data, error } = await updateProfile(profile.id, payload);
     if (error) return alert('Chyba při nastavování preferovaného účtu: ' + (error.message || error));
-    alert('Preferovaný účet nastaven.');
-    // update local profile variable
     profile.preferred_payment_account_id = accountId;
+    alert('Preferovaný účet nastaven.');
+    await loadAccounts();
   }
 
-  async function reloadProfile() {
-    const { data } = await getMyProfile();
-    if (data) Object.assign(profile, data);
-  }
+  // initial actions: load bank codes and accounts, then render profile by default
+  await loadBankCodes();
+  await loadAccounts();
 
-  // helpers
-  function grabValues(root, fields) {
-    const out = {};
-    fields.forEach(f => {
-      const el = root.querySelector(`[name="${f.key}"]`);
-      if (!el) return;
-      out[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
-    });
-    return out;
-  }
-
-  // initial render: profile tab
   btnProfile.addEventListener('click', () => { btnProfile.classList.add('bg-slate-50'); btnAccounts.classList.remove('bg-slate-50'); renderProfile(); });
-  btnAccounts.addEventListener('click', () => { btnAccounts.classList.add('bg-slate-50'); btnProfile.classList.remove('bg-slate-50'); loadAccounts(); });
+  btnAccounts.addEventListener('click', () => { btnAccounts.classList.add('bg-slate-50'); btnProfile.classList.remove('bg-slate-50'); renderAccounts(); });
 
-  await renderProfile();
+  // default show profile tab
+  renderProfile();
 }
 
 export default { render };
