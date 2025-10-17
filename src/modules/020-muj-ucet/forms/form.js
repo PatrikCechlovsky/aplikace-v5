@@ -1,7 +1,7 @@
 // modules/020/f/form.js
-// Můj účet — formulář upravený podle požadavku + kompatibilní export `form`
-// Compat fix: exportujeme také `form` DOM element, protože některé části aplikace
-// volají form.addEventListener(...) přímo na modulu.
+// Compat fix v2: default export je DOM form element (má addEventListener),
+// zároveň exportujeme render jako named export a přiřazujeme jej i do form.render
+// aby byly pokryté různé způsoby importu/volání v appce.
 
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
@@ -11,10 +11,10 @@ import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 function isUuid(v) { return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/.test(v); }
 
-// Compatibility export: create a real DOM form element so legacy callers can do form.addEventListener(...)
-export const form = document.createElement('form');
+// create actual DOM form element so legacy callers can call .addEventListener on default import
+const form = document.createElement('form');
 form.className = 'module-020-form-root';
-form.style.display = 'none'; // keep it hidden — the module uses the provided root param to render
+form.style.display = 'none'; // module renders into provided root, keep this hidden
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
@@ -118,7 +118,6 @@ export async function render(root) {
       }
     });
 
-    // unsaved helper for form fields
     useUnsavedHelper(contentArea.querySelectorAll('input'));
   }
 
@@ -306,4 +305,8 @@ export async function render(root) {
   renderProfile();
 }
 
-export default { render };
+// attach render to the form element for backward compatibility with code that expects default export to have render
+form.render = render;
+
+// export default as the DOM element so legacy imports like `const form = await import('...')` or default import return an object with addEventListener
+export default form;
