@@ -1,4 +1,4 @@
-// ========== Imports – hlavní stavební části aplikace ==========
+// src/app.js (upraveno: volání dynamického načtení permissions pro roli)
 import { MODULE_SOURCES } from './app/modules.index.js';
 import { icon } from './ui/icons.js';
 import { renderHomeButton } from './ui/homebutton.js';
@@ -9,7 +9,8 @@ import { renderCommonActions } from './ui/commonActions.js';
 import { renderDashboardTiles, loadFavorites, setFavorite } from './ui/content.js';
 import './supabase.js';
 import './auth.js';
-import { getMyProfile } from './db.js'; // <-- přidáno pro uživatele
+import { getMyProfile } from './db.js';
+import { loadPermissionsForRole, registerPermissionsLoader } from './security/permissions.js'; // NEW
 
 // ========== Mini utils ==========
 const $ = (sel) => document.querySelector(sel);
@@ -167,8 +168,16 @@ window.addEventListener('hashchange', function () {
     // ---- Načti profil uživatele a ulož do window.currentUser ----
     const { data: currentUser, error } = await getMyProfile();
     window.currentUser = currentUser || null;
-    // --- přidáno: ulož roli do globálu, aby ji mohly moduly použít pro renderCommonActions
     window.currentUserRole = currentUser?.role || 'user';
+
+    // --- DYNAMIC: pokusit se načíst aktuální permissions pro roli (loader/DB)
+    try {
+      await loadPermissionsForRole(window.currentUserRole);
+      console.log('[app] role permissions loaded for', window.currentUserRole);
+    } catch (e) {
+      console.warn('[app] loadPermissionsForRole failed', e);
+    }
+
     if (error) console.warn("Nepodařilo se načíst profil uživatele:", error);
 
     console.log('Obsah registry:', Array.from(registry.values()));
@@ -180,3 +189,11 @@ window.addEventListener('hashchange', function () {
     if (c) c.innerHTML = `<div style="color: red;">Inicializace selhala: ${err?.message || err}</div>`;
   }
 })();
+
+// Optional: example of registering a custom loader (uncomment and implement in your env)
+// import { fetchRolePermissionsFromServer } from './db.js'
+// registerPermissionsLoader(async (role) => {
+//   const { data, error } = await fetchRolePermissionsFromServer(role);
+//   if (!error && Array.isArray(data)) return data;
+//   return null;
+// });
