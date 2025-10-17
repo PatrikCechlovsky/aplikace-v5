@@ -6,10 +6,13 @@ import { ACTIONS_CONFIG } from '../logic/actions.config.js';
 
 // ====== START: výchozí statické demo (může být přepsáno dynamicky) ======
 let ROLE_PERMISSIONS = {
+  // Admin má nyní výchozí oprávnění i pro nové akce (save, invite, history)
   admin: [
     'add', 'edit', 'archive', 'attach', 'refresh',
     'detail', 'search', 'print', 'export', 'import',
-    'delete', 'approve', 'reject'
+    'delete', 'approve', 'reject',
+    // nové / UI-specifické akce
+    'save', 'invite', 'history'
   ],
   pronajimatel: [
     'add', 'edit', 'attach', 'refresh', 'detail', 'search', 'print'
