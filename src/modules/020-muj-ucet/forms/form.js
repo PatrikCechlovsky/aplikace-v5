@@ -1,14 +1,7 @@
 // modules/020/f/form.js
-// Můj účet — formulář upravený podle požadavku:
-// - role uživatele zobrazená nad jménem
-// - záložka Účty: dvouřádkový horizontální formulář (Popisek | Banka) a (Číslo účtu | Měna | IBAN) + seznam účtů dole
-// - banka vybíraná z tabulky public.bank_codes
-// - měna povinná (CZK/EUR/USD), popisek povinný, IBAN nepovinné
-// - při zobrazení účtu se ukáže "číslo / kód banky – název banky"
-// - zachovány akce: Add, Save, Delete, Set preferred
-//
-// Použij: nahraď existující modules/020/f/form.js tímto souborem, commitni a spusť aplikaci.
-// Pak otevři Můj účet → Účty a otestuj přidání/úpravu účtu.
+// Můj účet — formulář upravený podle požadavku + kompatibilní export `form`
+// Compat fix: exportujeme také `form` DOM element, protože některé části aplikace
+// volají form.addEventListener(...) přímo na modulu.
 
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
@@ -17,6 +10,11 @@ import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
 function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 function isUuid(v) { return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/.test(v); }
+
+// Compatibility export: create a real DOM form element so legacy callers can do form.addEventListener(...)
+export const form = document.createElement('form');
+form.className = 'module-020-form-root';
+form.style.display = 'none'; // keep it hidden — the module uses the provided root param to render
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
@@ -35,7 +33,6 @@ export async function render(root) {
   try { accountMemberships = await import('/src/services/accountMemberships.js'); accountMemberships = accountMemberships.default || accountMemberships; } catch(e){ accountMemberships = null; }
   try { supabase = (await import('/src/supabase.js')).supabase; } catch(e){ supabase = null; }
 
-  // fallback helpers if db lacks methods
   const getMyProfile = (db && (db.getMyProfile || db.getProfile)) ? (db.getMyProfile || db.getProfile) : (async () => ({ data: null, error: new Error('getMyProfile not available') }));
   const updateProfile = (db && (db.updateProfile || db.upsertProfile)) ? (db.updateProfile || db.upsertProfile) : (async () => ({ data: null, error: new Error('updateProfile not available') }));
   const listPaymentAccounts = payments && payments.listPaymentAccounts ? payments.listPaymentAccounts : (async () => ({ data: [], error: null }));
@@ -65,7 +62,6 @@ export async function render(root) {
   // load profile
   const { data: profileData } = await getMyProfile();
   const profile = profileData || {};
-  // determine overall role for display (fall back to window.currentUserRole or 'user')
   const globalRole = profile.role || window.currentUserRole || (window.currentUser && window.currentUser.role) || 'user';
 
   // render profile tab (with role badge above name fields)
@@ -103,7 +99,6 @@ export async function render(root) {
       formGrid.appendChild(wrap);
     });
 
-    // common actions (save, cancel)
     renderCommonActions(document.getElementById('commonactions'), {
       moduleActions: ['save','reject'],
       userRole: window.currentUserRole || 'user',
@@ -130,7 +125,6 @@ export async function render(root) {
   // ACCOUNTS tab rendering
   let bankCodes = [];
   async function loadBankCodes() {
-    // try services: payments.listBankCodes or query bank_codes table directly via supabase
     if (payments && typeof payments.listBankCodes === 'function') {
       try {
         const res = await payments.listBankCodes();
@@ -200,7 +194,6 @@ export async function render(root) {
 
     const acc = account ? { ...account } : { label: '', bank_code: '', account_number: '', iban: '', currency: 'CZK', is_primary: false };
 
-    // form layout (two rows)
     container.innerHTML = `
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
@@ -247,10 +240,8 @@ export async function render(root) {
       </div>
     `;
 
-    // attach unsaved helper
     useUnsavedHelper(container.querySelectorAll('input, select'));
 
-    // handlers
     const btnSave = container.querySelector('.btn-save');
     const btnAdd = container.querySelector('.btn-add');
     const btnDelete = container.querySelector('.btn-delete');
@@ -279,7 +270,6 @@ export async function render(root) {
 
       const { data, error } = await upsertPaymentAccount(payload, window.currentUser);
       if (error) return alert('Chyba při ukládání účtu: ' + (error.message || error));
-      // reload accounts and re-render
       await loadAccounts();
       alert('Účet uložen.');
     });
@@ -297,7 +287,6 @@ export async function render(root) {
     }
   }
 
-  // set preferred account from left list: handled in list UI via edit or separate button
   async function setPreferredAccount(accountId) {
     if (!profile.id) return alert('Profil neznámý');
     const payload = { preferred_payment_account_id: accountId };
@@ -308,14 +297,12 @@ export async function render(root) {
     await loadAccounts();
   }
 
-  // initial actions: load bank codes and accounts, then render profile by default
   await loadBankCodes();
   await loadAccounts();
 
   btnProfile.addEventListener('click', () => { btnProfile.classList.add('bg-slate-50'); btnAccounts.classList.remove('bg-slate-50'); renderProfile(); });
   btnAccounts.addEventListener('click', () => { btnAccounts.classList.add('bg-slate-50'); btnProfile.classList.remove('bg-slate-50'); renderAccounts(); });
 
-  // default show profile tab
   renderProfile();
 }
 
