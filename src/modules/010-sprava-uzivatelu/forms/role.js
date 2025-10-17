@@ -1,8 +1,10 @@
+// modules/010/f/role.js
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderForm } from '../../../ui/form.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo } from '../../../app.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
+import { getUserPermissions } from '../../../security/permissions.js';
 
 // paleta ~40 barev (střední tóny)
 const PALETTE = [
@@ -34,25 +36,8 @@ export async function render(root) {
     console.warn('[roles] DB API not available yet – using fallbacks', e);
   }
   listRoles  ||= async () => ({ data: [], error: null });
-  upsertRole ||= async () => ({ error: null });
+  upsertRole ||= async () => ({ data: null, error: null });
   deleteRole ||= async () => ({ error: null });
-
-  // CommonActions (jen nahoře) – Uložit a Zpět
-  renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['approve','reject'],
-    userRole: 'admin',
-    handlers: {
-      onApprove: async () => {
-        const v = grabValues(root);
-        if (!valid(v)) return;
-        const { error } = await upsertRole(v);
-        if (error) return alert('Uložení selhalo: ' + error.message);
-        alert('Uloženo.');
-        await loadList();
-      },
-      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
-    }
-  });
 
   // Form – kompaktní, bez spodních tlačítek
   renderForm(root, FIELDS, { color: '#64748b' }, async () => true, {
@@ -68,7 +53,7 @@ export async function render(root) {
   // Paleta barev
   attachPalette(root);
 
-  // Seznam existujících rolí
+  // Seznam existujících rolí (pod formulářem)
   const listWrap = document.createElement('div');
   listWrap.className = 'mt-6';
   listWrap.innerHTML = `
@@ -77,12 +62,43 @@ export async function render(root) {
   `;
   root.appendChild(listWrap);
 
+  // Permissions / rights
+  const myRole = window.currentUserRole || 'user';
+  const perms = getUserPermissions(myRole);
+  const canEdit = perms.includes('add') || perms.includes('edit') || perms.includes('save') || perms.includes('approve');
+
+  // CommonActions (ikonky nahoře)
+  // Použijeme standardní klíče 'save' a 'reject' — renderCommonActions je dopořadí a zohlední permissions.
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions: ['save', 'reject'],
+    userRole: window.currentUserRole || 'user',
+    handlers: {
+      onSave: async () => {
+        if (!canEdit) return alert('Nemáte oprávnění upravovat role.');
+        const v = grabValues(root);
+        if (!valid(v)) return;
+        // upsertRole(signature: { slug, label, color, is_system? })
+        const { data, error } = await upsertRole({ slug: v.slug, label: v.label, color: v.color });
+        if (error) {
+          console.error('upsertRole error', error);
+          return alert('Ukládání selhalo: ' + (error.message || error));
+        }
+        alert('Uloženo.');
+        await loadList();
+      },
+      onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
+    }
+  });
+
+  let roles = [];
+
   async function loadList() {
     const host = listWrap.querySelector('#role-table');
     host.innerHTML = '<div class="p-3 text-slate-500">Načítám…</div>';
     const { data, error } = await listRoles();
-    if (error) { host.innerHTML = `<div class="p-3 text-red-600">${error.message}</div>`; return; }
-    if (!data?.length) { host.innerHTML = '<div class="p-3 text-slate-500">Žádné role.</div>'; return; }
+    if (error) { host.innerHTML = `<div class="p-3 text-red-600">${escapeHtml(error.message || String(error))}</div>`; return; }
+    roles = data || [];
+    if (!roles.length) { host.innerHTML = '<div class="p-3 text-slate-500">Žádné role.</div>'; return; }
 
     host.innerHTML = `
       <table class="min-w-full text-sm">
@@ -95,19 +111,19 @@ export async function render(root) {
           </tr>
         </thead>
         <tbody>
-          ${data.map(r => `
-            <tr class="border-t">
+          ${roles.map(r => `
+            <tr class="border-t" data-slug="${r.slug}">
               <td class="px-3 py-2">${escapeHtml(r.slug)}</td>
               <td class="px-3 py-2">${escapeHtml(r.label)}</td>
               <td class="px-3 py-2">
                 <span class="inline-flex items-center gap-2">
                   <span class="inline-block w-4 h-4 rounded" style="background:${r.color}"></span>
-                  <code>${r.color}</code>
+                  <code>${escapeHtml(r.color || '')}</code>
                 </span>
               </td>
               <td class="px-3 py-2 text-right">
-                <button class="px-2 py-1 border rounded mr-2" data-edit="${r.slug}">Upravit</button>
-                <button class="px-2 py-1 border rounded text-red-600" data-del="${r.slug}">Smazat</button>
+                <button class="px-2 py-1 border rounded mr-2 btn-edit" data-edit="${r.slug}">Upravit</button>
+                <button class="px-2 py-1 border rounded text-red-600 btn-del" data-del="${r.slug}">Smazat</button>
               </td>
             </tr>
           `).join('')}
@@ -115,10 +131,10 @@ export async function render(root) {
       </table>
     `;
 
-    host.querySelectorAll('[data-edit]').forEach(btn => {
+    host.querySelectorAll('.btn-edit').forEach(btn => {
       btn.addEventListener('click', () => {
         const slug = btn.getAttribute('data-edit');
-        const row = data.find(x => x.slug === slug);
+        const row = roles.find(x => x.slug === slug);
         if (!row) return;
         setValue(root, 'slug', row.slug);
         setValue(root, 'label', row.label);
@@ -126,18 +142,36 @@ export async function render(root) {
         pickColor(root, row.color);
       });
     });
-    host.querySelectorAll('[data-del]').forEach(btn => {
+
+    host.querySelectorAll('.btn-del').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (!canEdit) return alert('Nemáte oprávnění mazat role.');
         const slug = btn.getAttribute('data-del');
-        if (confirm(`Smazat roli "${slug}"?`)) {
-          const { error } = await deleteRole(slug);
-          if (error) alert('Mazání selhalo: ' + error.message);
+        if (!confirm(`Smazat roli "${slug}"?`)) return;
+        const { error } = await deleteRole(slug);
+        if (error) {
+          alert('Mazání selhalo: ' + (error.message || error));
+        } else {
           await loadList();
         }
       });
     });
+
+    // double-click on row fills form for quick edit
+    host.querySelectorAll('tr[data-slug]').forEach(tr => {
+      tr.addEventListener('dblclick', () => {
+        const slug = tr.getAttribute('data-slug');
+        const row = roles.find(x => x.slug === slug);
+        if (!row) return;
+        setValue(root, 'slug', row.slug);
+        setValue(root, 'label', row.label);
+        setValue(root, 'color', row.color);
+        pickColor(root, row.color);
+      });
+    });
   }
 
+  // initial load
   await loadList();
 }
 
@@ -152,24 +186,28 @@ function attachPalette(root) {
       style="background:${hex}"></button>
   `).join('');
   host.parentElement.appendChild(grid);
+
   grid.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-hex]'); if (!b) return;
     const hex = b.getAttribute('data-hex');
     setValue(root, 'color', hex);
     pickColor(root, hex);
   });
+
+  // highlight current
   pickColor(root, host.value || '#64748b');
 }
 function pickColor(root, hex) {
   root.querySelectorAll('[data-hex]').forEach(b => {
-    b.style.outline = (b.getAttribute('data-hex') === hex) ? '2px solid #111827' : 'none';
+    b.style.outline = (b.getAttribute('data-hex') === hex) ? '3px solid rgba(0,0,0,0.8)' : 'none';
+    b.style.boxShadow = (b.getAttribute('data-hex') === hex) ? '0 0 0 2px rgba(255,255,255,0.6) inset' : 'none';
   });
 }
 function grabValues(root) {
   const obj = {};
   ['slug','label','color'].forEach(k => {
     const el = root.querySelector(`[name="${k}"]`);
-    obj[k] = el ? el.value.trim() : '';
+    obj[k] = el ? String(el.value || '').trim() : '';
   });
   return obj;
 }
@@ -178,9 +216,9 @@ function setValue(root, key, val) {
   if (el) el.value = val || '';
 }
 function valid(v) {
-  if (!v.slug)  return alert('Vyplň kód role.'), false;
-  if (!v.label) return alert('Vyplň název role.'), false;
-  if (!/^#[0-9A-Fa-f]{6}$/.test(v.color)) return alert('Barva musí být ve formátu #RRGGBB.'), false;
+  if (!v.slug)  { alert('Vyplň kód role.'); return false; }
+  if (!v.label) { alert('Vyplň název role.'); return false; }
+  if (!/^#[0-9A-Fa-f]{6}$/.test(v.color)) { alert('Barva musí být ve formátu #RRGGBB.'); return false; }
   return true;
 }
 function escapeHtml(s) {
