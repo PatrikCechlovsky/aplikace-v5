@@ -1,8 +1,7 @@
-import { listAttachments, uploadAttachment, archiveAttachment } from '../db.js';
+// Univerzální modal pro správu příloh k jakémukoliv záznamu
+import { listAttachments, uploadAttachment, archiveAttachment, updateAttachmentDescription } from '../db.js';
 
-// Nová funkce pro změnu popisu přílohy
-import { updateAttachmentDescription } from '../db.js';
-
+// Vloží modal do body (pokud tam ještě není)
 function ensureModalRoot() {
   let modal = document.getElementById('attachments-modal');
   if (!modal) {
@@ -13,6 +12,10 @@ function ensureModalRoot() {
   return modal;
 }
 
+/**
+ * Otevře modal se správou příloh pro konkrétní entitu.
+ * @param { entity: string, entityId: string|number }
+ */
 export async function showAttachmentsModal({ entity, entityId }) {
   const root = ensureModalRoot();
   root.innerHTML = `<div class="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
@@ -35,62 +38,88 @@ export async function showAttachmentsModal({ entity, entityId }) {
   async function renderList(showArchived = false) {
     root.querySelector('#attachments-list').innerHTML = 'Načítám…';
     const { data: files = [] } = await listAttachments({ entity, entityId, showArchived });
+
     if (!files.length) {
       root.querySelector('#attachments-list').innerHTML = '<div class="text-slate-400 text-sm">Žádné přílohy.</div>';
       return;
     }
+
+    // Sestav HTML pro seznam a přidej data-id pro ovladače
     root.querySelector('#attachments-list').innerHTML = `
       <ul>
         ${files.map(f => `
-          <li class="flex items-center gap-2 mb-2">
+          <li class="flex items-center gap-2 mb-2" data-id="${f.id}">
             <a href="${f.url}" target="_blank" class="underline">${f.filename}</a>
-            ${
-              f.editing
-                ? `<input type="text" value="${f.description || ''}" style="width:160px" data-edit-description="${f.id}" class="px-2 py-1 border rounded text-xs"/>
-                   <button data-save-desc="${f.id}" class="px-2 py-1 border rounded text-xs bg-emerald-100">Uložit</button>
-                   <button data-cancel-desc="${f.id}" class="px-2 py-1 border rounded text-xs bg-slate-100">Zpět</button>`
-                : `<span class="text-xs text-slate-600" style="min-width:100px;">${f.description || ''}</span>
-                   <button data-edit-desc="${f.id}" class="px-2 py-1 border rounded text-xs">Upravit popis</button>`
-            }
+            <span class="attachment-desc text-xs text-slate-600" style="min-width:160px;">${f.description || ''}</span>
+            <button class="edit-desc-btn text-xs px-2 py-1 border rounded" data-action="edit">Upravit popis</button>
+            <button class="archive-attachment text-xs px-2 py-1 border rounded"${f.archived ? ' disabled' : ''} data-action="archive">Archivovat</button>
             ${f.archived ? '<span class="text-xs text-slate-400">(archivováno)</span>' : ''}
-            ${!f.archived ? `<button data-id="${f.id}" class="archive-attachment text-xs px-2 py-1 border rounded">Archivovat</button>` : ''}
           </li>
         `).join('')}
       </ul>
     `;
-    // Archive
-    root.querySelectorAll('.archive-attachment').forEach(btn => {
-      btn.onclick = async () => {
-        await archiveAttachment(btn.dataset.id);
-        renderList(root.querySelector('#show-archived-attachments').checked);
-      };
-    });
 
-    // Edit popis
-    root.querySelectorAll('[data-edit-desc]').forEach(btn => {
-      btn.onclick = () => {
-        files.forEach(x => x.editing = (x.id === btn.dataset.editDesc));
-        renderList(root.querySelector('#show-archived-attachments').checked);
-      };
-    });
+    // Delegace: připoj handlery
+    root.querySelectorAll('li[data-id]').forEach(li => {
+      const id = li.getAttribute('data-id');
 
-    // Save popis
-    root.querySelectorAll('[data-save-desc]').forEach(btn => {
-      btn.onclick = async () => {
-        const id = btn.dataset.saveDesc;
-        const input = root.querySelector(`[data-edit-description="${id}"]`);
-        await updateAttachmentDescription(id, input.value);
-        files.forEach(x => x.editing = false);
-        renderList(root.querySelector('#show-archived-attachments').checked);
-      };
-    });
+      // Archivovat
+      const archiveBtn = li.querySelector('[data-action="archive"]');
+      if (archiveBtn) {
+        archiveBtn.onclick = async () => {
+          await archiveAttachment(id);
+          renderList(root.querySelector('#show-archived-attachments').checked);
+        };
+      }
 
-    // Cancel edit
-    root.querySelectorAll('[data-cancel-desc]').forEach(btn => {
-      btn.onclick = () => {
-        files.forEach(x => x.editing = false);
-        renderList(root.querySelector('#show-archived-attachments').checked);
-      };
+      // Upravit popis (inline)
+      const editBtn = li.querySelector('[data-action="edit"]');
+      const descSpan = li.querySelector('.attachment-desc');
+      if (editBtn && descSpan) {
+        editBtn.onclick = () => {
+          // Vytvoř input + save + cancel v rámci li
+          const current = descSpan.textContent || '';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = current;
+          input.className = 'px-2 py-1 border rounded text-xs';
+          input.style.width = '220px';
+
+          const save = document.createElement('button');
+          save.textContent = 'Uložit';
+          save.className = 'px-2 py-1 border rounded text-xs bg-emerald-100';
+          const cancel = document.createElement('button');
+          cancel.textContent = 'Zpět';
+          cancel.className = 'px-2 py-1 border rounded text-xs bg-slate-100';
+
+          // Skryj span a edit button, vlož input+save+cancel
+          descSpan.style.display = 'none';
+          editBtn.style.display = 'none';
+          li.insertBefore(input, archiveBtn);
+          li.insertBefore(save, archiveBtn);
+          li.insertBefore(cancel, archiveBtn);
+
+          cancel.onclick = () => {
+            input.remove();
+            save.remove();
+            cancel.remove();
+            descSpan.style.display = '';
+            editBtn.style.display = '';
+          };
+
+          save.onclick = async () => {
+            const newDesc = input.value || '';
+            const res = await updateAttachmentDescription(id, newDesc);
+            if (res.error) {
+              alert('Chyba při ukládání popisu: ' + res.error.message);
+              console.error(res.error);
+              return;
+            }
+            // reload list
+            renderList(root.querySelector('#show-archived-attachments').checked);
+          };
+        };
+      }
     });
   }
 
@@ -109,6 +138,7 @@ export async function showAttachmentsModal({ entity, entityId }) {
       alert('Chyba při nahrávání souboru: ' + result.error.message);
       console.error('Attachment upload error:', result.error);
     }
+    // vyčistit input
     root.querySelector('#attachment-description').value = '';
     renderList(root.querySelector('#show-archived-attachments').checked);
   };
