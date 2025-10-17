@@ -452,3 +452,23 @@ export async function getRolePermissions(role) {
     return { data: null, error: err };
   }
 }
+
+/**
+ * countProfilesByRole(role)
+ * - vrátí počet profilů, které používají danou roli (slug)
+ * - užitečné pro rozhodnutí, zda lze roli smazat nebo změnit její kód
+ * Returns: { count: number, error: Error|null }
+ */
+export async function countProfilesByRole(role) {
+  if (!role) return { count: 0, error: new Error('Role required') };
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', role);
+    if (error) return { count: 0, error };
+    return { count: Array.isArray(data) ? data.length : 0, error: null };
+  } catch (err) {
+    return { count: 0, error: err };
+  }
+}
