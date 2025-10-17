@@ -196,6 +196,16 @@ export async function uploadAttachment({ entity, entityId, file, description = '
   };
   const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
   return { data, error };
+
+export async function archiveAttachment(id) {
+  const { data, error } = await supabase
+    .from('attachments')
+    .update({ archived: true })
+    .eq('id', id)
+    .select()
+    .single();
+  return { data, error };
+}
 }
 export async function updateAttachmentDescription(id, description) {
   const { data, error } = await supabase
@@ -206,16 +216,6 @@ export async function updateAttachmentDescription(id, description) {
     .single();
   return { data, error };
 }
-export async function archiveAttachment(id) {
-  const { data, error } = await supabase
-    .from('attachments')
-    .update({ archived: true })
-    .eq('id', id)
-    .select()
-    .single();
-  return { data, error };
-}
-
 // --- Roles API ---
 export async function listRoles() {
   const { data, error } = await supabase
