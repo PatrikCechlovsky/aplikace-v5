@@ -196,7 +196,7 @@ export async function uploadAttachment({ entity, entityId, file, description = '
   };
   const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
   return { data, error };
-
+}
 export async function archiveAttachment(id) {
   const { data, error } = await supabase
     .from('attachments')
@@ -205,7 +205,7 @@ export async function archiveAttachment(id) {
     .select()
     .single();
   return { data, error };
-}
+
 }
 export async function updateAttachmentDescription(id, description) {
   const { data, error } = await supabase
