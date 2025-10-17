@@ -1,9 +1,9 @@
 // modules/020/f/form.js
 // Upravené Můj účet — kompletní soubor
-// - useUnsavedHelper voláno s DOM elementem (ne NodeList)
-// - kompatibilní default export = DOM form element (má addEventListener), render jako named export
-// - pojmenované helper exporty addEventListener/removeEventListener/dispatchEvent
-// - zbytek logiky zachován: načítání bank_codes, seznam účtů, formulář účtu
+// - badge role vykreslená podle tabulky roles (pole color jako hex)
+// - načtení roles přes supabase
+// - výběr textové barvy podle kontrastu
+// - použití elementu pro useUnsavedHelper (ne NodeList)
 
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
@@ -12,6 +12,43 @@ import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
 function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 function isUuid(v) { return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/.test(v); }
+
+// small helpers for color conversions / contrast
+function hexToRgb(hex) {
+  if (!hex) return null;
+  const h = hex.replace('#','').trim();
+  if (h.length === 3) {
+    return {
+      r: parseInt(h[0]+h[0],16),
+      g: parseInt(h[1]+h[1],16),
+      b: parseInt(h[2]+h[2],16)
+    };
+  }
+  if (h.length === 6) {
+    return {
+      r: parseInt(h.substring(0,2),16),
+      g: parseInt(h.substring(2,4),16),
+      b: parseInt(h.substring(4,6),16)
+    };
+  }
+  return null;
+}
+function hexToRgba(hex, alpha = 0.12) {
+  const c = hexToRgb(hex) || { r:107, g:114, b:128 }; // fallback grey
+  return `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})`;
+}
+// choose black or white text depending on bg luminance
+function pickTextColor(hex) {
+  const c = hexToRgb(hex);
+  if (!c) return '#000';
+  // relative luminance
+  const [r,g,b] = [c.r, c.g, c.b].map(v => {
+    v /= 255;
+    return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+  });
+  const L = 0.2126*r + 0.7152*g + 0.0722*b;
+  return L > 0.5 ? '#000' : '#fff';
+}
 
 // Compatibility: create a real DOM form element so legacy callers can call .addEventListener on default import
 const form = document.createElement('form');
@@ -64,16 +101,38 @@ export async function render(root) {
   // load profile
   const { data: profileData } = await getMyProfile();
   const profile = profileData || {};
+  // determine overall role for display (fall back to window.currentUserRole or 'user')
   const globalRole = profile.role || window.currentUserRole || (window.currentUser && window.currentUser.role) || 'user';
+
+  // load roles from DB (for colors)
+  let roles = [];
+  async function loadRoles() {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase.from('roles').select('code,name,color');
+      if (!error) roles = data || [];
+    } catch (e) { /* ignore */ }
+  }
 
   // render profile tab (with role badge above name fields)
   function renderProfile() {
     contentArea.innerHTML = '';
 
-    // role badge on top
+    // determine role label and color
+    const roleCode = profile.role || window.currentUserRole || 'user';
+    const roleObj = roles.find(r => String(r.code) === String(roleCode));
+    const roleLabel = roleObj ? (roleObj.name || roleCode) : roleCode;
+    const colorHex = (roleObj && roleObj.color) ? roleObj.color : '#6b7280';
+    const bg = hexToRgba(colorHex, 0.12);
+    const textColor = pickTextColor(colorHex);
+
+    // role badge on top (styled by role color)
     const roleRow = document.createElement('div');
     roleRow.className = 'mb-4';
-    roleRow.innerHTML = `<div class="text-sm text-slate-600">Role</div><div class="mt-1 inline-block px-3 py-1 rounded-md bg-indigo-50 text-indigo-700 font-medium">${escapeHtml(String(globalRole))}</div>`;
+    roleRow.innerHTML = `<div class="text-sm text-slate-600">Role</div>
+      <div class="mt-1 inline-block px-3 py-1 rounded-md" style="background:${bg}; color:${textColor}; border:1px solid ${colorHex}; font-weight:600;">
+        ${escapeHtml(roleLabel)}
+      </div>`;
     contentArea.appendChild(roleRow);
 
     // form grid (two columns)
@@ -121,7 +180,11 @@ export async function render(root) {
     });
 
     // useUnsavedHelper expects a DOM element with addEventListener; pass the container
-    useUnsavedHelper(contentArea);
+    try {
+      useUnsavedHelper(contentArea);
+    } catch (e) {
+      console.warn('useUnsavedHelper failed', e);
+    }
   }
 
   // ACCOUNTS tab rendering
@@ -314,6 +377,7 @@ export async function render(root) {
 
   // initial load
   await loadBankCodes();
+  await loadRoles();
   await loadAccounts();
 
   btnProfile.addEventListener('click', () => { btnProfile.classList.add('bg-slate-50'); btnAccounts.classList.remove('bg-slate-50'); renderProfile(); });
