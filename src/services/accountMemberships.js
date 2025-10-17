@@ -25,7 +25,6 @@ async function writeEntityHistory(entityType, entityId, changes = [], changedBy 
     const { data, error } = await supabase.from('entity_history').insert(inserts);
     return { data, error };
   } catch (err) {
-    // pokud tabulka neexistuje, ignoruj chybu (fallback)
     return { data: null, error: err };
   }
 }
@@ -77,8 +76,6 @@ export async function getRoleForProfileOnAccount(accountId, profileId) {
 
 /**
  * assignRoleToAccount(accountId, profileId, roleSlug, assignedBy)
- * - pokud existuje aktivní membership => aktualizuje role_slug (a is_active true)
- * - jinak vloží nový řádek
  */
 export async function assignRoleToAccount(accountId, profileId, roleSlug, assignedBy = null) {
   if (!accountId || !profileId || !roleSlug) return { data: null, error: new Error('Missing params') };
@@ -102,7 +99,6 @@ export async function assignRoleToAccount(accountId, profileId, roleSlug, assign
           .eq('id', existing.id)
           .select()
           .single();
-        // log change
         try {
           await writeEntityHistory('account_memberships', data.id, [
             { field: 'role_slug', old_value: existing.role_slug, new_value: roleSlug },
