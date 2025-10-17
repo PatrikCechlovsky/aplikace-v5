@@ -167,6 +167,8 @@ window.addEventListener('hashchange', function () {
     // ---- Načti profil uživatele a ulož do window.currentUser ----
     const { data: currentUser, error } = await getMyProfile();
     window.currentUser = currentUser || null;
+    // --- přidáno: ulož roli do globálu, aby ji mohly moduly použít pro renderCommonActions
+    window.currentUserRole = currentUser?.role || 'user';
     if (error) console.warn("Nepodařilo se načíst profil uživatele:", error);
 
     console.log('Obsah registry:', Array.from(registry.values()));
@@ -178,18 +180,3 @@ window.addEventListener('hashchange', function () {
     if (c) c.innerHTML = `<div style="color: red;">Inicializace selhala: ${err?.message || err}</div>`;
   }
 })();
-
-/*
-========================= TODO: Další funkce pro moduly =========================
-
-- Breadcrumbs (drobečková navigace)
-  -> Každý modul může vykreslit své breadcrumbs podle potřeby.
-
-- Common actions (Přidat, Upravit, Archivovat, hvězdička, atd.)
-  -> Řeš v jednotlivých modulech, nebo sdílej jako widget/helper.
-
-- Logika pro dashboard, tiles, forms atd.
-  -> Není potřeba v app.js, vše řeší dynamický import a logika v modulu.
-
-===============================================================================
-*/
