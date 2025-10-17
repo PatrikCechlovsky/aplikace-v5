@@ -3,9 +3,7 @@
 
 import { supabase } from '../supabase.js';
 
-/**
- * Helper: write entity history rows into entity_history (if table exists)
- */
+/** Helper: write entity history rows into entity_history (if table exists) */
 async function writeEntityHistory(entityType, entityId, changes = [], changedBy = null) {
   if (!changes || !changes.length) return { data: null, error: null };
   try {
@@ -26,9 +24,7 @@ async function writeEntityHistory(entityType, entityId, changes = [], changedBy 
   }
 }
 
-/**
- * listPaymentAccounts({ profileId })
- */
+/** listPaymentAccounts({ profileId }) */
 export async function listPaymentAccounts({ profileId = null } = {}) {
   let q = supabase.from('payment_accounts').select('*').order('created_at', { ascending: false });
   if (profileId) q = q.eq('profile_id', profileId).neq('archived', true);
@@ -36,9 +32,7 @@ export async function listPaymentAccounts({ profileId = null } = {}) {
   return { data: data || [], error };
 }
 
-/**
- * getPaymentAccount(id)
- */
+/** getPaymentAccount(id) */
 export async function getPaymentAccount(id) {
   if (!id) return { data: null, error: new Error('Missing id') };
   const { data, error } = await supabase.from('payment_accounts').select('*').eq('id', id).single();
@@ -48,8 +42,6 @@ export async function getPaymentAccount(id) {
 /**
  * upsertPaymentAccount(payload)
  * - payload: { id?, profile_id, label, bank_name, account_number, iban, bic, currency, is_primary, logo_path, archived }
- * - pokud is_primary=true provede aktualizaci ostatních účtů pro profil (nastaví false)
- * NOTE: pro plnou atomicitu je lepší DB transaction/RPC; zde děláme sekvenční kroky.
  */
 export async function upsertPaymentAccount(payload = {}, currentUser = null) {
   if (!payload || !payload.profile_id || !payload.account_number) {
@@ -105,7 +97,6 @@ export async function upsertPaymentAccount(payload = {}, currentUser = null) {
       }
       if (changes.length) await writeEntityHistory('payment_accounts', data.id, changes, changedBy);
     } catch (e) {
-      // ignore logging errors
       console.warn('payments: history logging failed', e);
     }
 
@@ -115,9 +106,7 @@ export async function upsertPaymentAccount(payload = {}, currentUser = null) {
   }
 }
 
-/**
- * deletePaymentAccount(id) - soft delete (archived=true)
- */
+/** deletePaymentAccount(id) - soft delete (archived=true) */
 export async function deletePaymentAccount(id, currentUser = null) {
   if (!id) return { data: null, error: new Error('Missing id') };
   try {
@@ -138,9 +127,7 @@ export async function deletePaymentAccount(id, currentUser = null) {
   }
 }
 
-/**
- * setPrimaryAccount(accountId)
- */
+/** setPrimaryAccount(accountId) */
 export async function setPrimaryAccount(accountId, currentUser = null) {
   if (!accountId) return { data: null, error: new Error('Missing accountId') };
   try {
