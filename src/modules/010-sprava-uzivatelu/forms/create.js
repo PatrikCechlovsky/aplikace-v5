@@ -5,7 +5,6 @@ import { renderCommonActions } from '../../../ui/commonActions.js';
 import { navigateTo } from '../../../app.js';
 import { listRoles, inviteUserByEmail } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
-import { icon as uiIcon } from '../../../ui/icons.js';
 
 const FIELDS = [
   { key: 'display_name', label: 'Uživatelské jméno', type: 'text', required: true },
@@ -35,16 +34,16 @@ export async function render(root) {
     f.key === "role" ? { ...f, options: roleOptions } : f
   );
 
-  // Ujistíme se, že container pro common actions existuje
+  // Ujistíme se, že container pro common actions existuje (layout používá ikonový toolbar)
   let commonEl = document.getElementById('commonactions');
   if (!commonEl) {
     commonEl = document.createElement('div');
     commonEl.id = 'commonactions';
-    // vložíme nad root pokud tam není - aby toolbar byl vidět
+    // vložíme nad root, aby toolbar byl nahoře a zarovnaný jako na ostatních stránkách
     root.prepend(commonEl);
   }
 
-  // --- Handlery (onInvite aktivuje tlačítko Pozvat / Odeslat) ---
+  // --- Handlery (onInvite aktivuje ikonové tlačítko v commonActions) ---
   const handlers = {
     onInvite: async () => {
       const values = grabValues(root);
@@ -60,7 +59,6 @@ export async function render(root) {
       }
 
       try {
-        // zavoláme server helper - pokud ho nemáte, upravíme to později na fallback
         const { data, error } = await inviteUserByEmail({
           email: values.email.trim(),
           display_name: values.display_name.trim(),
@@ -81,30 +79,13 @@ export async function render(root) {
     onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
   };
 
-  // Vykreslíme standardní ikonový toolbar (common actions). Pokud renderCommonActions
-  // z nějakého důvodu skryje tlačítko (permissions), níže doplníme explicitní textové tlačítko.
+  // Vykreslíme ikonový toolbar (bez textových tlačítek) - stejně jako ve form.js
   renderCommonActions(commonEl, {
     moduleActions: ['invite', 'reject'],
-    userRole: window.currentUserRole || 'admin', // pro test použijeme admin, aby bylo vidět
+    // pro testovací zobrazení můžeš mít window.currentUserRole = 'admin'
+    userRole: window.currentUserRole || 'admin',
     handlers
   });
-
-  // Přidáme viditelné "Odeslat pozvánku" tlačítko vedle ikonového toolbaru
-  // (pouze jeden přídavek, aby uživatel měl jasné, aktivní tlačítko).
-  (function addSendInviteButton() {
-    // pokud už tam existuje (dřívější fallback), nebudeme duplikovat
-    if (commonEl.querySelector('.btn-send-invite')) return;
-
-    const sendBtn = document.createElement('button');
-    sendBtn.type = 'button';
-    sendBtn.className = 'btn-send-invite px-3 py-1 border rounded ml-2';
-    sendBtn.innerHTML = `${uiIcon('invite')} &nbsp;Odeslat`;
-    sendBtn.title = 'Odeslat pozvánku e-mailem';
-    sendBtn.setAttribute('aria-label', 'Odeslat pozvánku');
-    // připojíme stejný handler jako commonActions onInvite (udělá validaci a zavolá inviteUserByEmail)
-    sendBtn.addEventListener('click', handlers.onInvite);
-    commonEl.appendChild(sendBtn);
-  })();
 
   // Render the form (no submit)
   const initial = { role: 'user' };
