@@ -24,19 +24,21 @@ function formatCzechDate(dateStr) {
 
 // Definice polí formuláře
 const FIELDS = [
-  { key: 'first_name',    label: 'Jméno',        type: 'text',     required: true },
-  { key: 'last_name',     label: 'Příjmení',     type: 'text',     required: true },
-  { key: 'display_name',  label: 'Uživatelské jméno', type: 'text', required: true },
-  { key: 'email',         label: 'E-mail',       type: 'email',    required: true },
-  { key: 'phone',         label: 'Telefon',      type: 'text',     required: true },
-  { key: 'street',        label: 'Ulice',        type: 'text' },
-  { key: 'house_number',  label: 'Číslo popisné',type: 'text' },
-  { key: 'city',          label: 'Město',        type: 'text' },
-  { key: 'zip',           label: 'PSČ',          type: 'text' },
-  { key: 'role',          label: 'Role',         type: 'select', options: [], required: true },
-  { key: 'active',        label: 'Aktivní',      type: 'checkbox' },
-  { key: 'birth_number',  label: 'Rodné číslo',  type: 'text' },
-  { key: 'note',          label: 'Poznámka',     type: 'textarea', fullWidth: true },
+  { key: 'first_name',    label: 'Jméno',             type: 'text',     required: true },
+  { key: 'last_name',     label: 'Příjmení',          type: 'text',     required: true },
+  // Interně je pole display_name, ve formuláři zobrazíme label "Uživatelské jméno"
+  { key: 'display_name',  label: 'Uživatelské jméno', type: 'text',     required: true },
+  { key: 'email',         label: 'E-mail',            type: 'email',    required: true },
+  { key: 'phone',         label: 'Telefon',           type: 'text',     required: true },
+  { key: 'street',        label: 'Ulice',             type: 'text' },
+  { key: 'house_number',  label: 'Číslo popisné',     type: 'text' },
+  { key: 'city',          label: 'Město',             type: 'text' },
+  { key: 'zip',           label: 'PSČ',               type: 'text' },
+  { key: 'role',          label: 'Role',              type: 'select',   options: [], required: true },
+  // Checkbox reprezentuje ARCHIVACI: zaškrtnuto = archivováno (neaktivní), nezaškrtnuto = aktivní
+  { key: 'archived',      label: 'Archivní',          type: 'checkbox' },
+  { key: 'birth_number',  label: 'Rodné číslo',       type: 'text' },
+  { key: 'note',          label: 'Poznámka',          type: 'textarea', fullWidth: true },
   // readonly pole jako prostý text, s českým formátem
   { key: 'last_login',    label: 'Poslední přihlášení', type: 'label', readOnly: true, format: formatCzechDate },
   { key: 'updated_at',    label: 'Poslední úprava',     type: 'label', readOnly: true, format: formatCzechDate },
@@ -73,6 +75,13 @@ export async function render(root) {
         }
       }
     }
+    // Pokud ve starších datech existuje pole 'active' místo 'archived', převést logiku:
+    if (typeof data.active !== 'undefined' && typeof data.archived === 'undefined') {
+      // active true => archived false
+      data.archived = !data.active;
+    }
+    // Zajistit, že archived má boolean (ne null/undefined)
+    if (typeof data.archived === 'undefined') data.archived = false;
   }
 
   // --- Načti role do selectu ---
@@ -128,6 +137,7 @@ export async function render(root) {
           window.currentUser.username ||
           window.currentUser.email;
       }
+      // Pokud uživatel zadal 'archived' jako checkbox: hodnotu uložíme přímo (checked = true = archivováno)
       const { data: updated, error } = await updateProfile(id, values, window.currentUser);
       if (error) {
         alert('Chyba při ukládání: ' + error.message);
@@ -149,6 +159,10 @@ export async function render(root) {
             }
           }
         }
+        // pokud starší verze má 'active', převést
+        if (typeof refreshed.active !== 'undefined' && typeof refreshed.archived === 'undefined') {
+          refreshed.archived = !refreshed.active;
+        }
         renderForm(root, fieldsWithRoles, refreshed, async () => true, {
           readOnly: false,
           showSubmit: false,
@@ -159,7 +173,7 @@ export async function render(root) {
               'street', 'house_number', 'city', 'zip', 'birth_number'
             ] },
             { id: 'system', label: 'Systém', fields: [
-              'role', 'active', 'note', 'last_login', 'updated_at', 'updated_by', 'created_at'
+              'role', 'archived', 'note', 'last_login', 'updated_at', 'updated_by', 'created_at'
             ] },
           ]
         });
@@ -205,7 +219,7 @@ export async function render(root) {
         'street', 'house_number', 'city', 'zip', 'birth_number'
       ] },
       { id: 'system', label: 'Systém', fields: [
-        'role', 'active', 'note', 'last_login', 'updated_at', 'updated_by', 'created_at'
+        'role', 'archived', 'note', 'last_login', 'updated_at', 'updated_by', 'created_at'
       ] },
     ]
   });
