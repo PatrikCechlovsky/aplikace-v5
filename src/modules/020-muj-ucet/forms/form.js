@@ -1,7 +1,9 @@
 // modules/020/f/form.js
-// Compat fix v3: default export je DOM form element + named export render,
-// a navíc explicitně exportujeme addEventListener/removeEventListener/dispatchEvent
-// aby volající, kteří dělají `const m = await import('...'); m.addEventListener(...)` fungovali.
+// Upravené Můj účet — kompletní soubor
+// - useUnsavedHelper voláno s DOM elementem (ne NodeList)
+// - kompatibilní default export = DOM form element (má addEventListener), render jako named export
+// - pojmenované helper exporty addEventListener/removeEventListener/dispatchEvent
+// - zbytek logiky zachován: načítání bank_codes, seznam účtů, formulář účtu
 
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
@@ -11,10 +13,10 @@ import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 function isUuid(v) { return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/.test(v); }
 
-// create actual DOM form element so legacy callers can call .addEventListener on default import
+// Compatibility: create a real DOM form element so legacy callers can call .addEventListener on default import
 const form = document.createElement('form');
 form.className = 'module-020-form-root';
-form.style.display = 'none'; // module renders into provided root
+form.style.display = 'none'; // module renders into provided root, keep hidden
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
@@ -118,7 +120,8 @@ export async function render(root) {
       }
     });
 
-    useUnsavedHelper(contentArea.querySelectorAll('input'));
+    // useUnsavedHelper expects a DOM element with addEventListener; pass the container
+    useUnsavedHelper(contentArea);
   }
 
   // ACCOUNTS tab rendering
@@ -170,11 +173,14 @@ export async function render(root) {
         row.innerHTML = `<div>${labelHtml}${acctHtml}</div><div><button data-id="${a.id}" class="btn-edit text-xs px-2 py-1 border rounded">Upravit</button></div>`;
         listEl.appendChild(row);
 
-        row.querySelector('.btn-edit').addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          selectedAccount = a;
-          renderAccountForm(a);
-        });
+        const editBtn = row.querySelector('.btn-edit');
+        if (editBtn) {
+          editBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            selectedAccount = a;
+            renderAccountForm(a);
+          });
+        }
       });
       left.appendChild(listEl);
     }
@@ -189,7 +195,6 @@ export async function render(root) {
   function renderAccountForm(account = null, host = null) {
     const container = host || contentArea.querySelector('.bg-white.border.rounded.p-3');
     if (!container) return;
-    container.innerHTML = '';
 
     const acc = account ? { ...account } : { label: '', bank_code: '', account_number: '', iban: '', currency: 'CZK', is_primary: false };
 
@@ -239,39 +244,50 @@ export async function render(root) {
       </div>
     `;
 
-    useUnsavedHelper(container.querySelectorAll('input, select'));
+    // pass an element (form inside container if exists, otherwise container itself)
+    const watchedEl = container.querySelector('form') || container;
+    try {
+      useUnsavedHelper(watchedEl);
+    } catch (e) {
+      // fallback: if helper misbehaves, ignore silently (prevents crash)
+      console.warn('useUnsavedHelper failed', e);
+    }
 
     const btnSave = container.querySelector('.btn-save');
     const btnAdd = container.querySelector('.btn-add');
     const btnDelete = container.querySelector('.btn-delete');
 
-    btnAdd.addEventListener('click', (e) => {
-      e.preventDefault();
-      selectedAccount = null;
-      renderAccountForm(null, container);
-    });
+    if (btnAdd) {
+      btnAdd.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectedAccount = null;
+        renderAccountForm(null, container);
+      });
+    }
 
-    btnSave.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const payload = {
-        label: container.querySelector('[name="acc_label"]').value.trim(),
-        bank_code: container.querySelector('[name="acc_bank"]').value,
-        account_number: container.querySelector('[name="acc_number"]').value.trim(),
-        iban: container.querySelector('[name="acc_iban"]').value.trim() || null,
-        currency: container.querySelector('[name="acc_currency"]').value,
-        is_primary: !!container.querySelector('[name="acc_primary"]').checked,
-        profile_id: profile.id
-      };
-      if (!payload.label || !payload.account_number || !payload.bank_code || !payload.currency) {
-        return alert('Vyplňte prosím povinná pole: Popisek, Banka, Číslo účtu a Měna.');
-      }
-      if (account && account.id) payload.id = account.id;
+    if (btnSave) {
+      btnSave.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const payload = {
+          label: container.querySelector('[name="acc_label"]').value.trim(),
+          bank_code: container.querySelector('[name="acc_bank"]').value,
+          account_number: container.querySelector('[name="acc_number"]').value.trim(),
+          iban: container.querySelector('[name="acc_iban"]').value.trim() || null,
+          currency: container.querySelector('[name="acc_currency"]').value,
+          is_primary: !!container.querySelector('[name="acc_primary"]').checked,
+          profile_id: profile.id
+        };
+        if (!payload.label || !payload.account_number || !payload.bank_code || !payload.currency) {
+          return alert('Vyplňte prosím povinná pole: Popisek, Banka, Číslo účtu a Měna.');
+        }
+        if (account && account.id) payload.id = account.id;
 
-      const { data, error } = await upsertPaymentAccount(payload, window.currentUser);
-      if (error) return alert('Chyba při ukládání účtu: ' + (error.message || error));
-      await loadAccounts();
-      alert('Účet uložen.');
-    });
+        const { data, error } = await upsertPaymentAccount(payload, window.currentUser);
+        if (error) return alert('Chyba při ukládání účtu: ' + (error.message || error));
+        await loadAccounts();
+        alert('Účet uložen.');
+      });
+    }
 
     if (btnDelete) {
       btnDelete.addEventListener('click', async (e) => {
@@ -296,12 +312,14 @@ export async function render(root) {
     await loadAccounts();
   }
 
+  // initial load
   await loadBankCodes();
   await loadAccounts();
 
   btnProfile.addEventListener('click', () => { btnProfile.classList.add('bg-slate-50'); btnAccounts.classList.remove('bg-slate-50'); renderProfile(); });
   btnAccounts.addEventListener('click', () => { btnAccounts.classList.add('bg-slate-50'); btnProfile.classList.remove('bg-slate-50'); renderAccounts(); });
 
+  // default show profile tab
   renderProfile();
 }
 
@@ -314,5 +332,4 @@ export function addEventListener(...args) { return form.addEventListener(...args
 export function removeEventListener(...args) { return form.removeEventListener(...args); }
 export function dispatchEvent(...args) { return form.dispatchEvent(...args); }
 
-// default export is the DOM element (so default import gives an element with addEventListener)
 export default form;
