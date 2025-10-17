@@ -2,6 +2,7 @@
 import { icon } from './icons.js';
 import { hardLogout, getUserSafe } from '../auth.js';
 import { getMyProfile } from '../db.js';
+import { navigateTo } from '../app.js';
 
 export async function renderHeaderActions(root) {
   if (!root) return;
@@ -46,8 +47,13 @@ export async function renderHeaderActions(root) {
   box.appendChild(mkIconBtn('Notifikace', 'bell', () => {
     window.dispatchEvent(new CustomEvent('openNotifications'));
   }));
+
+  // Můj účet - přesměrujeme na stránku modulu "Můj účet"
+  // (nahrazuje původní placeholder alert)
   box.appendChild(mkIconBtn('Můj účet', 'account', () => {
-    alert('Můj účet (placeholder)');
+    // navigace do modulu "Můj účet" (sekce formuláře)
+    // uprav tvůj modId/sekci pokud v registry používáš jiný identifikátor
+    navigateTo('#/m/020-muj-ucet/f/form');
   }));
 
   // Odhlásit – skutečná akce přes Supabase
