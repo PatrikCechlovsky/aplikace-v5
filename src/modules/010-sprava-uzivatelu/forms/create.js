@@ -6,6 +6,12 @@ import { navigateTo } from '../../../app.js';
 import { listRoles, inviteUserByEmail } from '../../../db.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 
+/**
+ * Create / Invite page
+ * Ensures an icon-only common actions toolbar is visible (positioned top-right like form.js).
+ * If the page template doesn't provide #commonactions, we create one and position it so it's visible.
+ */
+
 const FIELDS = [
   { key: 'display_name', label: 'Uživatelské jméno', type: 'text', required: true },
   { key: 'email',        label: 'E-mail',           type: 'email', required: true, placeholder: 'user@example.com' },
@@ -31,19 +37,35 @@ export async function render(root) {
     roleOptions = [];
   }
   const fieldsWithRoles = FIELDS.map(f =>
-    f.key === "role" ? { ...f, options: roleOptions } : f
+    f.key === 'role' ? { ...f, options: roleOptions } : f
   );
 
-  // Ujistíme se, že container pro common actions existuje (layout používá ikonový toolbar)
+  // Ensure root is positioned so absolute toolbar can anchor to it
+  if (root && getComputedStyle(root).position === 'static') {
+    root.style.position = 'relative';
+  }
+
+  // Ensure commonactions container exists and is visible top-right (icon-only toolbar)
   let commonEl = document.getElementById('commonactions');
   if (!commonEl) {
     commonEl = document.createElement('div');
     commonEl.id = 'commonactions';
-    // vložíme nad root, aby toolbar byl nahoře a zarovnaný jako na ostatních stránkách
+    // inline positioning so toolbar appears in top-right (matches form.js layout)
+    commonEl.style.position = 'absolute';
+    commonEl.style.top = '12px';
+    commonEl.style.right = '12px';
+    commonEl.style.zIndex = '60';
+    // keep layout flow: prepend to root so it's visually near page header
     root.prepend(commonEl);
+  } else {
+    // make sure it's visible / positioned similarly
+    commonEl.style.position = commonEl.style.position || 'absolute';
+    commonEl.style.top = commonEl.style.top || '12px';
+    commonEl.style.right = commonEl.style.right || '12px';
+    commonEl.style.zIndex = commonEl.style.zIndex || '60';
   }
 
-  // --- Handlery (onInvite aktivuje ikonové tlačítko v commonActions) ---
+  // --- Handlers: onInvite will make the invite icon active (commonActions enables button when handler present) ---
   const handlers = {
     onInvite: async () => {
       const values = grabValues(root);
@@ -79,15 +101,14 @@ export async function render(root) {
     onReject: () => navigateTo('#/m/010-sprava-uzivatelu/t/prehled')
   };
 
-  // Vykreslíme ikonový toolbar (bez textových tlačítek) - stejně jako ve form.js
+  // Render icon-only toolbar (commonActions will render icons; no text)
   renderCommonActions(commonEl, {
     moduleActions: ['invite', 'reject'],
-    // pro testovací zobrazení můžeš mít window.currentUserRole = 'admin'
-    userRole: window.currentUserRole || 'admin',
+    userRole: window.currentUserRole || 'admin', // for testing, default to admin so icon shows
     handlers
   });
 
-  // Render the form (no submit)
+  // Render the form (no submit button; actions live in toolbar)
   const initial = { role: 'user' };
   renderForm(root, fieldsWithRoles, initial, async () => true, {
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
@@ -95,11 +116,11 @@ export async function render(root) {
     showSubmit: false
   });
 
-  const formEl = root.querySelector("form");
+  const formEl = root.querySelector('form');
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// Helper: sebrat hodnoty z polí (pro akce v headeru)
+// Helper: collect form values
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
