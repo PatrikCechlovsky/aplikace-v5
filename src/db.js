@@ -244,7 +244,7 @@ export async function createTempUpload(folder, file, { autoSanitize = true } = {
  */
 export async function cancelTemporaryUpload(path) {
   if (!path) return { data: null, error: new Error('No path provided') };
-  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).remove([path]);
+  const { data, error } = await supabase.from(ATTACH_BUCKET).remove([path]);
   return { data, error };
 }
 
@@ -305,7 +305,7 @@ export async function uploadAttachment({ entity, entityId, file, description = '
   // get url (public or signed)
   let fileUrl = filePath;
   try {
-    const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(filePath);
+    const { data: publicUrlData } = await supabase.storage.from(ATTACH_BUCKET).getPublicUrl(filePath);
     fileUrl = publicUrlData?.publicUrl || filePath;
     if (!publicUrlData?.publicUrl) {
       const { data: signedData } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(filePath, 60);
@@ -429,4 +429,26 @@ export async function upsertRole({ slug, label, color, is_system = false }) {
 export async function deleteRole(slug) {
   const { error } = await supabase.from('roles').delete().eq('slug', slug);
   return { error };
+}
+
+/**
+ * getRolePermissions(role)
+ * - Attempt to read role permissions from DB table "role_permissions"
+ * - Expected row shape: { role, permission_key } (one row per permission) or similar.
+ * - Returns: { data: Array<string> | null, error: null | Error }
+ */
+export async function getRolePermissions(role) {
+  if (!role) return { data: null, error: new Error('Role required') };
+  try {
+    // Try reading simple permission_key column from role_permissions table
+    const { data, error } = await supabase
+      .from('role_permissions')
+      .select('permission_key')
+      .eq('role', role);
+    if (error) return { data: null, error };
+    const keys = (data || []).map(r => r.permission_key || r.key || r.permission).filter(Boolean);
+    return { data: keys, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
 }
