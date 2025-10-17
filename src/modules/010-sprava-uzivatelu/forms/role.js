@@ -6,14 +6,32 @@ import { navigateTo } from '../../../app.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { getUserPermissions } from '../../../security/permissions.js';
 
-// 24 pastelových, odlišných barev (bez bílé), uspořádáno světle -> tmavě
+// 24 tmavších pastelových barev (bez bílé), výrazněji rozlišitelné
 const PALETTE = [
-  '#ffd6e0','#ffc1d4','#ffb3e6','#ffb3d1',
-  '#ffd7b5','#ffe7a7','#fff1b8','#f7ffbf',
-  '#dfffd6','#c8ffea','#c7f8ff','#cfe8ff',
-  '#d7d9ff','#e8d6ff','#ffd6ff','#ffccd9',
-  '#ffdfe6','#ffefc7','#e0ffd6','#c8f7d1',
-  '#bfe4ff','#a9d0ff','#9fb8ff','#9fb3d6'
+  '#e05570', // dark pink
+  '#f35b1a', // orange
+  '#f0a500', // golden
+  '#ffd166', // mustard
+  '#7cc058', // lime green
+  '#1fb086', // teal green
+  '#0b9d8f', // sea green
+  '#0b84b5', // cyan
+  '#1e6fff', // bright blue
+  '#2d4ed8', // indigo
+  '#6b46c1', // violet
+  '#8b5cf6', // purple
+  '#d63ea5', // magenta
+  '#ff6b8a', // rose
+  '#ff8a65', // salmon
+  '#ffb86b', // apricot
+  '#f4d35e', // warm yellow
+  '#9fdc97', // soft green
+  '#55c2a0', // mint
+  '#3fb0b0', // turquoise
+  '#4da6ff', // sky blue
+  '#2f6f9f', // steel blue
+  '#6b7280', // slate gray
+  '#4b5563'  // dark slate
 ];
 
 export async function render(root) {
