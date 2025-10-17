@@ -6,14 +6,14 @@ import { navigateTo } from '../../../app.js';
 import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 import { getUserPermissions } from '../../../security/permissions.js';
 
-// 24 pastelových barev (světle -> tmavě), bez bílé
+// 24 pastelových, odlišných barev (bez bílé), uspořádáno světle -> tmavě
 const PALETTE = [
-  '#ffe6f0', '#ffd6e8', '#ffccd9', '#ffc4d3', // very light pinks
-  '#ffdeda', '#ffe8cc', '#fff3cc', '#fff6d6', // light warm
-  '#e6f7d9', '#dff7e8', '#dff7f6', '#ddefef', // light greens / aqua
-  '#dfe7ff', '#e9e0ff', '#f0d9ff', '#f8d2ff', // light purples
-  '#ffd6f0', '#fcd5e1', '#f9d6a5', '#e6f7b3', // pastels mixed
-  '#a5d8ff', '#84c6f4', '#6fb3e8', '#5aa0dd'  // mid -> darker pastels
+  '#ffd6e0','#ffc1d4','#ffb3e6','#ffb3d1',
+  '#ffd7b5','#ffe7a7','#fff1b8','#f7ffbf',
+  '#dfffd6','#c8ffea','#c7f8ff','#cfe8ff',
+  '#d7d9ff','#e8d6ff','#ffd6ff','#ffccd9',
+  '#ffdfe6','#ffefc7','#e0ffd6','#c8f7d1',
+  '#bfe4ff','#a9d0ff','#9fb8ff','#9fb3d6'
 ];
 
 export async function render(root) {
@@ -24,17 +24,18 @@ export async function render(root) {
   ]);
 
   // SAFE lazy import DB API
-  let listRoles, upsertRole, deleteRole;
+  let listRoles, upsertRole, deleteRole, countProfilesByRole;
   try {
-    ({ listRoles, upsertRole, deleteRole } = await import('../../../db.js'));
+    ({ listRoles, upsertRole, deleteRole, countProfilesByRole } = await import('../../../db.js'));
   } catch (e) {
     console.warn('[roles] DB API not available yet – using fallbacks', e);
   }
   listRoles  ||= async () => ({ data: [], error: null });
   upsertRole ||= async () => ({ data: null, error: null });
   deleteRole ||= async () => ({ error: null });
+  countProfilesByRole ||= async () => ({ count: 0, error: null });
 
-  // Render form
+  // Form
   const FIELDS = [
     { key: 'slug',  label: 'Kód role',   type: 'text',  required: true,  placeholder: 'např. admin, user' },
     { key: 'label', label: 'Název',      type: 'text',  required: true,  placeholder: 'Administrátor' },
@@ -60,6 +61,7 @@ export async function render(root) {
   // State
   let roles = [];
   let selectedSlug = null;
+  let selectedInUse = false; // true pokud vybraná role má uživatele
 
   // CommonActions (save, delete, back)
   renderCommonActions(document.getElementById('commonactions'), {
@@ -70,6 +72,10 @@ export async function render(root) {
         if (!canEdit) return alert('Nemáte oprávnění upravovat role.');
         const v = grabValues(root);
         if (!valid(v)) return;
+        // Pokud se mění slug a role je používána -> zakázat
+        if (selectedInUse && selectedSlug && selectedSlug !== v.slug) {
+          return alert('Kód role nelze změnit, protože je role používána v uživatelských účtech.');
+        }
         const { data, error } = await upsertRole({ slug: v.slug, label: v.label, color: v.color });
         if (error) {
           console.error('upsertRole error', error);
@@ -82,12 +88,14 @@ export async function render(root) {
       onDelete: async () => {
         if (!canDelete) return alert('Nemáte oprávnění mazat role.');
         if (!selectedSlug) return alert('Vyberte prosím roli kliknutím na řádek.');
+        if (selectedInUse) return alert('Tuto roli nelze smazat, protože je používána v uživatelských účtech.');
         if (!confirm(`Smazat roli "${selectedSlug}"?`)) return;
         const { error } = await deleteRole(selectedSlug);
         if (error) {
           alert('Mazání selhalo: ' + (error.message || error));
         } else {
           selectedSlug = null;
+          selectedInUse = false;
           await loadList();
         }
       },
@@ -140,13 +148,26 @@ export async function render(root) {
 
     // Bind events: click = select, dblclick = edit
     host.querySelectorAll('tr.row-item').forEach(tr => {
-      tr.addEventListener('click', () => {
+      tr.addEventListener('click', async () => {
         const slug = tr.getAttribute('data-slug');
         selectedSlug = slug;
         // highlight
         host.querySelectorAll('tr.row-item').forEach(x => x.classList.remove('row-selected'));
         tr.classList.add('row-selected');
+
+        // check if role used
+        try {
+          const { count, error: cntErr } = await countProfilesByRole(slug);
+          selectedInUse = !!(count && count > 0);
+        } catch (e) {
+          selectedInUse = false;
+        }
+
+        // disable slug input if in use
+        const slugInput = root.querySelector('[name="slug"]');
+        if (slugInput) slugInput.disabled = selectedInUse;
       });
+
       tr.addEventListener('dblclick', () => {
         const slug = tr.getAttribute('data-slug');
         const row = roles.find(x => x.slug === slug);
@@ -155,11 +176,24 @@ export async function render(root) {
         setValue(root, 'label', row.label);
         setValue(root, 'color', row.color);
         pickColor(root, row.color);
+
         // mark selected
         selectedSlug = slug;
         host.querySelectorAll('tr.row-item').forEach(x => x.classList.remove('row-selected'));
         tr.classList.add('row-selected');
-        // focus first input
+
+        // force check usage and possibly disable slug input
+        (async () => {
+          try {
+            const { count } = await countProfilesByRole(slug);
+            selectedInUse = !!(count && count > 0);
+          } catch (e) {
+            selectedInUse = false;
+          }
+          const slugInput = root.querySelector('[name="slug"]');
+          if (slugInput) slugInput.disabled = selectedInUse;
+        })();
+
         const inp = root.querySelector('[name="label"]');
         if (inp) inp.focus();
       });
@@ -173,6 +207,7 @@ export async function render(root) {
         sel.classList.add('row-selected');
       } else {
         selectedSlug = null;
+        selectedInUse = false;
       }
     }
   }
@@ -180,7 +215,7 @@ export async function render(root) {
   await loadList();
 }
 
-// Helpers: palette attach, selection highlight, contrast for outline
+// Helpers: palette attach, contrast for outline, etc.
 function attachPalette(root) {
   const host = root.querySelector('[name="color"]');
   if (!host) return;
@@ -222,7 +257,6 @@ function luminance(hex) {
   return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
 }
 function contrastColor(hex) {
-  // return white for dark colors, black for light colors
   const L = luminance(hex);
   return (L > 0.5) ? '#111827' : '#ffffff';
 }
