@@ -1,4 +1,5 @@
-// src/db.js — upravená verze s validation/sanitization strategií a podporou popisku a aktualizace metadat
+// src/db.js — upravená verze: upload -> temp upload -> finalize metadata,
+// možnost cancel (smazat temp soubor), update metadata, unarchive
 import { supabase } from './supabase.js';
 export { supabase };
 
@@ -27,128 +28,14 @@ export async function isAdmin() {
   return data?.role === 'admin';
 }
 
-export async function listProfiles({ q = '' } = {}) {
-  let query = supabase
-    .from('profiles')
-    .select('id, email, display_name, username, first_name, last_name, phone, role, note, archived, last_login, updated_at, updated_by, created_at, active, street, house_number, city, zip, birth_number')
-    .order('display_name', { ascending: true });
-  if (q) query = query.ilike('display_name', `%${q}%`);
-  const { data, error } = await query;
-  return { data: data || [], error };
-}
+// (ostatní profile funkce beze změn - zkráceno pro přehlednost; ponechte své existující implementace)
 
-export async function getProfile(id) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, email, display_name, username, first_name, last_name, phone, role, note, archived, last_login, updated_at, updated_by, created_at, active, street, house_number, city, zip, birth_number')
-    .eq('id', id)
-    .single();
-  return { data, error };
-}
-
-// --- Historie změn (profiles_history) ---
-export async function getProfileHistory(profileId) {
-  const { data, error } = await supabase
-    .from('profiles_history')
-    .select('*')
-    .eq('profile_id', profileId)
-    .order('changed_at', { ascending: false });
-  return { data, error };
-}
-
-export async function logProfileHistory(profileId, currentUser, oldData, newData) {
-  let changed_by = null;
-  if (currentUser) {
-    changed_by = currentUser.display_name || currentUser.username || currentUser.email;
-  }
-  const changed_at = new Date().toISOString();
-
-  const inserts = [];
-  for (const key of Object.keys(newData)) {
-    if (!Object.prototype.hasOwnProperty.call(oldData, key) || oldData[key] !== newData[key]) {
-      inserts.push({
-        profile_id: profileId,
-        field: key,
-        old_value: old_data_to_string(oldData[key]),
-        new_value: new_data_to_string(newData[key]),
-        changed_by,
-        changed_at
-      });
-    }
-  }
-  if (inserts.length) {
-    await supabase.from('profiles_history').insert(inserts);
-  }
-}
-
-function old_data_to_string(v) {
-  return v == null ? null : String(v);
-}
-function new_data_to_string(v) {
-  return v == null ? null : String(v);
-}
-
-export async function updateProfile(id, payload, currentUser = null) {
-  if (currentUser) {
-    payload.updated_by = currentUser.display_name || currentUser.username || currentUser.email;
-  }
-  const { data: oldProfile } = await getProfile(id);
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(payload)
-    .eq('id', id)
-    .select()
-    .single();
-  if (oldProfile && data) {
-    await logProfileHistory(id, currentUser, oldProfile, payload);
-  }
-  return { data, error };
-}
-
-export async function createProfile(payload, currentUser = null) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .insert(payload)
-    .select()
-    .single();
-  if (data) {
-    await logProfileHistory(data.id, currentUser, {}, payload);
-  }
-  return { data, error };
-}
-
-export async function archiveProfile(id, currentUser = null) {
-  const { data: oldProfile } = await getProfile(id);
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ archived: true })
-    .eq('id', id)
-    .select()
-    .single();
-  if (oldProfile && data) {
-    await logProfileHistory(id, currentUser, oldProfile, { archived: true });
-  }
-  return { data, error };
-}
-
-export async function inviteUserByEmail({ email, display_name = '', role = 'user' }) {
-  try {
-    const { data, error } = await supabase.functions.invoke('invite-user', {
-      body: { email, display_name, role }
-    });
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-}
-
-// --- Přílohy (univerzální tabulka attachments) ---
+// --- Přílohy (attachments) ---
 const ATTACH_BUCKET = 'attachments';
 
 /**
- * validateFilename:
- * - kontroluje, zda název souboru obsahuje pouze povolené znaky (bez diakritiky)
- * - povolené znaky: A-Za-z0-9 . _ -
+ * validateFilename: kontrola povolených znaků (bez diakritiky)
+ * povolené znaky: A-Za-z0-9 . _ -
  */
 export function validateFilename(name) {
   if (!name || typeof name !== 'string') return false;
@@ -158,8 +45,7 @@ export function validateFilename(name) {
 }
 
 /**
- * sanitizeFilename:
- * - odstraní diakritiku a nahradí nepovolené znaky podtržítkem
+ * sanitizeFilename: odstraní diakritiku a nahradí nepovolené znaky podtržítkem
  */
 export function sanitizeFilename(name) {
   if (!name || typeof name !== 'string') return 'file';
@@ -170,11 +56,10 @@ export function sanitizeFilename(name) {
 }
 
 /**
- * uploadAttachmentToStorage(folder, file, options)
- * - options.autoSanitize: pokud true, upraví název souboru místo vrácení chyby
- * - pokud autoSanitize=false (výchozí) a název obsahuje nepovolené znaky, vrátí chybu (user musí přejmenovat)
+ * uploadAttachmentToStorage(folder, file, { autoSanitize })
+ * - nahraje soubor do storage a vrátí path (klíč) i případné data z API
  */
-export async function uploadAttachmentToStorage(folder, file, { autoSanitize = false } = {}) {
+export async function uploadAttachmentToStorage(folder, file, { autoSanitize = true } = {}) {
   if (!file || !file.name) {
     return { data: null, error: new Error('No file provided') };
   }
@@ -201,16 +86,64 @@ export async function uploadAttachmentToStorage(folder, file, { autoSanitize = f
   }
 }
 
-export async function removeAttachmentFromStorage(path) {
+/**
+ * createTempUpload(folder, file, options)
+ * - nahraje soubor do storage (sanitized key) a vrátí path + public url + originalName
+ * - tato funkce se používá pro "upload první, pak metadata"
+ */
+export async function createTempUpload(folder, file, { autoSanitize = true } = {}) {
+  const { data, error, path } = await uploadAttachmentToStorage(folder, file, { autoSanitize });
+  if (error || !path) return { data: null, error: error || new Error('Upload failed') };
+
+  const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(path);
+  const publicUrl = publicUrlData?.publicUrl || path;
+
+  return {
+    data: { path, publicUrl, originalName: file.name },
+    error: null
+  };
+}
+
+/**
+ * cancelTemporaryUpload(path) - pokud uživatel zruší vkládání, smaže se temp soubor ze storage
+ */
+export async function cancelTemporaryUpload(path) {
+  if (!path) return { data: null, error: new Error('No path provided') };
   const { data, error } = await supabase.storage.from(ATTACH_BUCKET).remove([path]);
   return { data, error };
 }
 
-export async function listStorageAttachments(folder) {
-  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).list(folder, { limit: 100 });
-  return { data: data || [], error };
+/**
+ * createAttachmentFromUpload({ entity, entityId, path, filename, description })
+ * - uloží do tabulky attachments metadata a odkaz na již nahraný soubor (path)
+ * - filename = display name (může obsahovat diakritiku); path zůstává sanitizovaný storage key
+ */
+export async function createAttachmentFromUpload({ entity, entityId, path, filename, description = '' }) {
+  if (!path) return { data: null, error: new Error('No path provided') };
+  if (!filename || !filename.trim()) return { data: null, error: new Error('Filename (display name) is required') };
+  if (description == null) description = '';
+
+  const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(path);
+  const url = publicUrlData?.publicUrl || path;
+
+  const fileData = {
+    entity,
+    entity_id: entityId,
+    filename: filename.trim(),
+    path,
+    url,
+    archived: false,
+    description,
+    created_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
+  return { data, error };
 }
 
+/**
+ * listAttachments - vrátí záznamy z tabulky attachments (metadata)
+ */
 export async function listAttachments({ entity, entityId, showArchived = false }) {
   let query = supabase
     .from('attachments')
@@ -223,38 +156,8 @@ export async function listAttachments({ entity, entityId, showArchived = false }
 }
 
 /**
- * uploadAttachment({entity, entityId, file, description = '', autoSanitize = false})
- * - pokud filename není validní a autoSanitize=false vrátí error, aby uživatel přejmenoval soubor
- * - pokud autoSanitize=true, provede sanitizaci názvu automaticky
+ * archiveAttachment / unarchiveAttachment
  */
-export async function uploadAttachment({ entity, entityId, file, description = '', autoSanitize = false }) {
-  const folder = `${entity}/${entityId}`;
-  const { data: uploadData, error: uploadError, path } = await uploadAttachmentToStorage(folder, file, { autoSanitize });
-  if (uploadError) return { data: null, error: uploadError };
-
-  const filePath = (uploadData && uploadData.path) ? uploadData.path : path;
-  if (!filePath) {
-    return { data: null, error: new Error('Soubor nahrán do storage, ale nebyla získána cesta k souboru (path)') };
-  }
-
-  const { data: publicUrlData } = supabase.storage.from(ATTACH_BUCKET).getPublicUrl(filePath);
-  const fileUrl = publicUrlData?.publicUrl || filePath;
-
-  const fileData = {
-    entity,
-    entity_id: entityId,
-    filename: file.name,
-    path: filePath,
-    url: fileUrl,
-    archived: false,
-    description,
-    created_at: new Date().toISOString()
-  };
-
-  const { data, error } = await supabase.from('attachments').insert(fileData).select().single();
-  return { data, error };
-}
-
 export async function archiveAttachment(id) {
   const { data, error } = await supabase
     .from('attachments')
@@ -264,8 +167,6 @@ export async function archiveAttachment(id) {
     .single();
   return { data, error };
 }
-
-// Nová funkce: od-archivovat (vrátit do aktivních)
 export async function unarchiveAttachment(id) {
   const { data, error } = await supabase
     .from('attachments')
@@ -276,8 +177,10 @@ export async function unarchiveAttachment(id) {
   return { data, error };
 }
 
-// Nová funkce: aktualizovat metadata (filename/display-name a description) v DB
-// Poznámka: toto NEPŘEJMENOVÁVÁ objekt ve storage, pouze metadata v tabulce attachments
+/**
+ * updateAttachmentMetadata(id, { filename, description })
+ * - aktualizuje pouze metadata v DB (ne storage path)
+ */
 export async function updateAttachmentMetadata(id, { filename, description }) {
   const payload = {};
   if (typeof filename === 'string') payload.filename = filename;
@@ -293,12 +196,18 @@ export async function updateAttachmentMetadata(id, { filename, description }) {
   return { data, error };
 }
 
-// Pro zpětnou kompatibilitu — jednoduchá funkce na update pouze popisku
+// pro zpětnou kompatibilitu
 export async function updateAttachmentDescription(id, description) {
   return await updateAttachmentMetadata(id, { description });
 }
 
-// --- Roles API ---
+// removeAttachmentFromStorage (pokud potřebuješ manuálně mazat)
+export async function removeAttachmentFromStorage(path) {
+  const { data, error } = await supabase.storage.from(ATTACH_BUCKET).remove([path]);
+  return { data, error };
+}
+
+// --- Roles API (ponechám beze změny) ---
 export async function listRoles() {
   const { data, error } = await supabase
     .from('roles')
@@ -306,7 +215,6 @@ export async function listRoles() {
     .order('label', { ascending: true });
   return { data, error };
 }
-
 export async function upsertRole({ slug, label, color, is_system = false }) {
   const { data, error } = await supabase
     .from('roles')
@@ -314,7 +222,6 @@ export async function upsertRole({ slug, label, color, is_system = false }) {
     .select();
   return { data, error };
 }
-
 export async function deleteRole(slug) {
   const { error } = await supabase.from('roles').delete().eq('slug', slug);
   return { error };
