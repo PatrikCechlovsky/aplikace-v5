@@ -1,9 +1,8 @@
 // modules/020/f/form.js
-// Upravené Můj účet — kompletní soubor
-// - badge role vykreslená podle tabulky roles (pole color jako hex)
-// - načtení roles přes supabase
-// - výběr textové barvy podle kontrastu
-// - použití elementu pro useUnsavedHelper (ne NodeList)
+// Upravené Můj účet — loadRoles normalizuje slug/label/color z Supabase
+// - používá slug/label pokud jsou v DB
+// - normalizuje hex (přidá #, rozšíří krátký hex)
+// - fallbacky pokud RLS nebo chybí supabase
 
 import { setBreadcrumb } from '../../../ui/breadcrumb.js';
 import { renderCommonActions } from '../../../ui/commonActions.js';
@@ -13,7 +12,22 @@ import { useUnsavedHelper } from '../../../ui/unsaved-helper.js';
 function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 function isUuid(v) { return typeof v === 'string' && /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/.test(v); }
 
-// small helpers for color conversions / contrast
+// color helpers
+function normalizeHex(hex) {
+  if (!hex) return '#6b7280';
+  let h = String(hex).trim();
+  if (!h) return '#6b7280';
+  if (h[0] !== '#') h = '#' + h;
+  h = h.toLowerCase();
+  // expand short form #abc -> #aabbcc
+  if (h.length === 4) {
+    const r = h[1], g = h[2], b = h[3];
+    h = `#${r}${r}${g}${g}${b}${b}`;
+  }
+  // if still wrong length, fallback
+  if (h.length !== 7) return '#6b7280';
+  return h;
+}
 function hexToRgb(hex) {
   if (!hex) return null;
   const h = hex.replace('#','').trim();
@@ -34,14 +48,12 @@ function hexToRgb(hex) {
   return null;
 }
 function hexToRgba(hex, alpha = 0.12) {
-  const c = hexToRgb(hex) || { r:107, g:114, b:128 }; // fallback grey
+  const c = hexToRgb(hex) || { r:107, g:114, b:128 };
   return `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})`;
 }
-// choose black or white text depending on bg luminance
 function pickTextColor(hex) {
   const c = hexToRgb(hex);
   if (!c) return '#000';
-  // relative luminance
   const [r,g,b] = [c.r, c.g, c.b].map(v => {
     v /= 255;
     return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
@@ -50,10 +62,10 @@ function pickTextColor(hex) {
   return L > 0.5 ? '#000' : '#fff';
 }
 
-// Compatibility: create a real DOM form element so legacy callers can call .addEventListener on default import
+// Compatibility default export element
 const form = document.createElement('form');
 form.className = 'module-020-form-root';
-form.style.display = 'none'; // module renders into provided root, keep hidden
+form.style.display = 'none';
 
 export async function render(root) {
   setBreadcrumb(document.getElementById('crumb'), [
@@ -101,28 +113,47 @@ export async function render(root) {
   // load profile
   const { data: profileData } = await getMyProfile();
   const profile = profileData || {};
-  // determine overall role for display (fall back to window.currentUserRole or 'user')
   const globalRole = profile.role || window.currentUserRole || (window.currentUser && window.currentUser.role) || 'user';
 
-  // load roles from DB (for colors)
+  // load roles from DB (slug,label,color) and normalize to { code, name, color }
   let roles = [];
   async function loadRoles() {
-    if (!supabase) return;
+    roles = [];
+    if (!supabase) {
+      console.debug('supabase client not available; roles not loaded');
+      return;
+    }
     try {
-      const { data, error } = await supabase.from('roles').select('code,name,color');
-      if (!error) roles = data || [];
-    } catch (e) { /* ignore */ }
+      // select using typical column names (slug,label,color) in your DB
+      const { data, error } = await supabase.from('roles').select('slug,label,color');
+      if (error) {
+        console.warn('loadRoles supabase error:', error);
+        return;
+      }
+      if (!Array.isArray(data)) return;
+      roles = data.map(r => {
+        const rawColor = r.color ?? r.colour ?? r.color_hex ?? '';
+        const hex = normalizeHex(rawColor);
+        return {
+          code: r.slug ?? r.code ?? '',
+          name: r.label ?? r.name ?? r.slug ?? '',
+          color: hex
+        };
+      });
+      console.debug('loaded roles:', roles);
+    } catch (e) {
+      console.warn('loadRoles failed', e);
+    }
   }
 
   // render profile tab (with role badge above name fields)
   function renderProfile() {
     contentArea.innerHTML = '';
 
-    // determine role label and color
     const roleCode = profile.role || window.currentUserRole || 'user';
     const roleObj = roles.find(r => String(r.code) === String(roleCode));
-    const roleLabel = roleObj ? (roleObj.name || roleCode) : roleCode;
-    const colorHex = (roleObj && roleObj.color) ? roleObj.color : '#6b7280';
+    const roleLabel = roleObj ? (roleObj.name || roleObj.code) : roleCode;
+    const colorHex = roleObj ? roleObj.color : '#6b7280';
     const bg = hexToRgba(colorHex, 0.12);
     const textColor = pickTextColor(colorHex);
 
@@ -135,7 +166,7 @@ export async function render(root) {
       </div>`;
     contentArea.appendChild(roleRow);
 
-    // form grid (two columns)
+    // rest of profile form...
     const formGrid = document.createElement('div');
     formGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
     contentArea.appendChild(formGrid);
@@ -179,7 +210,6 @@ export async function render(root) {
       }
     });
 
-    // useUnsavedHelper expects a DOM element with addEventListener; pass the container
     try {
       useUnsavedHelper(contentArea);
     } catch (e) {
@@ -187,13 +217,13 @@ export async function render(root) {
     }
   }
 
-  // ACCOUNTS tab rendering
+  // ACCOUNTS tab (same as before) ------------------------------------------------
   let bankCodes = [];
   async function loadBankCodes() {
     if (payments && typeof payments.listBankCodes === 'function') {
       try {
-        const res = await payments.listBankCodes();
-        bankCodes = res.data || [];
+        const res = await payments.listPaymentAccounts?.() ?? await payments.listBankCodes?.();
+        bankCodes = (res && res.data) ? res.data : [];
         return;
       } catch(e){}
     }
@@ -220,7 +250,6 @@ export async function render(root) {
     wrap.className = 'grid md:grid-cols-2 gap-4';
     contentArea.appendChild(wrap);
 
-    // Left: list of accounts (box)
     const left = document.createElement('div');
     left.className = 'border rounded p-3 bg-slate-50 min-h-[220px]';
     if (!accounts.length) {
@@ -249,7 +278,6 @@ export async function render(root) {
     }
     wrap.appendChild(left);
 
-    // Right: account form (two-row horizontal form)
     const right = document.createElement('div'); right.className='bg-white border rounded p-3';
     wrap.appendChild(right);
     renderAccountForm(selectedAccount, right);
@@ -307,12 +335,10 @@ export async function render(root) {
       </div>
     `;
 
-    // pass an element (form inside container if exists, otherwise container itself)
     const watchedEl = container.querySelector('form') || container;
     try {
       useUnsavedHelper(watchedEl);
     } catch (e) {
-      // fallback: if helper misbehaves, ignore silently (prevents crash)
       console.warn('useUnsavedHelper failed', e);
     }
 
@@ -390,8 +416,6 @@ export async function render(root) {
 // attach render to the form element for backward compatibility
 form.render = render;
 
-// Named helper exports so callers who import the module namespace can call these directly:
-// e.g. const m = await import('...'); m.addEventListener(...)
 export function addEventListener(...args) { return form.addEventListener(...args); }
 export function removeEventListener(...args) { return form.removeEventListener(...args); }
 export function dispatchEvent(...args) { return form.dispatchEvent(...args); }
