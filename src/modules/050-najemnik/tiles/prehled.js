@@ -5,7 +5,8 @@ import { formatDate } from '/src/app/utils.js';
 export async function render(root) {
   root.innerHTML = '<h2>Všichni nájemníci</h2>';
   const profileId = (window.currentUser && window.currentUser.id) || null;
-  const { data, error } = await listSubjects({ role: 'najemnik', profileId, limit: 500 });
+  // POZOR: odstraněn role filter -> ukáže všechny subjekty přiřazené k profilu (osoba, firma, ...)
+  const { data, error } = await listSubjects({ profileId, limit: 500 });
   if (error) {
     root.innerHTML += `<div class="error">Chyba: ${error.message || JSON.stringify(error)}</div>`;
     return;
