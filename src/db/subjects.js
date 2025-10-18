@@ -1,18 +1,45 @@
 // src/db/subjects.js
 // DB helpery pro "subjects" / subjekty (pronajímatel, nájemník, zástupce, ...)
+// Používá Supabase Auth (auth.uid()) jako výchozí identitu, pokud není předán profileId.
 // Závisí na existenci /src/supabase.js exportujícího klienta `supabase`.
 
 import { supabase } from '/src/supabase.js';
 
+/** Helper: zjistí aktuální auth UID (supabase user id) nebo vrátí null */
+async function getAuthUid() {
+  try {
+    // preferovat globální window.currentUser pokud existuje (starší části aplikace)
+    if (typeof window !== 'undefined' && window.currentUser && window.currentUser.id) {
+      return window.currentUser.id;
+    }
+    // moderní supabase client
+    if (supabase && supabase.auth && typeof supabase.auth.getUser === 'function') {
+      const res = await supabase.auth.getUser();
+      if (res && res.data && res.data.user && res.data.user.id) return res.data.user.id;
+    }
+    // fallback - supabase.auth.user (starší verze)
+    if (supabase && supabase.auth && typeof supabase.auth.user === 'function') {
+      const u = supabase.auth.user();
+      if (u && u.id) return u.id;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return null;
+}
+
 /**
  * listSubjects(options)
  * options: { q, type, role, profileId, limit, offset, orderBy }
- * - pokud profileId je zadáno, vrací pouze subjekty spojené přes user_subjects
+ * - pokud profileId není zadáno, použije se aktuální auth.uid()
  */
 export async function listSubjects(options = {}) {
-  const { q, type, role, profileId, limit = 50, offset = 0, orderBy = 'display_name' } = options;
+  const { q, type, role, profileId: pProfileId, limit = 50, offset = 0, orderBy = 'display_name' } = options;
 
   try {
+    let profileId = pProfileId;
+    if (!profileId) profileId = await getAuthUid();
+
     // pokud chceme pouze subjekty spojené s profileId -> nejprve vyber subject_id
     if (profileId) {
       const { data: linkRows, error: linkErr } = await supabase
@@ -25,7 +52,7 @@ export async function listSubjects(options = {}) {
       const ids = (linkRows || []).map(r => r.subject_id).filter(Boolean);
       if (ids.length === 0) return { data: [], error: null };
 
-      let query = supabase.from('subjects').select('*').in('id', ids).order(orderBy, { ascending: true }).limit(limit).range(offset, offset + limit - 1);
+      let query = supabase.from('subjects').select('*').in('id', ids).order(orderBy, { ascending: true }).range(offset, offset + limit - 1);
 
       if (type) query = query.eq('typ_subjektu', type);
       if (role) query = query.eq('role', role);
@@ -38,8 +65,8 @@ export async function listSubjects(options = {}) {
       return { data, error };
     }
 
-    // bez profileId - obecný seznam (můžeš ho omezit role/type nebo q)
-    let query = supabase.from('subjects').select('*').order(orderBy, { ascending: true }).limit(limit).range(offset, offset + limit - 1);
+    // bez profileId - obecný seznam (může vrátit i všechny subjekty, pokud to povolíte)
+    let query = supabase.from('subjects').select('*').order(orderBy, { ascending: true }).range(offset, offset + limit - 1);
 
     if (type) query = query.eq('typ_subjektu', type);
     if (role) query = query.eq('role', role);
@@ -99,16 +126,15 @@ export async function upsertSubject(payload = {}) {
 
     // vytvoříme "data" – zkopírujeme payload a odstraníme hlavní klíče
     const data = { ...(p.data || {}) };
-    // odstraň klíče obsažené v main z data
+    // odstraň klíče obsažené v main z data a z původního payloadu
     const mainKeys = ['id','typ_subjektu','type','role','display_name','primary_email','email','primary_phone','telefon','country','stat','city','mesto','zip','psc','street','ulice','cislo_popisne','house_number','ico','dic','zastupce_id','zastupuje_id','owner_id'];
     mainKeys.forEach(k => { if (k in data) delete data[k]; if (k in p) delete p[k]; });
 
-    // sloučit zbytek payloadu do data (není to destruktivní)
+    // sloučit zbytek payloadu do data
     Object.assign(data, p);
 
     const row = { ...main, data };
 
-    // Supabase upsert: pokud je id povoleno změnit, upsert provede update/insert podle PK
     const { data: result, error } = await supabase
       .from('subjects')
       .upsert(row, { returning: 'representation' });
@@ -120,12 +146,17 @@ export async function upsertSubject(payload = {}) {
 }
 
 /**
- * assignSubjectToProfile(profileId, subjectId, roleInSubject)
+ * assignSubjectToProfile(subjectId, profileId?, roleInSubject)
+ * - pokud profileId není poskytnut, použije aktuální auth.uid()
  */
-export async function assignSubjectToProfile(profileId, subjectId, roleInSubject = 'owner') {
-  if (!profileId || !subjectId) return { data: null, error: new Error('profileId and subjectId required') };
+export async function assignSubjectToProfile(subjectId, profileId = null, roleInSubject = 'owner') {
+  if (!subjectId) return { data: null, error: new Error('subjectId required') };
   try {
-    const payload = { profile_id: profileId, subject_id: subjectId, role_in_subject: roleInSubject };
+    let pid = profileId;
+    if (!pid) pid = await getAuthUid();
+    if (!pid) return { data: null, error: new Error('profileId or auth uid required') };
+
+    const payload = { profile_id: pid, subject_id: subjectId, role_in_subject: roleInSubject };
     const { data, error } = await supabase.from('user_subjects').insert(payload).select().single();
     return { data, error };
   } catch (e) {
@@ -134,12 +165,16 @@ export async function assignSubjectToProfile(profileId, subjectId, roleInSubject
 }
 
 /**
- * unassignSubjectFromProfile(profileId, subjectId)
+ * unassignSubjectFromProfile(subjectId, profileId?)
  */
-export async function unassignSubjectFromProfile(profileId, subjectId) {
-  if (!profileId || !subjectId) return { data: null, error: new Error('profileId and subjectId required') };
+export async function unassignSubjectFromProfile(subjectId, profileId = null) {
+  if (!subjectId) return { data: null, error: new Error('subjectId required') };
   try {
-    const { data, error } = await supabase.from('user_subjects').delete().match({ profile_id: profileId, subject_id: subjectId });
+    let pid = profileId;
+    if (!pid) pid = await getAuthUid();
+    if (!pid) return { data: null, error: new Error('profileId or auth uid required') };
+
+    const { data, error } = await supabase.from('user_subjects').delete().match({ profile_id: pid, subject_id: subjectId });
     return { data, error };
   } catch (e) {
     return { data: null, error: e };
