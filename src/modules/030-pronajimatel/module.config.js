@@ -1,7 +1,7 @@
 // module.config.js — manifest pro modul "Pronajímatel"
 export async function getManifest() {
   return {
-    id: '030a-pronajimatel',
+    id: '030-pronajimatel',
     title: 'Pronajímatel',
     icon: 'home',
     defaultTile: 'prehled',
