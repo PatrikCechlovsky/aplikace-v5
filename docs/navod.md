@@ -200,7 +200,18 @@ Každý formulář ukládá pomocí `updateProfile(profile.id, payload)` a po us
 - [ ] Privacy: Marketing consent + log
 
 ---
-
+### TODO: Dynamické skrývání prázdných položek v sidebaru
+- Cíl: v sidebaru nezobrazovat konkrétní dlaždice/podsekce (např. "Spolek"), pokud pro přihlášeného uživatele neexistují žádné subjekty daného typu.
+- DB: použít listSubjects({ type, profileId, limit: 1 }) pro kontrolu existence.
+- UI:
+  - při generování sidebaru pro každý modul načíst počet existujících subjektů pro daný typ (nebo pouze boolean existence).
+  - pokud count === 0 → při renderu sidebaru skryj tu dlaždici.
+  - optimalizace: cache výsledky a invaliduj při vytvoření/odstranění subjektu.
+- Poznámky:
+  - implementace by měla brát ohled na RLS (zavolat jako přihlášený uživatel).
+  - optional: serverless endpoint, který vrátí booleans pro více typů najednou (efektivnější při větším počtu modulů).
+- Priorita: později (po stabilizaci formulářů a ARES integrace).
+- 
 ## Další kroky (co teď navrhuju)
 Vyber prosím JEDNU z následujících akcí, já připravím přesný patch (soubor nebo SQL), který vložíš a otestuješ:
 - A) SQL migrace: přidat `preferences jsonb` + `phone` + `avatar_url` do `profiles`.
