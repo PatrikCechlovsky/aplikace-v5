@@ -18,7 +18,7 @@ const TILES = [
 export async function render(root) {
   root.innerHTML = '<h2>Nový subjekt — vyber typ</h2><div class="tiles-row" style="display:flex;gap:12px;flex-wrap:wrap"></div>';
   const row = root.querySelector('.tiles-row');
-  const moduleId = getModuleIdFromHash() || '030a-pronajimatel';
+  const moduleId = getModuleIdFromHash() || '030-pronajimatel';
 
   TILES.forEach(t => {
     const el = document.createElement('button');
