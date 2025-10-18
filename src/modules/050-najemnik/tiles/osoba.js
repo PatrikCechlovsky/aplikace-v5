@@ -4,7 +4,8 @@ import { listSubjects } from '/src/db/subjects.js';
 export async function render(root) {
   root.innerHTML = '<h2>Osoby</h2>';
   const profileId = (window.currentUser && window.currentUser.id) || null;
-  const { data, error } = await listSubjects({ role: 'najemnik', type: 'osoba', profileId, limit: 500 });
+  // bez role: zobrazí všechny 'osoba' subjekty, které má uživatel přiřazené
+  const { data, error } = await listSubjects({ type: 'osoba', profileId, limit: 500 });
   if (error) {
     root.innerHTML += `<div class="error">Chyba: ${error.message || error}</div>`;
     return;
