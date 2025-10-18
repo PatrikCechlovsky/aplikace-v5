@@ -1,30 +1,16 @@
+// module.config.js — manifest pro modul "Pronajímatel"
 export async function getManifest() {
   return {
-    id: "030-pronajimatel",
-    title: "Pronajímatel",
-    icon: "home",
+    id: '030a-pronajimatel',
+    title: 'Pronajímatel',
+    icon: 'home',
+    defaultTile: 'prehled',
     tiles: [
-      {
-        id: "detail",
-        title: "Detail",
-        icon: "tile",
-        desc: "Formulář"
-      },
-      {
-        id: "prehled",
-        title: "Přehled",
-        icon: "list",
-        desc: "Seznam"
-      }
+      { id: 'prehled', title: 'Přehled', icon: 'list' },
+      { id: 'seznam', title: 'Seznam', icon: 'list' }
     ],
     forms: [
-      {
-        id: "novy",
-        title: "Nový / Pozvat",
-        icon: "form",
-        desc: "Formulář"
-      }
-    ],
-    defaultTile: "prehled"
-  }
+      { id: 'form', title: 'Formulář', icon: 'form' }
+    ]
+  };
 }
