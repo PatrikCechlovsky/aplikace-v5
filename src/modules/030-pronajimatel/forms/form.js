@@ -7,6 +7,7 @@ import { renderForm } from '/src/ui/form.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { getSubject, upsertSubject } from '/src/db/subjects.js';
 import { toast } from '/src/ui/commonActions.js';
+import { icon } from '/src/ui/icons.js';
 
 // TYPE_SCHEMAS tvořeny podle excelu / tvého návrhu
 const TYPE_SCHEMAS = {
@@ -14,7 +15,7 @@ const TYPE_SCHEMAS = {
     { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
     { key: 'jmeno', label: 'Křestní jméno', type: 'text' },
     { key: 'prijmeni', label: 'Příjmení', type: 'text' },
-    { key: 'typ_dokladu', label: 'Typ dokladu', type: 'select', options: [{value:'op',label:'OP'},{value:'pas',label:'Pas'},{value:'rid',label:'ŘP'}] },
+    { key: 'typ_dokladu', label: 'Typ dokladu', type: 'select', options: [{value:'op',label:'Občanský průkaz'},{value:'pas',label:'Pas'},{value:'rid',label:'ŘP'}] },
     { key: 'cislo_dokladu', label: 'Číslo dokladu', type: 'text' },
     { key: 'telefon', label: 'Telefon', type: 'text' },
     { key: 'email', label: 'E-mail', type: 'email' },
@@ -64,6 +65,15 @@ const TYPE_SCHEMAS = {
   ]
 };
 
+const TYPE_LABELS = {
+  osoba: 'Osoba',
+  osvc: 'OSVČ',
+  firma: 'Firma',
+  spolek: 'Spolek / Skupina',
+  stat: 'Státní instituce',
+  zastupce: 'Zástupce'
+};
+
 function getModuleIdFromHash() {
   try {
     const m = (location.hash || '').match(/#\/m\/([^\/]+)/);
@@ -78,23 +88,34 @@ export async function render(root, params = {}) {
 
   // načíst existující data pokud editujeme
   let initial = {};
+  const moduleId = params?.module || getModuleIdFromHash();
+  const typeLabel = TYPE_LABELS[type] || type;
+
+  // zobrazit nad formulářem jaký typ zakládáme
+  const header = document.createElement('div');
+  header.className = 'mb-4';
+  header.innerHTML = `<h2 class="text-lg font-semibold">${icon('tile')} Nový subjekt — ${typeLabel}</h2>`;
+  root.appendChild(header);
+
   if (params?.id) {
     const { data, error } = await getSubject(params.id);
     if (error) {
-      root.innerHTML = `<div class="error">Chyba při načtení: ${error.message || error}</div>`;
+      root.innerHTML += `<div class="error">Chyba při načtení: ${error.message || error}</div>`;
       return;
     }
     initial = data || {};
   } else {
-    initial = { typ_subjektu: type, role: params?.role || (getModuleIdFromHash()?.startsWith('050') ? 'najemnik' : 'pronajimatel') };
+    initial = { typ_subjektu: type, role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel') };
   }
 
   renderForm(root, schema, initial, async (values) => {
-    const inferredRole = params?.role || (getModuleIdFromHash()?.startsWith('050') ? 'najemnik' : 'pronajimatel');
+    const inferredRole = params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel');
     const payload = {
       ...values,
       typ_subjektu: type,
       role: inferredRole,
+      // přidat modul odkud vzniklo (pokud je k dispozici)
+      source_module: moduleId || params?.module || null,
       display_name: (values.display_name && values.display_name.trim()) ||
                     ((values.jmeno || values.prijmeni) ? `${values.jmeno || ''} ${values.prijmeni || ''}`.trim() : values.primary_email || '')
     };
@@ -106,8 +127,10 @@ export async function render(root, params = {}) {
       return false;
     }
     toast('Uloženo', 'success');
-    const moduleId = params?.module || getModuleIdFromHash();
-    if (moduleId) window.navigateTo?.(`#/m/${moduleId}/t/prehled`);
+    if (moduleId) {
+      if (typeof window.navigateTo === 'function') window.navigateTo(`#/m/${moduleId}/t/prehled`);
+      else location.hash = `#/m/${moduleId}/t/prehled`;
+    }
     return true;
   });
 
