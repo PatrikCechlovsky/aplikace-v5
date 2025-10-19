@@ -1,38 +1,69 @@
-// Shared form (krok1) — obsahuje guard: pokud není ani type ani id, přesměruje na chooser.
-// Dále vykreslí formulář (shared) bez submit tlačítka (uložení přes commonActions).
+// src/modules/030-pronajimatel/forms/form.js
+// Shared dynamic form — krok1 + krok2 (guard + prefill z profilu)
 import { renderForm } from '/src/ui/form.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { renderCommonActions, toast } from '/src/ui/commonActions.js';
 import { getSubject, upsertSubject } from '/src/db/subjects.js';
+import { getProfile } from '/src/db.js';
 import { icon } from '/src/ui/icons.js';
 import { setUnsaved } from '/src/app.js';
 import { navigateTo } from '/src/app.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
+import { supabase } from '/src/supabase.js';
 
-// Minimální schémata pro krok1 (plné doplnění v dalším kroku)
+// Minimální TYPE_SCHEMAS (plné schéma doplníme v dalším kroku)
 const TYPE_SCHEMAS = {
   osoba: [
     { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
     { key: 'jmeno', label: 'Křestní jméno', type: 'text' },
-    { key: 'prijmeni', label: 'Příjmení', type: 'text' }
+    { key: 'prijmeni', label: 'Příjmení', type: 'text' },
+    { key: 'typ_dokladu', label: 'Typ dokladu', type: 'select', options: [{value:'op',label:'Občanský průkaz'},{value:'pas',label:'Pas'},{value:'rid',label:'ŘP'}] },
+    { key: 'cislo_dokladu', label: 'Číslo dokladu', type: 'text' },
+    { key: 'telefon', label: 'Telefon', type: 'text' },
+    { key: 'primary_email', label: 'E-mail', type: 'email' },
+    { key: 'street', label: 'Ulice', type: 'text' },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
+    { key: 'city', label: 'Město', type: 'text' },
+    { key: 'zip', label: 'PSČ', type: 'text' }
   ],
   osvc: [
     { key: 'display_name', label: 'Jméno / Firma', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' }
+    { key: 'ico', label: 'IČO', type: 'text' },
+    { key: 'dic', label: 'DIČ', type: 'text' },
+    { key: 'telefon', label: 'Telefon', type: 'text' },
+    { key: 'primary_email', label: 'E-mail', type: 'email' },
+    { key: 'street', label: 'Ulice', type: 'text' },
+    { key: 'city', label: 'Město', type: 'text' },
+    { key: 'zip', label: 'PSČ', type: 'text' }
   ],
   firma: [
     { key: 'display_name', label: 'Název firmy', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' }
+    { key: 'ico', label: 'IČO', type: 'text' },
+    { key: 'dic', label: 'DIČ', type: 'text' },
+    { key: 'primary_phone', label: 'Telefon', type: 'text' },
+    { key: 'primary_email', label: 'E-mail', type: 'email' },
+    { key: 'street', label: 'Ulice', type: 'text' },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
+    { key: 'city', label: 'Město', type: 'text' },
+    { key: 'zip', label: 'PSČ', type: 'text' },
+    { key: 'bankovni_ucet', label: 'Bankovní účet / číslo', type: 'text' }
   ],
   spolek: [
-    { key: 'display_name', label: 'Název spolku', type: 'text', required: true }
+    { key: 'display_name', label: 'Název spolku', type: 'text', required: true },
+    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' },
+    { key: 'telefon', label: 'Telefon', type: 'text' }
   ],
   stat: [
-    { key: 'display_name', label: 'Organizace', type: 'text', required: true }
+    { key: 'display_name', label: 'Organizace', type: 'text', required: true },
+    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' },
+    { key: 'street', label: 'Ulice', type: 'text' },
+    { key: 'city', label: 'Město', type: 'text' }
   ],
   zastupce: [
     { key: 'display_name', label: 'Jméno zástupce', type: 'text', required: true },
-    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text' }
+    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text' },
+    { key: 'telefon', label: 'Telefon', type: 'text' },
+    { key: 'primary_email', label: 'E-mail', type: 'email' }
   ]
 };
 
@@ -65,6 +96,22 @@ function grabValues(root, schema) {
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
   }
   return obj;
+}
+
+// Map profile data to initial subject fields
+function mapProfileToInitial(profile = {}) {
+  return {
+    display_name: profile.display_name || ((profile.first_name || profile.last_name) ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '') || '',
+    jmeno: profile.first_name || '',
+    prijmeni: profile.last_name || '',
+    primary_email: profile.email || profile.primary_email || '',
+    primary_phone: profile.phone || profile.primary_phone || '',
+    street: profile.street || '',
+    cislo_popisne: profile.house_number || profile.cislo_popisne || '',
+    city: profile.city || '',
+    zip: profile.zip || '',
+    ico: profile.ico || ''
+  };
 }
 
 export async function render(root, params = {}) {
@@ -118,10 +165,40 @@ export async function render(root, params = {}) {
     }
     initial = data || {};
   } else {
-    initial = { typ_subjektu: type, role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel') };
+    // krok2: prefill z profilu (pokud existuje)
+    let profileData = {};
+    try {
+      // prefer window.currentUser if available
+      let uid = window.currentUser?.id;
+      if (!uid) {
+        // Supabase getUser
+        try {
+          const { data: userResp } = await supabase.auth.getUser();
+          uid = userResp?.data?.user?.id || userResp?.user?.id || null;
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (uid) {
+        const { data: p, error: pErr } = await getProfile(uid);
+        if (!pErr && p) profileData = p;
+      }
+    } catch (e) {
+      // ignore profile load errors
+      profileData = {};
+    }
+
+    // mapovat profilová data + respektovat params.preserved (pokud přepínáme typ)
+    const fromProfile = mapProfileToInitial(profileData);
+    initial = {
+      typ_subjektu: type,
+      role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel'),
+      ...fromProfile,
+      ...(params?.preserved || {})
+    };
   }
 
-  // commonActions handlers (minimal stubs for krok1)
+  // commonActions handlers
   const handlers = {};
   handlers.onSave = async () => {
     setUnsaved(true);
