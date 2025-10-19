@@ -1,5 +1,7 @@
 // src/modules/030-pronajimatel/forms/form.js
-// Shared dynamic form — krok1 + krok2 (guard + prefill z profilu)
+// Shared dynamic form — krok1 + krok2 (guard + tlačítko "Vyplnit z mého účtu")
+// Pozn.: automatické naplnění profilovými daty bylo odstraněno; uživatel musí stisknout tlačítko.
+
 import { renderForm } from '/src/ui/form.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { renderCommonActions, toast } from '/src/ui/commonActions.js';
@@ -98,8 +100,8 @@ function grabValues(root, schema) {
   return obj;
 }
 
-// Map profile data to initial subject fields
-function mapProfileToInitial(profile = {}) {
+// mapování profilových dat na pole formuláře (pouze pro tlačítko Fill)
+function mapProfileToValues(profile = {}) {
   return {
     display_name: profile.display_name || ((profile.first_name || profile.last_name) ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '') || '',
     jmeno: profile.first_name || '',
@@ -112,6 +114,18 @@ function mapProfileToInitial(profile = {}) {
     zip: profile.zip || '',
     ico: profile.ico || ''
   };
+}
+
+// safe setter do polí formuláře (najde input/select/textarea a nastaví hodnotu)
+function setFormValues(root, values) {
+  for (const key of Object.keys(values)) {
+    const el = root.querySelector(`[name="${key}"]`);
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = !!values[key];
+    else el.value = values[key] ?? '';
+    // dispatch input event to trigger form internals
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 }
 
 export async function render(root, params = {}) {
@@ -145,11 +159,19 @@ export async function render(root, params = {}) {
     ]);
   } catch (e) { /* ignore if crumb missing */ }
 
-  // header + actions container
+  // header + actions container (přidáme tlačítko "Vyplnit z mého účtu")
   const header = document.createElement('div');
-  header.className = 'mb-4';
-  header.innerHTML = `<div class="flex items-center gap-3"><span style="font-size:20px">${icon('form')}</span><div><h2 class="text-lg font-semibold">Formulář — ${typeLabel}</h2><div class="text-sm text-slate-500">Modul: ${moduleId}</div></div></div>`;
+  header.className = 'mb-4 flex items-center justify-between';
+  header.innerHTML = `<div class="flex items-center gap-3"><span style="font-size:20px">${icon('form')}</span><div><h2 class="text-lg font-semibold">Formulář — ${typeLabel}</h2><div class="text-sm text-slate-500">Modul: ${moduleId}</div></div></div><div id="form-actions-extra" class="flex items-center gap-2"></div>`;
   root.appendChild(header);
+
+  // extra actions area (tlačítko pro načtení z profilu)
+  const extraActions = header.querySelector('#form-actions-extra');
+  const fillBtn = document.createElement('button');
+  fillBtn.type = 'button';
+  fillBtn.className = 'inline-flex items-center gap-2 px-3 py-2 rounded-md border text-sm';
+  fillBtn.innerHTML = `${icon('user')} Vyplnit z mého účtu`;
+  extraActions.appendChild(fillBtn);
 
   const actionsWrap = document.createElement('div');
   actionsWrap.id = 'commonactions';
@@ -165,37 +187,8 @@ export async function render(root, params = {}) {
     }
     initial = data || {};
   } else {
-    // krok2: prefill z profilu (pokud existuje)
-    let profileData = {};
-    try {
-      // prefer window.currentUser if available
-      let uid = window.currentUser?.id;
-      if (!uid) {
-        // Supabase getUser
-        try {
-          const { data: userResp } = await supabase.auth.getUser();
-          uid = userResp?.data?.user?.id || userResp?.user?.id || null;
-        } catch (e) {
-          // ignore
-        }
-      }
-      if (uid) {
-        const { data: p, error: pErr } = await getProfile(uid);
-        if (!pErr && p) profileData = p;
-      }
-    } catch (e) {
-      // ignore profile load errors
-      profileData = {};
-    }
-
-    // mapovat profilová data + respektovat params.preserved (pokud přepínáme typ)
-    const fromProfile = mapProfileToInitial(profileData);
-    initial = {
-      typ_subjektu: type,
-      role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel'),
-      ...fromProfile,
-      ...(params?.preserved || {})
-    };
+    // new record - nezaplníme automaticky (uživatel použije tlačítko)
+    initial = { typ_subjektu: type, role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel'), ...(params?.preserved || {}) };
   }
 
   // commonActions handlers
@@ -245,6 +238,42 @@ export async function render(root, params = {}) {
     readOnly: false,
     showSubmit: false,
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' }
+  });
+
+  // implementace tlačítka "Vyplnit z mého účtu"
+  fillBtn.addEventListener('click', async () => {
+    fillBtn.disabled = true;
+    fillBtn.textContent = 'Načítám…';
+    try {
+      // zkus získat uid
+      let uid = window.currentUser?.id;
+      if (!uid) {
+        try {
+          const { data: userResp } = await supabase.auth.getUser();
+          uid = userResp?.data?.user?.id || userResp?.user?.id || null;
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (!uid) {
+        alert('Nelze zjistit přihlášeného uživatele.');
+        return;
+      }
+      const { data: profile, error } = await getProfile(uid);
+      if (error || !profile) {
+        alert('Nelze načíst profil uživatele: ' + (error?.message || 'žádná data'));
+        return;
+      }
+      const mapped = mapProfileToValues(profile);
+      setFormValues(root, mapped);
+      toast('Formulář naplněn z mého účtu', 'success');
+    } catch (e) {
+      console.error(e);
+      alert('Chyba při načítání profilu.');
+    } finally {
+      fillBtn.disabled = false;
+      fillBtn.innerHTML = `${icon('user')} Vyplnit z mého účtu`;
+    }
   });
 
   const formEl = root.querySelector('form');
