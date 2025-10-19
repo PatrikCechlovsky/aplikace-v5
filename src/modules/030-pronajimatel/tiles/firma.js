@@ -14,7 +14,7 @@ function escapeHtml(s='') {
 }
 
 export async function render(root) {
-  // breadcrumb: Domů › Pronajímatel › Přehled 030i050 › Firma (s ikonou)
+  // breadcrumb: Domů › Pronajímatel › Přehled › Firma (s ikonou)
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home',  label: 'Domů', href: '#/' },
