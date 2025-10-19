@@ -1,10 +1,9 @@
 export async function getManifest() {
   return {
-    id: '030-pronajimatel',
-    title: 'Pronajímatel',
-    icon: 'home',
+    id: '050-najemnik',
+    title: 'Nájemník',
+    icon: 'users',
     defaultTile: 'prehled',
-    // tiles jsou položky v levém menu, FORM NEPATŘÍ mezi ně (formy jsou v sekci forms)
     tiles: [
       { id: 'prehled', title: 'Všichni', icon: 'list' },
       { id: 'osoba', title: 'Osoba', icon: 'person' },
@@ -12,12 +11,10 @@ export async function getManifest() {
       { id: 'firma', title: 'Firma', icon: 'building' },
       { id: 'spolek', title: 'Spolek / Skupina', icon: 'people' },
       { id: 'stat', title: 'Státní instituce', icon: 'bank' },
-      { id: 'zastupce', title: 'Zástupci', icon: 'handshake' },
-      { id: 'novy', title: 'Nový subjekt', icon: 'add' }
+      { id: 'zastupce', title: 'Zástupci', icon: 'handshake' }
     ],
-    // sem patří formy (nezobrazují se jako běžné menu-tile)
     forms: [
-      { id: 'chooser', title: 'Nový subjekt', icon: 'grid' },
+      { id: 'chooser', title: 'Nový nájemník', icon: 'grid' },
       { id: 'form', title: 'Formulář', icon: 'form' }
     ]
   };
