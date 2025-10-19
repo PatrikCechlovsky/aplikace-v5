@@ -14,7 +14,7 @@ function escapeHtml(s='') {
 }
 
 export async function render(root) {
-  // breadcrumb: Domů › Pronajímatel › Přehled › Firma (s ikonou)
+  // breadcrumb: Domů › Pronajímatel › Přehled 030i050 › Firma (s ikonou)
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home',  label: 'Domů', href: '#/' },
@@ -62,12 +62,10 @@ export async function render(root) {
       handlers: {
         onAdd: () => navigateTo('#/m/030-pronajimatel/f/chooser?type=firma'),
         onEdit: hasSel ? () => navigateTo(`#/m/030-pronajimatel/f/form?id=${selectedRow.id}&type=${selectedRow.typ_subjektu}`) : undefined,
-        onArchive: (perms.includes('archive') && hasSel) ? async () => {
-          alert('Archivace musí být implementována na serveru');
-        } : undefined,
+        onArchive: (perms.includes('archive') && hasSel) ? async () => alert('Archivace musí být implementována na serveru') : undefined,
         onAttach: hasSel ? () => showAttachmentsModal({ entity: 'subjects', entityId: selectedRow.id }) : undefined,
         onRefresh: () => render(root),
-        onHistory: hasSel ? () => alert('Historie subjektu - implementovat') : undefined
+        onHistory: hasSel ? () => showHistoryModal(async (id) => await (await import('/src/modules/030-pronajimatel/db.js')).getSubjectHistory(id), selectedRow.id) : undefined
       }
     });
   }
@@ -81,15 +79,6 @@ export async function render(root) {
       moduleId: '030-pronajimatel',
       filterValue,
       showFilter: true,
-      customHeader: ({ filterInputHtml }) => `
-        <div class="flex items-center gap-4">
-          ${filterInputHtml}
-          <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
-            <input type="checkbox" id="toggle-archived" />
-            Zobrazit archivované
-          </label>
-        </div>
-      `,
       onRowSelect: row => {
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
         drawActions();
@@ -100,16 +89,6 @@ export async function render(root) {
       }
     }
   });
-
-  // posluchač pro toggle archivovaných (jen refresh UI)
-  const tableRoot = root.querySelector('#subject-table');
-  if (tableRoot) {
-    tableRoot.addEventListener('change', (e) => {
-      if (e.target && e.target.id === 'toggle-archived') {
-        render(root);
-      }
-    });
-  }
 }
 
 export default { render };
