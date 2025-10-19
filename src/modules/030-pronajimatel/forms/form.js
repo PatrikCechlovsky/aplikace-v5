@@ -22,10 +22,6 @@ function formatCzechDate(dateStr) {
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
 
-const FIELDS_COMMON = [
-  // We'll build fields dynamically from TYPE_SCHEMAS for selected type
-];
-
 export async function render(root) {
   const { id, type: qtype, mode: modeParam } = getHashParams();
   const type = qtype || 'spolek';
@@ -64,7 +60,7 @@ export async function render(root) {
     { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
   ];
 
-  // Render form
+  // Render form (hide internal submit buttons - commonActions will render Save)
   renderForm(root, fields, data, async (values) => {
     // submit handler
     try {
@@ -86,7 +82,7 @@ export async function render(root) {
     }
   }, {
     readOnly: mode === 'read',
-    showSubmit: mode !== 'read',
+    showSubmit: false, // submit moved to commonActions
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
     sections
   });
