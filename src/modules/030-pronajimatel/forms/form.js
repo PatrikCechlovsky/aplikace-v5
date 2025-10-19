@@ -1,15 +1,19 @@
 // src/modules/030-pronajimatel/forms/form.js
 // Sdílený univerzální formulář pro všechny typy subjektů.
-// Dynamicky vykreslí pole podle TYPE_SCHEMAS a po uložení zavolá upsertSubject,
-// který nově automaticky přiřadí subjekt k přihlášenému uživateli.
+// - Dynamické schéma podle TYPE_SCHEMAS
+// - Form nemá vlastní "Uložit" tlačítko (showSubmit: false) — ukládá se přes commonActions (onSave)
+// - Po uložení volá upsertSubject (který už automaticky přiřadí subjekt k profilu)
 
 import { renderForm } from '/src/ui/form.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
+import { renderCommonActions } from '/src/ui/commonActions.js';
 import { getSubject, upsertSubject } from '/src/db/subjects.js';
 import { toast } from '/src/ui/commonActions.js';
 import { icon } from '/src/ui/icons.js';
+import { setUnsaved } from '/src/app.js';
+import { navigateTo } from '/src/app.js';
 
-// TYPE_SCHEMAS tvořeny podle excelu / tvého návrhu
+// TYPE_SCHEMAS — upraveno podle tvého spreadsheetu (základní verze)
 const TYPE_SCHEMAS = {
   osoba: [
     { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
@@ -81,26 +85,50 @@ function getModuleIdFromHash() {
   } catch (e) { return null; }
 }
 
+// získat parametry z hashe (type, id, role)
+function getHashParams() {
+  const q = (location.hash.split('?')[1] || '');
+  return Object.fromEntries(new URLSearchParams(q));
+}
+
+// čtení hodnot z formuláře (podobné grabValues v profil form)
+function grabValues(root, schema) {
+  const obj = {};
+  for (const f of schema) {
+    if (f.type === 'label') continue; // readonly label
+    const el = root.querySelector(`[name="${f.key}"]`);
+    if (!el) continue;
+    obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
+  }
+  return obj;
+}
+
 export async function render(root, params = {}) {
   root.innerHTML = '';
-  const type = params?.type || 'osoba';
+  const hash = getHashParams();
+  const type = params?.type || hash.type || 'osoba';
+  const id = params?.id || hash.id || null;
+  const moduleId = params?.module || getModuleIdFromHash() || (hash.role === 'najemnik' ? '050-najemnik' : '030-pronajimatel');
   const schema = TYPE_SCHEMAS[type] || TYPE_SCHEMAS['osoba'];
-
-  // načíst existující data pokud editujeme
-  let initial = {};
-  const moduleId = params?.module || getModuleIdFromHash();
   const typeLabel = TYPE_LABELS[type] || type;
 
-  // zobrazit nad formulářem jaký typ zakládáme
+  // header (typ nad formulářem)
   const header = document.createElement('div');
   header.className = 'mb-4';
-  header.innerHTML = `<h2 class="text-lg font-semibold">${icon('tile')} Nový subjekt — ${typeLabel}</h2>`;
+  header.innerHTML = `<div class="flex items-center gap-3"><span style="font-size:20px">${icon('tile')}</span><div><h2 class="text-lg font-semibold">Nový subjekt — ${typeLabel}</h2><div class="text-sm text-slate-500">Modul: ${moduleId}</div></div></div>`;
   root.appendChild(header);
 
-  if (params?.id) {
-    const { data, error } = await getSubject(params.id);
+  // area for common actions
+  const actionsWrap = document.createElement('div');
+  actionsWrap.id = 'commonactions';
+  root.appendChild(actionsWrap);
+
+  // načíst existující data pokud máme id (edit)
+  let initial = {};
+  if (id) {
+    const { data, error } = await getSubject(id);
     if (error) {
-      root.innerHTML += `<div class="error">Chyba při načtení: ${error.message || error}</div>`;
+      root.innerHTML += `<div class="p-2 text-red-600">Chyba při načtení záznamu: ${error.message || error}</div>`;
       return;
     }
     initial = data || {};
@@ -108,32 +136,75 @@ export async function render(root, params = {}) {
     initial = { typ_subjektu: type, role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel') };
   }
 
-  renderForm(root, schema, initial, async (values) => {
-    const inferredRole = params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel');
+  // commonActions handlers (save handled here)
+  const handlers = {};
+
+  handlers.onSave = async () => {
+    // set unsaved state from app
+    setUnsaved(true);
+    // přečíst aktuální hodnoty z DOM podle schema
+    const values = grabValues(root, schema);
+    // doplnit metainformace
     const payload = {
       ...values,
       typ_subjektu: type,
-      role: inferredRole,
-      // přidat modul odkud vzniklo (pokud je k dispozici)
-      source_module: moduleId || params?.module || null,
-      display_name: (values.display_name && values.display_name.trim()) ||
-                    ((values.jmeno || values.prijmeni) ? `${values.jmeno || ''} ${values.prijmeni || ''}`.trim() : values.primary_email || '')
+      role: initial.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel'),
+      source_module: moduleId || null,
+      // při editaci předej id
+      ...(id ? { id } : {})
     };
 
-    // Po uložení upsertSubject nyní automaticky přiřadí subjekt k profilu (pokud není payload.skipAssign = true)
-    const { data, error } = await upsertSubject(payload);
+    // volání DB helperu
+    const { data: saved, error } = await upsertSubject(payload);
     if (error) {
       toast('Chyba při ukládání: ' + (error.message || JSON.stringify(error)), 'error');
-      return false;
+      setUnsaved(false);
+      return;
     }
     toast('Uloženo', 'success');
+    setUnsaved(false);
+    // po ulozeni naviguj do přehledu modulu
     if (moduleId) {
-      if (typeof window.navigateTo === 'function') window.navigateTo(`#/m/${moduleId}/t/prehled`);
+      if (typeof navigateTo === 'function') navigateTo(`#/m/${moduleId}/t/prehled`);
       else location.hash = `#/m/${moduleId}/t/prehled`;
     }
-    return true;
+  };
+
+  handlers.onReject = () => {
+    if (moduleId) {
+      if (typeof navigateTo === 'function') navigateTo(`#/m/${moduleId}/t/prehled`);
+      else location.hash = `#/m/${moduleId}/t/prehled`;
+    } else history.back();
+  };
+
+  handlers.onAttach = () => {
+    // TODO: implement attachments modal for subjects
+    alert('Přílohy (zatím neimplementováno)');
+  };
+
+  handlers.onHistory = () => {
+    // TODO: pokud existuje historie subjektu, otevřít modal
+    alert('Historie (zatím neimplementováno)');
+  };
+
+  // akce: přizpůsobit, které ikony/akce ukázat
+  const moduleActions = id ? ['save', 'reject', 'attach', 'history'] : ['save', 'reject'];
+
+  // render common actions
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions,
+    userRole: window.currentUserRole || 'admin',
+    handlers
   });
 
+  // render samotného formuláře (bez submitu)
+  renderForm(root, schema, initial, async () => true, {
+    readOnly: false,
+    showSubmit: false,
+    layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' }
+  });
+
+  // use unsaved helper for the form
   const formEl = root.querySelector('form');
   if (formEl) useUnsavedHelper(formEl);
 }
