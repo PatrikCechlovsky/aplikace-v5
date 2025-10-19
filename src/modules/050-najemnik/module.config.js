@@ -5,7 +5,7 @@ export async function getManifest() {
     icon: 'users',
     defaultTile: 'prehled',
     tiles: [
-      { id: 'prehled', title: 'Všichni', icon: 'list' },
+      { id: 'prehled', title: 'Přehled', icon: 'list' },
       { id: 'osoba', title: 'Osoba', icon: 'person' },
       { id: 'osvc', title: 'OSVČ', icon: 'briefcase' },
       { id: 'firma', title: 'Firma', icon: 'building' },
