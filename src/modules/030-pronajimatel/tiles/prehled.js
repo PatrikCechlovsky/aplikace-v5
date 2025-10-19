@@ -14,14 +14,14 @@ function escapeHtml(s='') {
 }
 
 export async function render(root) {
-  // breadcrumb identické s 010
+  // breadcrumb
   try {
     setBreadcrumb(document.getElementById('crumb'), [
-      { icon: 'home',  label: 'Domů',      href: '#/' },
+      { icon: 'home',  label: 'Domů', href: '#/' },
       { icon: 'users', label: 'Pronajímatel', href: '#/m/030-pronajimatel' },
       { icon: 'list',  label: 'Přehled' }
     ]);
-  } catch (e) { /* ignore */ }
+  } catch (e) {}
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="subject-table"></div>`;
 
@@ -108,5 +108,4 @@ export async function render(root) {
     }
   });
 }
-
 export default { render };
