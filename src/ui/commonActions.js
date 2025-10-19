@@ -1,5 +1,6 @@
 // src/ui/commonActions.js
 // Kompaktní ikonové akce s kompatibilitou pro různé tvary permissions.
+// Přidán jednoduchý export `toast(message, type, opts)` pro kompatibilitu s formuláři.
 
 import { icon as uiIcon } from './icons.js';
 import { getAllowedActions } from '../security/permissions.js';
@@ -93,11 +94,6 @@ export function renderCommonActions(
   }
 
   // 4.5) defaultní inteligentní řazení (intuitivní pořadí)
-  // - uložit / potvrdit první
-  // - akutní / editace / přidat blízko začátku
-  // - pomocné (history, attach, refresh) uprostřed
-  // - nebezpečné akce (archive, delete) později
-  // - "zpět / zavřít" (reject/exit) vždy poslední
   const PREFERRED_ORDER = [
     'save', 'approve', 'add', 'edit', 'invite', 'send', 'attach', 'history',
     'refresh', 'search', 'print', 'export', 'import', 'archive', 'delete',
@@ -154,3 +150,58 @@ export function renderCommonActions(
 }
 
 export { CATALOG };
+
+/**
+ * Small exported toast helper for forms and other UI parts.
+ * - If your app already exposes window.showAppToast(...) it uses that.
+ * - Otherwise it renders a small DOM toast container with auto-dismiss.
+ */
+export function toast(message, type = 'info', opts = {}) {
+  try {
+    if (typeof window.showAppToast === 'function') {
+      // prefer app's native toast if available (keeps consistent UX)
+      window.showAppToast({ message, type, ...opts });
+      return true;
+    }
+
+    const containerId = 'app-toast-container';
+    let container = document.getElementById(containerId);
+    if (!container) {
+      container = document.createElement('div');
+      container.id = containerId;
+      container.style.position = 'fixed';
+      container.style.right = '18px';
+      container.style.top = '18px';
+      container.style.zIndex = 9999;
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.alignItems = 'flex-end';
+      document.body.appendChild(container);
+    }
+
+    const el = document.createElement('div');
+    el.textContent = message;
+    el.style.marginTop = '8px';
+    el.style.padding = '8px 12px';
+    el.style.borderRadius = '8px';
+    el.style.background = type === 'error' ? '#fee2e2' : '#ecfeff';
+    el.style.color = '#111827';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+    el.style.maxWidth = '360px';
+    el.style.fontSize = '13px';
+    el.style.lineHeight = '1.2';
+    container.appendChild(el);
+
+    setTimeout(() => {
+      el.style.transition = 'opacity 250ms ease';
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 260);
+    }, opts.duration || 3500);
+
+    return true;
+  } catch (e) {
+    // graceful fallback to console
+    try { console.log('toast:', type, message); } catch (e2) {}
+    return false;
+  }
+}
