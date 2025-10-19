@@ -14,7 +14,6 @@ function escapeHtml(s='') {
 }
 
 export async function render(root) {
-  // breadcrumb (shodně s 030 / 010)
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home',  label: 'Domů',      href: '#/' },
@@ -25,7 +24,6 @@ export async function render(root) {
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="subject-table"></div>`;
 
-  // načíst subjekty (listSubjects vrátí [] i když user nemá žádné přiřazení)
   const { data, error } = await listSubjects({ limit: 500 });
   if (error) {
     root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
@@ -59,11 +57,10 @@ export async function render(root) {
       moduleActions: ['add', 'edit', 'archive', 'attach', 'refresh', 'history'],
       userRole,
       handlers: {
-        // pro nájemníka otevíráme chooser, aby uživatel zvolil typ
         onAdd: () => navigateTo('#/m/050-najemnik/f/chooser'),
         onEdit: hasSel ? () => navigateTo(`#/m/050-najemnik/f/form?id=${selectedRow.id}&type=${selectedRow.typ_subjektu}`) : undefined,
         onArchive: (perms.includes('archive') && hasSel) ? async () => {
-          alert('Archivace (implementovat server-side)');
+          alert('Archivace musí být implementována na serveru');
         } : undefined,
         onAttach: hasSel ? () => showAttachmentsModal({ entity: 'subjects', entityId: selectedRow.id }) : undefined,
         onRefresh: () => render(root),
