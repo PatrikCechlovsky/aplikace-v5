@@ -1,10 +1,18 @@
+// safe chooser for 050: adds role=najemnik when navigating to form
+function safeNavigate(href) {
+  if (typeof window.navigateTo === 'function') {
+    try { window.navigateTo(href); return; } catch (e) { /* fallback */ }
+  }
+  location.hash = href;
+}
+
 const TILES = [
-  { id: 'osoba', label: 'Osoba', icon: 'person' },
-  { id: 'osvc', label: 'OSVČ', icon: 'briefcase' },
-  { id: 'firma', label: 'Firma', icon: 'building' },
-  { id: 'spolek', label: 'Spolek', icon: 'people' },
-  { id: 'stat', label: 'Státní instituce', icon: 'bank' },
-  { id: 'zastupce', label: 'Zástupce', icon: 'handshake' }
+  { id: 'osoba', label: 'Osoba' },
+  { id: 'osvc', label: 'OSVČ' },
+  { id: 'firma', label: 'Firma' },
+  { id: 'spolek', label: 'Spolek' },
+  { id: 'stat', label: 'Státní instituce' },
+  { id: 'zastupce', label: 'Zástupce' }
 ];
 
 export async function render(root) {
@@ -17,10 +25,9 @@ export async function render(root) {
     el.className = 'tile small';
     el.style.padding = '18px';
     el.style.minWidth = '140px';
-    el.innerHTML = `<div style="font-size:18px">${t.label}</div>`;
+    el.textContent = t.label;
     el.addEventListener('click', () => {
-      // navigate to module form with type and role=najemnik
-      window.navigateTo(`#/m/${moduleId}/f/form?type=${t.id}&role=najemnik`);
+      safeNavigate(`#/m/${moduleId}/f/form?type=${t.id}&role=najemnik`);
     });
     row.appendChild(el);
   });
