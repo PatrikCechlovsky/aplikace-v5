@@ -1,17 +1,23 @@
 // src/db/subjects.js
 // DB helpery pro "subjects" / subjekty (pronajímatel, nájemník, zástupce, ...)
+// Používá Supabase Auth (auth.uid()) jako výchozí identitu, pokud není předán profileId.
+// Závisí na existenci /src/supabase.js exportujícího klienta `supabase`.
+
 import { supabase } from '/src/supabase.js';
 
 /** Helper: zjistí aktuální auth UID (supabase user id) nebo vrátí null */
 async function getAuthUid() {
   try {
+    // preferovat globální window.currentUser pokud existuje (starší části aplikace)
     if (typeof window !== 'undefined' && window.currentUser && window.currentUser.id) {
       return window.currentUser.id;
     }
+    // moderní supabase client
     if (supabase && supabase.auth && typeof supabase.auth.getUser === 'function') {
       const res = await supabase.auth.getUser();
       if (res && res.data && res.data.user && res.data.user.id) return res.data.user.id;
     }
+    // fallback - supabase.auth.user (starší verze)
     if (supabase && supabase.auth && typeof supabase.auth.user === 'function') {
       const u = supabase.auth.user();
       if (u && u.id) return u.id;
@@ -51,6 +57,7 @@ export async function listSubjects(options = {}) {
       if (type) query = query.eq('typ_subjektu', type);
       if (role) query = query.eq('role', role);
       if (q) {
+        // jednoduché filtrování: hledáme v display_name nebo v emailu
         query = query.or(`ilike(display_name,%${q}%),ilike(primary_email,%${q}%)`);
       }
 
@@ -58,7 +65,7 @@ export async function listSubjects(options = {}) {
       return { data, error };
     }
 
-    // bez profileId - obecný seznam
+    // bez profileId - obecný seznam (může vrátit i všechny subjekty, pokud to povolíte)
     let query = supabase.from('subjects').select('*').order(orderBy, { ascending: true }).range(offset, offset + limit - 1);
 
     if (type) query = query.eq('typ_subjektu', type);
@@ -117,12 +124,14 @@ export async function upsertSubject(payload = {}) {
       dic: p.dic || null,
       zastupce_id: p.zastupce_id || null,
       zastupuje_id: p.zastupuje_id || null,
-      owner_id: p.owner_id || null
+      owner_id: p.owner_id || null,
+      // nově: module / zdroj (uloží se pokud existuje)
+      source_module: p.source_module || p.module || null
     };
 
     // vytvoříme "data" – zkopírujeme payload a odstraníme hlavní klíče
     const data = { ...(p.data || {}) };
-    const mainKeys = ['id','typ_subjektu','type','role','display_name','primary_email','email','primary_phone','telefon','country','stat','city','mesto','zip','psc','street','ulice','cislo_popisne','house_number','ico','dic','zastupce_id','zastupuje_id','owner_id'];
+    const mainKeys = ['id','typ_subjektu','type','role','display_name','primary_email','email','primary_phone','telefon','country','stat','city','mesto','zip','psc','street','ulice','cislo_popisne','house_number','ico','dic','zastupce_id','zastupuje_id','owner_id','source_module','module'];
     mainKeys.forEach(k => { if (k in data) delete data[k]; if (k in p) delete p[k]; });
 
     // sloučit zbytek payloadu do data
