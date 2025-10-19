@@ -16,7 +16,7 @@ function escapeHtml(s='') {
 export async function render(root) {
   try {
     setBreadcrumb(document.getElementById('crumb'), [
-      { icon: 'home',  label: 'Domů',      href: '#/' },
+      { icon: 'home',  label: 'Domů', href: '#/' },
       { icon: 'users', label: 'Nájemník', href: '#/m/050-najemnik' },
       { icon: 'list',  label: 'Přehled' }
     ]);
@@ -89,5 +89,4 @@ export async function render(root) {
     }
   });
 }
-
 export default { render };
