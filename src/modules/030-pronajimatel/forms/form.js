@@ -1,19 +1,16 @@
 // src/modules/030-pronajimatel/forms/form.js
-// Sdílený univerzální formulář pro všechny typy subjektů.
-// - Dynamické schéma podle TYPE_SCHEMAS
-// - Form nemá vlastní "Uložit" tlačítko (showSubmit: false) — ukládá se přes commonActions (onSave)
-// - Po uložení volá upsertSubject (který už automaticky přiřadí subjekt k profilu)
+// Shared dynamic form — celý soubor (vč. breadcrumb + commonActions + TYPE_SCHEMAS)
 
 import { renderForm } from '/src/ui/form.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
-import { renderCommonActions } from '/src/ui/commonActions.js';
+import { renderCommonActions, toast } from '/src/ui/commonActions.js';
 import { getSubject, upsertSubject } from '/src/db/subjects.js';
-import { toast } from '/src/ui/commonActions.js';
 import { icon } from '/src/ui/icons.js';
 import { setUnsaved } from '/src/app.js';
 import { navigateTo } from '/src/app.js';
+import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 
-// TYPE_SCHEMAS — upraveno podle tvého spreadsheetu (základní verze)
+// TYPE_SCHEMAS (dle excelu) — přizpůsobíme později podle finálního CSV/excelu
 const TYPE_SCHEMAS = {
   osoba: [
     { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
@@ -84,18 +81,15 @@ function getModuleIdFromHash() {
     return m ? m[1] : null;
   } catch (e) { return null; }
 }
-
-// získat parametry z hashe (type, id, role)
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
 }
 
-// čtení hodnot z formuláře (podobné grabValues v profil form)
 function grabValues(root, schema) {
   const obj = {};
   for (const f of schema) {
-    if (f.type === 'label') continue; // readonly label
+    if (f.type === 'label') continue;
     const el = root.querySelector(`[name="${f.key}"]`);
     if (!el) continue;
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
@@ -112,18 +106,28 @@ export async function render(root, params = {}) {
   const schema = TYPE_SCHEMAS[type] || TYPE_SCHEMAS['osoba'];
   const typeLabel = TYPE_LABELS[type] || type;
 
-  // header (typ nad formulářem)
+  // breadcrumb (jako v 010: Domů › Modul › Formulář › [jméno / Nový])
+  try {
+    const nameForCrumb = id ? ( (params?.title) || 'Uživatel' ) : `Nový ${typeLabel}`;
+    setBreadcrumb(document.getElementById('crumb'), [
+      { icon: 'home', label: 'Domů', href: '#/' },
+      { icon: (moduleId.startsWith('050') ? 'users' : 'users'), label: (moduleId.startsWith('050') ? 'Nájemník' : 'Pronajímatel'), href: `#/m/${moduleId}` },
+      { icon: 'form', label: 'Formulář' },
+      { icon: 'account', label: nameForCrumb }
+    ]);
+  } catch (e) {}
+
+  // header + actions container
   const header = document.createElement('div');
   header.className = 'mb-4';
-  header.innerHTML = `<div class="flex items-center gap-3"><span style="font-size:20px">${icon('tile')}</span><div><h2 class="text-lg font-semibold">Nový subjekt — ${typeLabel}</h2><div class="text-sm text-slate-500">Modul: ${moduleId}</div></div></div>`;
+  header.innerHTML = `<div class="flex items-center gap-3"><span style="font-size:20px">${icon('form')}</span><div><h2 class="text-lg font-semibold">Formulář — ${typeLabel}</h2><div class="text-sm text-slate-500">Modul: ${moduleId}</div></div></div>`;
   root.appendChild(header);
 
-  // area for common actions
   const actionsWrap = document.createElement('div');
   actionsWrap.id = 'commonactions';
   root.appendChild(actionsWrap);
 
-  // načíst existující data pokud máme id (edit)
+  // načíst data pokud edit
   let initial = {};
   if (id) {
     const { data, error } = await getSubject(id);
@@ -136,25 +140,18 @@ export async function render(root, params = {}) {
     initial = { typ_subjektu: type, role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel') };
   }
 
-  // commonActions handlers (save handled here)
+  // handlers pro commonActions
   const handlers = {};
-
   handlers.onSave = async () => {
-    // set unsaved state from app
     setUnsaved(true);
-    // přečíst aktuální hodnoty z DOM podle schema
     const values = grabValues(root, schema);
-    // doplnit metainformace
     const payload = {
       ...values,
       typ_subjektu: type,
       role: initial.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel'),
       source_module: moduleId || null,
-      // při editaci předej id
       ...(id ? { id } : {})
     };
-
-    // volání DB helperu
     const { data: saved, error } = await upsertSubject(payload);
     if (error) {
       toast('Chyba při ukládání: ' + (error.message || JSON.stringify(error)), 'error');
@@ -163,48 +160,34 @@ export async function render(root, params = {}) {
     }
     toast('Uloženo', 'success');
     setUnsaved(false);
-    // po ulozeni naviguj do přehledu modulu
     if (moduleId) {
       if (typeof navigateTo === 'function') navigateTo(`#/m/${moduleId}/t/prehled`);
       else location.hash = `#/m/${moduleId}/t/prehled`;
     }
   };
-
   handlers.onReject = () => {
     if (moduleId) {
       if (typeof navigateTo === 'function') navigateTo(`#/m/${moduleId}/t/prehled`);
       else location.hash = `#/m/${moduleId}/t/prehled`;
     } else history.back();
   };
+  handlers.onAttach = () => alert('Přílohy zatím neimplementováno');
+  handlers.onHistory = () => alert('Historie zatím neimplementováno');
 
-  handlers.onAttach = () => {
-    // TODO: implement attachments modal for subjects
-    alert('Přílohy (zatím neimplementováno)');
-  };
-
-  handlers.onHistory = () => {
-    // TODO: pokud existuje historie subjektu, otevřít modal
-    alert('Historie (zatím neimplementováno)');
-  };
-
-  // akce: přizpůsobit, které ikony/akce ukázat
   const moduleActions = id ? ['save', 'reject', 'attach', 'history'] : ['save', 'reject'];
 
-  // render common actions
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
     userRole: window.currentUserRole || 'admin',
     handlers
   });
 
-  // render samotného formuláře (bez submitu)
   renderForm(root, schema, initial, async () => true, {
     readOnly: false,
     showSubmit: false,
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' }
   });
 
-  // use unsaved helper for the form
   const formEl = root.querySelector('form');
   if (formEl) useUnsavedHelper(formEl);
 }
