@@ -1,7 +1,6 @@
 // src/modules/030-pronajimatel/forms/form.js
-// Shared dynamic form — krok1 + krok2 (guard + tlačítko "Vyplnit z mého účtu")
-// Pozn.: automatické naplnění profilovými daty bylo odstraněno; uživatel musí stisknout tlačítko.
-
+// Shared dynamic form — krok3: přidána ARES tlačítka pro typy s IČO (firma, osvc)
+// Tento soubor rozšiřuje předchozí verzi – přidej/nahraď přesně v repu.
 import { renderForm } from '/src/ui/form.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { renderCommonActions, toast } from '/src/ui/commonActions.js';
@@ -12,8 +11,9 @@ import { setUnsaved } from '/src/app.js';
 import { navigateTo } from '/src/app.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { supabase } from '/src/supabase.js';
+import { lookupIco } from '/src/lib/ares.js';
 
-// Minimální TYPE_SCHEMAS (plné schéma doplníme v dalším kroku)
+// TYPE_SCHEMAS (rozšířitelné) - zde zůstávají základní, přesné doplnění uděláme v další iteraci
 const TYPE_SCHEMAS = {
   osoba: [
     { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
@@ -100,30 +100,12 @@ function grabValues(root, schema) {
   return obj;
 }
 
-// mapování profilových dat na pole formuláře (pouze pro tlačítko Fill)
-function mapProfileToValues(profile = {}) {
-  return {
-    display_name: profile.display_name || ((profile.first_name || profile.last_name) ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '') || '',
-    jmeno: profile.first_name || '',
-    prijmeni: profile.last_name || '',
-    primary_email: profile.email || profile.primary_email || '',
-    primary_phone: profile.phone || profile.primary_phone || '',
-    street: profile.street || '',
-    cislo_popisne: profile.house_number || profile.cislo_popisne || '',
-    city: profile.city || '',
-    zip: profile.zip || '',
-    ico: profile.ico || ''
-  };
-}
-
-// safe setter do polí formuláře (najde input/select/textarea a nastaví hodnotu)
 function setFormValues(root, values) {
   for (const key of Object.keys(values)) {
     const el = root.querySelector(`[name="${key}"]`);
     if (!el) continue;
     if (el.type === 'checkbox') el.checked = !!values[key];
     else el.value = values[key] ?? '';
-    // dispatch input event to trigger form internals
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }
 }
@@ -137,18 +119,15 @@ export async function render(root, params = {}) {
 
   // Guard: pokud není ani type ani id → přesměruj na chooser (nový subjekt)
   if (!id && !type) {
-    if (typeof navigateTo === 'function') {
-      navigateTo(`#/m/${moduleId}/f/chooser`);
-    } else {
-      location.hash = `#/m/${moduleId}/f/chooser`;
-    }
+    if (typeof navigateTo === 'function') navigateTo(`#/m/${moduleId}/f/chooser`);
+    else location.hash = `#/m/${moduleId}/f/chooser`;
     return;
   }
 
   const schema = TYPE_SCHEMAS[type] || TYPE_SCHEMAS['osoba'];
   const typeLabel = TYPE_LABELS[type] || type || 'Osoba';
 
-  // breadcrumb: Domů › Modul › Formulář › (Nový <typ> | jméno)
+  // breadcrumb
   try {
     const nameForCrumb = id ? (params?.title || 'Záznam') : `Nový ${typeLabel}`;
     setBreadcrumb(document.getElementById('crumb'), [
@@ -157,21 +136,61 @@ export async function render(root, params = {}) {
       { icon: 'form', label: 'Formulář' },
       { icon: 'account', label: nameForCrumb }
     ]);
-  } catch (e) { /* ignore if crumb missing */ }
+  } catch (e) {}
 
-  // header + actions container (přidáme tlačítko "Vyplnit z mého účtu")
+  // header + extra actions (ARES)
   const header = document.createElement('div');
   header.className = 'mb-4 flex items-center justify-between';
   header.innerHTML = `<div class="flex items-center gap-3"><span style="font-size:20px">${icon('form')}</span><div><h2 class="text-lg font-semibold">Formulář — ${typeLabel}</h2><div class="text-sm text-slate-500">Modul: ${moduleId}</div></div></div><div id="form-actions-extra" class="flex items-center gap-2"></div>`;
   root.appendChild(header);
 
-  // extra actions area (tlačítko pro načtení z profilu)
   const extraActions = header.querySelector('#form-actions-extra');
-  const fillBtn = document.createElement('button');
-  fillBtn.type = 'button';
-  fillBtn.className = 'inline-flex items-center gap-2 px-3 py-2 rounded-md border text-sm';
-  fillBtn.innerHTML = `${icon('user')} Vyplnit z mého účtu`;
-  extraActions.appendChild(fillBtn);
+
+  // pokud typ má IČO, přidej tlačítko ARES
+  const hasIco = ['firma', 'osvc'].includes(type);
+  if (hasIco) {
+    const aresBtn = document.createElement('button');
+    aresBtn.type = 'button';
+    aresBtn.className = 'inline-flex items-center gap-2 px-3 py-2 rounded-md border text-sm';
+    aresBtn.innerHTML = `${icon('search')} Načíst z ARES`;
+    extraActions.appendChild(aresBtn);
+
+    aresBtn.addEventListener('click', async () => {
+      try {
+        // najít pole IČO v DOMu
+        const icoEl = root.querySelector('[name="ico"]');
+        const icoVal = icoEl?.value?.trim();
+        if (!icoVal) {
+          alert('Zadejte nejdříve IČO do pole "IČO".');
+          return;
+        }
+        aresBtn.disabled = true;
+        aresBtn.textContent = 'Načítám z ARES…';
+        const res = await lookupIco(icoVal);
+        if (res.error) {
+          alert('ARES: ' + res.error);
+          return;
+        }
+        // mapovat výsledky do formuláře
+        const toSet = {};
+        if (res.display_name) toSet.display_name = res.display_name;
+        if (res.ico) toSet.ico = res.ico;
+        if (res.dic) toSet.dic = res.dic;
+        if (res.street) toSet.street = res.street;
+        if (res.cislo_popisne) toSet.cislo_popisne = res.cislo_popisne;
+        if (res.city) toSet.city = res.city;
+        if (res.zip) toSet.zip = res.zip;
+        setFormValues(root, toSet);
+        toast('Načteno z ARES', 'success');
+      } catch (e) {
+        console.error(e);
+        alert('Chyba při volání ARES: ' + (e.message || e));
+      } finally {
+        aresBtn.disabled = false;
+        aresBtn.innerHTML = `${icon('search')} Načíst z ARES`;
+      }
+    });
+  }
 
   const actionsWrap = document.createElement('div');
   actionsWrap.id = 'commonactions';
@@ -187,7 +206,6 @@ export async function render(root, params = {}) {
     }
     initial = data || {};
   } else {
-    // new record - nezaplníme automaticky (uživatel použije tlačítko)
     initial = { typ_subjektu: type, role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel'), ...(params?.preserved || {}) };
   }
 
@@ -233,47 +251,11 @@ export async function render(root, params = {}) {
     handlers
   });
 
-  // render samotného formuláře (bez submit tlačítka)
+  // render form
   renderForm(root, schema, initial, async () => true, {
     readOnly: false,
     showSubmit: false,
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' }
-  });
-
-  // implementace tlačítka "Vyplnit z mého účtu"
-  fillBtn.addEventListener('click', async () => {
-    fillBtn.disabled = true;
-    fillBtn.textContent = 'Načítám…';
-    try {
-      // zkus získat uid
-      let uid = window.currentUser?.id;
-      if (!uid) {
-        try {
-          const { data: userResp } = await supabase.auth.getUser();
-          uid = userResp?.data?.user?.id || userResp?.user?.id || null;
-        } catch (e) {
-          // ignore
-        }
-      }
-      if (!uid) {
-        alert('Nelze zjistit přihlášeného uživatele.');
-        return;
-      }
-      const { data: profile, error } = await getProfile(uid);
-      if (error || !profile) {
-        alert('Nelze načíst profil uživatele: ' + (error?.message || 'žádná data'));
-        return;
-      }
-      const mapped = mapProfileToValues(profile);
-      setFormValues(root, mapped);
-      toast('Formulář naplněn z mého účtu', 'success');
-    } catch (e) {
-      console.error(e);
-      alert('Chyba při načítání profilu.');
-    } finally {
-      fillBtn.disabled = false;
-      fillBtn.innerHTML = `${icon('user')} Vyplnit z mého účtu`;
-    }
   });
 
   const formEl = root.querySelector('form');
