@@ -1,23 +1,17 @@
 // src/db/subjects.js
 // DB helpery pro "subjects" / subjekty (pronajímatel, nájemník, zástupce, ...)
-// Používá Supabase Auth (auth.uid()) jako výchozí identitu, pokud není předán profileId.
-// Závisí na existenci /src/supabase.js exportujícího klienta `supabase`.
-
 import { supabase } from '/src/supabase.js';
 
 /** Helper: zjistí aktuální auth UID (supabase user id) nebo vrátí null */
 async function getAuthUid() {
   try {
-    // preferovat globální window.currentUser pokud existuje (starší části aplikace)
     if (typeof window !== 'undefined' && window.currentUser && window.currentUser.id) {
       return window.currentUser.id;
     }
-    // moderní supabase client
     if (supabase && supabase.auth && typeof supabase.auth.getUser === 'function') {
       const res = await supabase.auth.getUser();
       if (res && res.data && res.data.user && res.data.user.id) return res.data.user.id;
     }
-    // fallback - supabase.auth.user (starší verze)
     if (supabase && supabase.auth && typeof supabase.auth.user === 'function') {
       const u = supabase.auth.user();
       if (u && u.id) return u.id;
@@ -57,7 +51,6 @@ export async function listSubjects(options = {}) {
       if (type) query = query.eq('typ_subjektu', type);
       if (role) query = query.eq('role', role);
       if (q) {
-        // jednoduché filtrování: hledáme v display_name nebo v emailu
         query = query.or(`ilike(display_name,%${q}%),ilike(primary_email,%${q}%)`);
       }
 
@@ -65,7 +58,7 @@ export async function listSubjects(options = {}) {
       return { data, error };
     }
 
-    // bez profileId - obecný seznam (může vrátit i všechny subjekty, pokud to povolíte)
+    // bez profileId - obecný seznam
     let query = supabase.from('subjects').select('*').order(orderBy, { ascending: true }).range(offset, offset + limit - 1);
 
     if (type) query = query.eq('typ_subjektu', type);
@@ -99,6 +92,9 @@ export async function getSubject(id) {
  * - payload may contain id to update, otherwise insert.
  * - maps main fields to top-level columns and stores rest in data JSONB
  * - returns inserted/updated row
+ *
+ * Nově: pokud dojde k insertu (nebo update a nechceme skipAssign),
+ *       funkce automaticky přiřadí subjekt k aktuálnímu uživateli pomocí assignSubjectToProfile.
  */
 export async function upsertSubject(payload = {}) {
   try {
@@ -126,7 +122,6 @@ export async function upsertSubject(payload = {}) {
 
     // vytvoříme "data" – zkopírujeme payload a odstraníme hlavní klíče
     const data = { ...(p.data || {}) };
-    // odstraň klíče obsažené v main z data a z původního payloadu
     const mainKeys = ['id','typ_subjektu','type','role','display_name','primary_email','email','primary_phone','telefon','country','stat','city','mesto','zip','psc','street','ulice','cislo_popisne','house_number','ico','dic','zastupce_id','zastupuje_id','owner_id'];
     mainKeys.forEach(k => { if (k in data) delete data[k]; if (k in p) delete p[k]; });
 
@@ -135,11 +130,29 @@ export async function upsertSubject(payload = {}) {
 
     const row = { ...main, data };
 
+    // upsert (vrací representation)
     const { data: result, error } = await supabase
       .from('subjects')
       .upsert(row, { returning: 'representation' });
 
-    return { data: Array.isArray(result) ? result[0] : result, error };
+    if (error) return { data: null, error };
+
+    const returned = Array.isArray(result) ? result[0] : result;
+    const insertedId = returned && returned.id ? returned.id : null;
+
+    // pokud chceme, automaticky přiřadit nový/aktualizovaný subjekt k aktuálnímu profilu
+    // použití: payload.skipAssign = true zabrání tomu
+    if (insertedId && !payload.skipAssign) {
+      try {
+        // přiřadit k auth uid (pokud existuje)
+        const assignRes = await assignSubjectToProfile(insertedId, null, 'owner');
+        // ignore assign error here (vrátíme původní výsledky)
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    return { data: returned, error: null };
   } catch (e) {
     return { data: null, error: e };
   }
