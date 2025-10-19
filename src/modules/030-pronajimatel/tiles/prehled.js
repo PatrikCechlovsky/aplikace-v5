@@ -14,10 +14,9 @@ function escapeHtml(s='') {
 }
 
 export async function render(root) {
-  // breadcrumb
   try {
     setBreadcrumb(document.getElementById('crumb'), [
-      { icon: 'home',  label: 'Domů', href: '#/' },
+      { icon: 'home', label: 'Domů', href: '#/' },
       { icon: 'users', label: 'Pronajímatel', href: '#/m/030-pronajimatel' },
       { icon: 'list',  label: 'Přehled' }
     ]);
@@ -27,22 +26,14 @@ export async function render(root) {
 
   const { data, error } = await listSubjects({ limit: 500 });
   if (error) {
-    root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
+    root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message || JSON.stringify(error)}</div>`;
     return;
   }
   const rows = data || [];
 
   const columns = [
-    { key: 'id', label: 'ID', sortable: true },
-    {
-      key: 'display_name',
-      label: 'Název / Jméno',
-      sortable: true,
-      render: (r) => {
-        const name = escapeHtml(r.display_name || '—');
-        return `<a href="#/m/030-pronajimatel/f/form?type=${encodeURIComponent(r.typ_subjektu||'osoba')}&id=${encodeURIComponent(r.id)}">${name}</a>`;
-      }
-    },
+    { key: 'id', label: 'ID' },
+    { key: 'display_name', label: 'Název / Jméno' },
     { key: 'typ_subjektu', label: 'Typ' },
     { key: 'ico', label: 'IČO' },
     { key: 'primary_phone', label: 'Telefon' },
@@ -57,17 +48,15 @@ export async function render(root) {
     const userRole = window.currentUserRole || 'admin';
     const perms = getUserPermissions(userRole);
     renderCommonActions(ca, {
-      moduleActions: ['add', 'edit', 'archive', 'attach', 'refresh', 'history'],
+      moduleActions: ['add','edit','archive','attach','refresh','history'],
       userRole,
       handlers: {
-        onAdd: () => navigateTo('#/m/030-pronajimatel/f/chooser?type=osoba'),
+        onAdd: () => navigateTo('#/m/030-pronajimatel/f/chooser'),
         onEdit: hasSel ? () => navigateTo(`#/m/030-pronajimatel/f/form?id=${selectedRow.id}&type=${selectedRow.typ_subjektu}`) : undefined,
-        onArchive: (perms.includes('archive') && hasSel) ? async () => {
-          alert('Archivace musí být implementována na serveru');
-        } : undefined,
-        onAttach: hasSel ? () => showAttachmentsModal({ entity: 'subjects', entityId: selectedRow.id }) : undefined,
+        onArchive: (perms.includes('archive') && hasSel) ? async () => alert('Archivace - implementovat server-side') : undefined,
+        onAttach: hasSel ? () => showAttachmentsModal({ entity:'subjects', entityId: selectedRow.id }) : undefined,
         onRefresh: () => render(root),
-        onHistory: hasSel ? () => alert('Historie subjektu - implementovat') : undefined
+        onHistory: hasSel ? () => alert('Historie - implementovat') : undefined
       }
     });
   }
@@ -81,15 +70,6 @@ export async function render(root) {
       moduleId: '030-pronajimatel',
       filterValue,
       showFilter: true,
-      customHeader: ({ filterInputHtml }) => `
-        <div class="flex items-center gap-4">
-          ${filterInputHtml}
-          <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
-            <input type="checkbox" id="toggle-archived" />
-            Zobrazit archivované
-          </label>
-        </div>
-      `,
       onRowSelect: row => {
         selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
         drawActions();
@@ -100,12 +80,6 @@ export async function render(root) {
       }
     }
   });
-
-  const tableRoot = root.querySelector('#subject-table');
-  tableRoot.addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'toggle-archived') {
-      render(root);
-    }
-  });
 }
+
 export default { render };
