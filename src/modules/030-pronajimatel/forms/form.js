@@ -1,6 +1,5 @@
-// src/modules/030-pronajimatel/forms/form.js
-// Shared dynamic form — celý soubor (vč. breadcrumb + commonActions + TYPE_SCHEMAS)
-
+// Shared form (krok1) — obsahuje guard: pokud není ani type ani id, přesměruje na chooser.
+// Dále vykreslí formulář (shared) bez submit tlačítka (uložení přes commonActions).
 import { renderForm } from '/src/ui/form.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { renderCommonActions, toast } from '/src/ui/commonActions.js';
@@ -10,59 +9,30 @@ import { setUnsaved } from '/src/app.js';
 import { navigateTo } from '/src/app.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 
-// TYPE_SCHEMAS (dle excelu) — přizpůsobíme později podle finálního CSV/excelu
+// Minimální schémata pro krok1 (plné doplnění v dalším kroku)
 const TYPE_SCHEMAS = {
   osoba: [
     { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
     { key: 'jmeno', label: 'Křestní jméno', type: 'text' },
-    { key: 'prijmeni', label: 'Příjmení', type: 'text' },
-    { key: 'typ_dokladu', label: 'Typ dokladu', type: 'select', options: [{value:'op',label:'Občanský průkaz'},{value:'pas',label:'Pas'},{value:'rid',label:'ŘP'}] },
-    { key: 'cislo_dokladu', label: 'Číslo dokladu', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' },
-    { key: 'zip', label: 'PSČ', type: 'text' }
+    { key: 'prijmeni', label: 'Příjmení', type: 'text' }
   ],
   osvc: [
     { key: 'display_name', label: 'Jméno / Firma', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' },
-    { key: 'dic', label: 'DIČ', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' },
-    { key: 'zip', label: 'PSČ', type: 'text' }
+    { key: 'ico', label: 'IČO', type: 'text' }
   ],
   firma: [
     { key: 'display_name', label: 'Název firmy', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' },
-    { key: 'dic', label: 'DIČ', type: 'text' },
-    { key: 'primary_phone', label: 'Telefon', type: 'text' },
-    { key: 'primary_email', label: 'E-mail', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' },
-    { key: 'zip', label: 'PSČ', type: 'text' },
-    { key: 'bankovni_ucet', label: 'Bankovní účet / číslo', type: 'text' }
+    { key: 'ico', label: 'IČO', type: 'text' }
   ],
   spolek: [
-    { key: 'display_name', label: 'Název spolku', type: 'text', required: true },
-    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' },
-    { key: 'telefon', label: 'Telefon', type: 'text' }
+    { key: 'display_name', label: 'Název spolku', type: 'text', required: true }
   ],
   stat: [
-    { key: 'display_name', label: 'Organizace', type: 'text', required: true },
-    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' }
+    { key: 'display_name', label: 'Organizace', type: 'text', required: true }
   ],
   zastupce: [
     { key: 'display_name', label: 'Jméno zástupce', type: 'text', required: true },
-    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' }
+    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text' }
   ]
 };
 
@@ -100,22 +70,33 @@ function grabValues(root, schema) {
 export async function render(root, params = {}) {
   root.innerHTML = '';
   const hash = getHashParams();
-  const type = params?.type || hash.type || 'osoba';
+  const type = params?.type || hash.type || null;
   const id = params?.id || hash.id || null;
   const moduleId = params?.module || getModuleIdFromHash() || (hash.role === 'najemnik' ? '050-najemnik' : '030-pronajimatel');
-  const schema = TYPE_SCHEMAS[type] || TYPE_SCHEMAS['osoba'];
-  const typeLabel = TYPE_LABELS[type] || type;
 
-  // breadcrumb (jako v 010: Domů › Modul › Formulář › [jméno / Nový])
+  // Guard: pokud není ani type ani id → přesměruj na chooser (nový subjekt)
+  if (!id && !type) {
+    if (typeof navigateTo === 'function') {
+      navigateTo(`#/m/${moduleId}/f/chooser`);
+    } else {
+      location.hash = `#/m/${moduleId}/f/chooser`;
+    }
+    return;
+  }
+
+  const schema = TYPE_SCHEMAS[type] || TYPE_SCHEMAS['osoba'];
+  const typeLabel = TYPE_LABELS[type] || type || 'Osoba';
+
+  // breadcrumb: Domů › Modul › Formulář › (Nový <typ> | jméno)
   try {
-    const nameForCrumb = id ? ( (params?.title) || 'Uživatel' ) : `Nový ${typeLabel}`;
+    const nameForCrumb = id ? (params?.title || 'Záznam') : `Nový ${typeLabel}`;
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
       { icon: (moduleId.startsWith('050') ? 'users' : 'users'), label: (moduleId.startsWith('050') ? 'Nájemník' : 'Pronajímatel'), href: `#/m/${moduleId}` },
       { icon: 'form', label: 'Formulář' },
       { icon: 'account', label: nameForCrumb }
     ]);
-  } catch (e) {}
+  } catch (e) { /* ignore if crumb missing */ }
 
   // header + actions container
   const header = document.createElement('div');
@@ -127,7 +108,7 @@ export async function render(root, params = {}) {
   actionsWrap.id = 'commonactions';
   root.appendChild(actionsWrap);
 
-  // načíst data pokud edit
+  // načíst existující data pokud editujeme
   let initial = {};
   if (id) {
     const { data, error } = await getSubject(id);
@@ -140,7 +121,7 @@ export async function render(root, params = {}) {
     initial = { typ_subjektu: type, role: params?.role || (moduleId?.startsWith('050') ? 'najemnik' : 'pronajimatel') };
   }
 
-  // handlers pro commonActions
+  // commonActions handlers (minimal stubs for krok1)
   const handlers = {};
   handlers.onSave = async () => {
     setUnsaved(true);
@@ -182,6 +163,7 @@ export async function render(root, params = {}) {
     handlers
   });
 
+  // render samotného formuláře (bez submit tlačítka)
   renderForm(root, schema, initial, async () => true, {
     readOnly: false,
     showSubmit: false,
