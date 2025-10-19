@@ -13,15 +13,15 @@ export async function render(root) {
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon:'home', label:'Domů', href:'#/' },
-      { icon:'users', label:'Pronajímatel', href:'#/m/030-pronajimatel' },
-      { icon:'list', label:'Přehled', href:'#/m/030-pronajimatel/t/prehled' },
+      { icon:'users', label:'Nájemník', href:'#/m/050-najemnik' },
+      { icon:'list', label:'Přehled', href:'#/m/050-najemnik/t/prehled' },
       { icon:'handshake', label:'Zástupci' }
     ]);
   } catch (e) {}
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="subject-table"></div>`;
 
-  const { data, error } = await listSubjects({ type: 'zastupce', limit: 500 });
+  const { data, error } = await listSubjects({ type: 'zastupce', role:'najemnik', limit: 500 });
   if (error) { root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; return; }
   const rows = data || [];
 
@@ -41,8 +41,8 @@ export async function render(root) {
       moduleActions: ['add','edit','archive','attach','refresh','history'],
       userRole,
       handlers: {
-        onAdd: () => navigateTo('#/m/030-pronajimatel/f/chooser?type=zastupce'),
-        onEdit: hasSel ? () => navigateTo(`#/m/030-pronajimatel/f/form?id=${selectedRow.id}&type=${selectedRow.typ_subjektu}`) : undefined,
+        onAdd: () => navigateTo('#/m/050-najemnik/f/chooser?type=zastupce'),
+        onEdit: hasSel ? () => navigateTo(`#/m/050-najemnik/f/form?id=${selectedRow.id}&type=${selectedRow.typ_subjektu}`) : undefined,
         onArchive: (perms.includes('archive') && hasSel) ? async () => alert('Archivace - implementovat') : undefined,
         onAttach: hasSel ? () => showAttachmentsModal({ entity:'subjects', entityId: selectedRow.id }) : undefined,
         onRefresh: () => render(root),
@@ -56,11 +56,11 @@ export async function render(root) {
   renderTable(root.querySelector('#subject-table'), {
     columns, rows,
     options: {
-      moduleId: '030-pronajimatel',
+      moduleId: '050-najemnik',
       filterValue,
       showFilter: true,
       onRowSelect: row => { selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row; drawActions(); },
-      onRowDblClick: row => { selectedRow = row; navigateTo(`#/m/030-pronajimatel/f/form?id=${row.id}&type=${row.typ_subjektu}`); }
+      onRowDblClick: row => { selectedRow = row; navigateTo(`#/m/050-najemnik/f/form?id=${row.id}&type=${row.typ_subjektu}`); }
     }
   });
 }
