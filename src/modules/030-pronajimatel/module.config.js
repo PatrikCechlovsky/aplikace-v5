@@ -13,7 +13,7 @@ export async function getManifest() {
       { id: 'spolek', title: 'Spolek / Skupina', icon: 'people' },
       { id: 'stat', title: 'Státní instituce', icon: 'bank' },
       { id: 'zastupce', title: 'Zástupci', icon: 'handshake' },
-      { id: 'novy', title: 'Nový subjekt', icon: 'add' }
+      // { id: 'novy', title: 'Nový subjekt', icon: 'add' }
     ],
     // sem patří formy (nezobrazují se jako běžné menu-tile)
     forms: [
