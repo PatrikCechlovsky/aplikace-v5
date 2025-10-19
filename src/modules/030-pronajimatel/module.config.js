@@ -6,7 +6,7 @@ export async function getManifest() {
     defaultTile: 'prehled',
     // tiles jsou položky v levém menu, FORM NEPATŘÍ mezi ně (formy jsou v sekci forms)
     tiles: [
-      { id: 'prehled', title: 'Všichni', icon: 'list' },
+      { id: 'prehled', title: 'Přehled', icon: 'list' },
       { id: 'osoba', title: 'Osoba', icon: 'person' },
       { id: 'osvc', title: 'OSVČ', icon: 'briefcase' },
       { id: 'firma', title: 'Firma', icon: 'building' },
