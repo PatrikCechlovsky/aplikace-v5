@@ -60,9 +60,18 @@ export const ICONS = {
 
   // HISTORY / ZMĚNY
   history: '⏳', // historie změn / čas
+
+  // Doplňkové ikony (pokryjí chybějící názvy z modulů)
+  person: '👤',
+  briefcase: '💼',
+  building: '🏢',
+  people: '👥',
+  bank: '🏦',
+  handshake: '🤝',
+  grid: '🟦',
 };
 
-// Aliasy – pohodlnější klíče na totéž
+ // Aliasy – pohodlnější klíče na totéž
 const ALIASES = {
   plus: 'add',
   user: 'account',
@@ -71,6 +80,15 @@ const ALIASES = {
   favorite: 'star',
   email: 'mail',
   remove: 'delete',
+
+  // drobné aliasy pro kompatibilitu se staršími názvy
+  person: 'account',
+  briefcase: 'briefcase',
+  building: 'building',
+  people: 'users',
+  bank: 'bank',
+  handshake: 'handshake',
+  grid: 'grid',
 };
 
 /**
