@@ -15,7 +15,7 @@ export async function getManifest() {
     ],
     forms: [
       { id: 'chooser', title: 'Nový nájemník', icon: 'grid' },
-      { id: 'form', title: 'Formulář', icon: 'form' }
+      // { id: 'form', title: 'Formulář', icon: 'form' }
     ]
   };
 }
