@@ -54,6 +54,7 @@ export async function render(root) {
     { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
   ];
 
+  // Render form (hide internal submit buttons - commonActions will render Save)
   renderForm(root, fields, data, async (values) => {
     try {
       const curUser = window.currentUser || null;
@@ -72,7 +73,7 @@ export async function render(root) {
     }
   }, {
     readOnly: mode === 'read',
-    showSubmit: mode !== 'read',
+    showSubmit: false, // submit moved to commonActions
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
     sections
   });
