@@ -223,7 +223,7 @@ export async function upsertSubject(payload = {}, currentUser = null) {
       console.warn('logSubjectHistory failed', e);
     }
 
-    // přiřadit k current user pokud nově vloženo a skipAssign není true
+    // přiřadit k current user pokud nově vloženo a skipAssign isn't true
     if (insertedId && !payload.skipAssign) {
       try {
         await assignSubjectToProfile(insertedId, null, 'owner');
