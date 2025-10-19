@@ -14,20 +14,17 @@ function escapeHtml(s='') {
 }
 
 export async function render(root) {
-  // breadcrumb (stejné jako v 010)
+  // breadcrumb identické s 010
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home',  label: 'Domů',      href: '#/' },
       { icon: 'users', label: 'Pronajímatel', href: '#/m/030-pronajimatel' },
       { icon: 'list',  label: 'Přehled' }
     ]);
-  } catch (e) {
-    // ignore if crumb element missing
-  }
+  } catch (e) { /* ignore */ }
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="subject-table"></div>`;
 
-  // načtení dat (listSubjects sama použije auth uid pokud není profileId)
   const { data, error } = await listSubjects({ limit: 500 });
   if (error) {
     root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
@@ -35,7 +32,6 @@ export async function render(root) {
   }
   const rows = data || [];
 
-  // sloupce s klikacím názvem (otevře edit form v 030)
   const columns = [
     { key: 'id', label: 'ID', sortable: true },
     {
@@ -60,16 +56,14 @@ export async function render(root) {
     const hasSel = !!selectedRow;
     const userRole = window.currentUserRole || 'admin';
     const perms = getUserPermissions(userRole);
-    // stejný set akcí jako v 010
     renderCommonActions(ca, {
       moduleActions: ['add', 'edit', 'archive', 'attach', 'refresh', 'history'],
       userRole,
       handlers: {
-        onAdd: () => navigateTo('#/m/030-pronajimatel/f/form?type=osoba'),
+        onAdd: () => navigateTo('#/m/030-pronajimatel/f/chooser?type=osoba'),
         onEdit: hasSel ? () => navigateTo(`#/m/030-pronajimatel/f/form?id=${selectedRow.id}&type=${selectedRow.typ_subjektu}`) : undefined,
         onArchive: (perms.includes('archive') && hasSel) ? async () => {
-          // jednoduchá archivace: přesměrujeme do formuláře nebo zavolat endpoint - tady jen alert (nahraďte)
-          alert('Archivace (implementovat server-side)');
+          alert('Archivace musí být implementována na serveru');
         } : undefined,
         onAttach: hasSel ? () => showAttachmentsModal({ entity: 'subjects', entityId: selectedRow.id }) : undefined,
         onRefresh: () => render(root),
@@ -107,11 +101,9 @@ export async function render(root) {
     }
   });
 
-  // posluchač pro checkbox (z customHeader)
   const tableRoot = root.querySelector('#subject-table');
   tableRoot.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'toggle-archived') {
-      // jednoduché překreslení (můžeš implementovat filtr na archived)
       render(root);
     }
   });
