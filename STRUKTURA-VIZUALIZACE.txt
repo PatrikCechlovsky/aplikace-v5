@@ -1,242 +1,98 @@
-================================================================================
-                    STANDARDIZOVANÁ STRUKTURA MODULŮ
-================================================================================
+STRUCTURE VALIDATION REPORT
+===========================
 
-PŘED (❌ Problematické):
-------------------------
-src/
-├── modules/
-│   ├── 030-pronajimatel/
-│   │   └── forms/
-│   │       └── form.js
-│   │           ├── TYPE_SCHEMAS {...}  ← DUPLIKACE 1
-│   │           ├── renderForm()
-│   │           └── useUnsavedHelper()
-│   │
-│   ├── 050-najemnik/
-│   │   └── forms/
-│   │       └── form.js
-│   │           ├── TYPE_SCHEMAS {...}  ← DUPLIKACE 2 (stejné jako 1!)
-│   │           ├── renderForm()
-│   │           └── useUnsavedHelper()
-│   │
-│   └── 040-nemovitost/
-│       └── forms/
-│           ├── edit.js      ← PRÁZDNÝ (1 byte)
-│           └── detail.js    ← PRÁZDNÝ (1 byte)
+1. SHARED TYPE SCHEMAS
+-----------------------
+✓ src/db/type-schemas.js created
+  - SUBJECT_TYPE_SCHEMAS (osoba, osvc, firma, spolek, stat, zastupce)
+  - PROPERTY_SCHEMA
+  - getSubjectTypeSchema(type) function
+  - getPropertySchema() function
 
+2. UNIVERSAL FORM WRAPPER
+--------------------------
+✓ src/ui/universal-form.js created
+  - renderUniversalForm() function
+  - Supports: breadcrumbs, common actions, attachments, history, archive
+  - Read-only mode support
+  - Unsaved changes warning
+  - getModuleIdFromHash() helper
+  - navigateToModuleOverview() helper
 
-PO (✅ Opravené):
+3. MODULE UPDATES
 -----------------
-src/
-├── db/
-│   └── type-schemas.js      ← 🎯 CENTRÁLNÍ SCHÉMATA
-│       ├── SUBJECT_TYPE_SCHEMAS
-│       │   ├── osoba
-│       │   ├── osvc
-│       │   ├── firma
-│       │   ├── spolek
-│       │   ├── stat
-│       │   └── zastupce
-│       ├── PROPERTY_SCHEMA
-│       ├── getSubjectTypeSchema(type)
-│       └── getPropertySchema()
-│
-├── ui/
-│   └── universal-form.js    ← 🎯 UNIVERZÁLNÍ WRAPPER
-│       ├── renderUniversalForm()
-│       │   ├── ✅ Breadcrumbs (automaticky)
-│       │   ├── ✅ Common Actions (automaticky)
-│       │   ├── ✅ Attachments (automaticky)
-│       │   ├── ✅ History (automaticky)
-│       │   ├── ✅ Archive (volitelně)
-│       │   └── ✅ Unsaved Warning (automaticky)
-│       ├── getModuleIdFromHash()
-│       └── navigateToModuleOverview()
-│
-└── modules/
-    ├── 030-pronajimatel/
-    │   └── forms/
-    │       └── form.js
-    │           ├── import { getSubjectTypeSchema } ← používá sdílené
-    │           ├── import { renderUniversalForm }  ← používá wrapper
-    │           └── 68 řádků (bylo 104)
-    │
-    ├── 050-najemnik/
-    │   └── forms/
-    │       └── form.js
-    │           ├── import { getSubjectTypeSchema } ← používá sdílené
-    │           ├── import { renderUniversalForm }  ← používá wrapper
-    │           └── 76 řádků (bylo 107)
-    │
-    ├── 040-nemovitost/
-    │   └── forms/
-    │       ├── edit.js
-    │       │   ├── import { getPropertySchema }    ← používá sdílené
-    │       │   ├── import { renderUniversalForm }  ← používá wrapper
-    │       │   └── 64 řádků (bylo 1 byte!)
-    │       └── detail.js
-    │           ├── import { getPropertySchema }    ← používá sdílené
-    │           ├── import { renderUniversalForm }  ← používá wrapper
-    │           └── 48 řádků (bylo 1 byte!)
-    │
-    └── 000-sablona/
-        └── forms/
-            ├── edit.js      ← 🎓 VZOROVÁ IMPLEMENTACE
-            └── detail.js    ← 🎓 VZOROVÁ IMPLEMENTACE
+✓ Module 030 (Pronajímatel)
+  - forms/form.js updated to use getSubjectTypeSchema()
+  - forms/form.js updated to use renderUniversalForm()
+  - Removed duplicate TYPE_SCHEMAS (saved ~55 lines)
 
+✓ Module 050 (Nájemník)
+  - forms/form.js updated to use getSubjectTypeSchema()
+  - forms/form.js updated to use renderUniversalForm()
+  - Removed duplicate TYPE_SCHEMAS (saved ~55 lines)
 
-================================================================================
-                        JAK FUNGUJE renderUniversalForm()
-================================================================================
+✓ Module 040 (Nemovitost)
+  - forms/edit.js implemented with renderUniversalForm()
+  - forms/detail.js implemented with renderUniversalForm() in read-only mode
+  - Uses getPropertySchema()
 
-KROK 1: Definuj schéma
-----------------------
-const schema = getSubjectTypeSchema('osoba');
-// nebo
-const schema = [
-  { key: 'name', label: 'Název *', type: 'text', required: true },
-  { key: 'description', label: 'Popis', type: 'textarea' },
-  // ...
-];
+✓ Module 000 (Šablona)
+  - forms/edit.js updated with example using renderUniversalForm()
+  - forms/detail.js updated with read-only example
+  - assets/README.md updated with documentation
+  - assets/checklist.md updated with new structure info
 
-KROK 2: Zavolej renderUniversalForm()
---------------------------------------
-await renderUniversalForm({
-  root,                           // kam renderovat
-  schema,                         // co renderovat
-  initialData: { ... },           // počáteční hodnoty
-  breadcrumbs: [ ... ],           // drobečková navigace
-  onSave: async (values) => {     // co udělat při uložení
-    const { data, error } = await saveToDb(values);
-    if (error) {
-      toast('Chyba!', 'error');
-      return { success: false, error };
-    }
-    toast('Uloženo!', 'success');
-    navigateToModuleOverview('030-pronajimatel');
-    return { success: true, data };
-  },
-  options: {
-    entity: 'subject',            // typ entity (pro přílohy/historii)
-    entityId: 'abc123',           // ID entity
-    showAttachments: true,        // ✅ zobraz tlačítko Přílohy
-    showHistory: true,            // ✅ zobraz tlačítko Historie
-    showArchive: false,           // ❌ nezobrazuj Archivaci
-    readOnly: false,              // false = editovatelný
-  }
-});
-
-KROK 3: Výsledek
+4. DOCUMENTATION
 ----------------
-┌─────────────────────────────────────────────────┐
-│ Domů › Modul › Úprava               [Breadcrumbs]│
-├─────────────────────────────────────────────────┤
-│                                                  │
-│  ┌──────────────┐  ┌──────────────┐            │
-│  │ Název *      │  │ Popis        │            │
-│  │ [__________ ]│  │ [__________ ]│            │
-│  └──────────────┘  └──────────────┘            │
-│                                                  │
-│  ┌──────────────┐                               │
-│  │ Stav         │                               │
-│  │ [▼ Aktivní  ]│                               │
-│  └──────────────┘                               │
-│                                                  │
-└─────────────────────────────────────────────────┘
-             [Uložit] [Zpět] [Přílohy] [Historie]  ← Common Actions
+✓ docs/standardized-module-structure.md created
+  - Complete guide for standardized structure
+  - Usage examples
+  - Schema definition guide
+  - Module checklist
 
+✓ STRUKTURA-ODPOVED.md created
+  - Czech language summary answering user's question
+  - Before/After comparison
+  - Usage instructions
 
-================================================================================
-                            VÝHODY NOVÉ STRUKTURY
-================================================================================
+5. CODE QUALITY
+---------------
+✓ All JavaScript files pass syntax check:
+  - src/db/type-schemas.js
+  - src/ui/universal-form.js
+  - src/modules/030-pronajimatel/forms/form.js
+  - src/modules/050-najemnik/forms/form.js
+  - src/modules/040-nemovitost/forms/edit.js
+  - src/modules/040-nemovitost/forms/detail.js
+  - src/modules/000-sablona/forms/edit.js
+  - src/modules/000-sablona/forms/detail.js
 
-1. ✅ ŽÁDNÁ DUPLIKACE
-   - TYPE_SCHEMAS na jednom místě
-   - Renderovací logika na jednom místě
-   - Ušetřeno: ~110 řádků duplikovaného kódu
+6. CONSISTENCY CHECK
+--------------------
+✓ All modules now follow the same pattern:
+  - Use shared schemas or define local schemas
+  - Use renderUniversalForm() for consistent UI
+  - Include breadcrumbs configuration
+  - Include onSave handler
+  - Include options for attachments/history/archive
 
-2. ✅ KONZISTENTNÍ UX
-   - Všechny formuláře vypadají stejně
-   - Všechny formuláře se chovají stejně
-   - Uživatel ví, co může čekat
+✓ No more duplicate code:
+  - TYPE_SCHEMAS removed from 2 locations
+  - Form rendering logic centralized
 
-3. ✅ AUTOMATICKÉ FUNKCE
-   - Breadcrumbs          → automaticky přidány
-   - Common Actions       → automaticky přidány
-   - Attachments          → automaticky přidány (pokud entityId)
-   - History              → automaticky přidány (pokud entityId)
-   - Unsaved Warning      → automaticky přidáno
+✓ Consistent features across all modules:
+  - Common Actions (Save, Back)
+  - Breadcrumbs
+  - Attachments (for existing records)
+  - History (for existing records)
+  - Archive (optional)
+  - Unsaved changes warning
 
-4. ✅ SNADNÁ ÚDRŽBA
-   - Změna na jednom místě → promítne se všude
-   - Přidání nové funkce → stačí upravit universal-form.js
-   - Oprava bug → opraví se všude najednou
-
-5. ✅ RYCHLÝ VÝVOJ
-   - Nový modul za pár minut
-   - Zkopíruj template (000-sablona)
-   - Uprav schema
-   - Hotovo!
-
-
-================================================================================
-                         JAK VYTVOŘIT NOVÝ MODUL
-================================================================================
-
-1. Zkopíruj šablonu
-   cp -r src/modules/000-sablona src/modules/XXX-muj-modul
-
-2. Uprav module.config.js
-   {
-     id: 'XXX-muj-modul',
-     title: 'Můj modul',
-     icon: 'folder',
-     ...
-   }
-
-3. Uprav forms/edit.js - schéma
-   const SCHEMA = [
-     { key: 'name', label: 'Název', type: 'text', required: true },
-     // ... tvoje pole
-   ];
-
-4. Implementuj DB funkce
-   async function getData(id) { ... }
-   async function saveData(values) { ... }
-
-5. Propoj s formulářem
-   onSave: async (values) => {
-     const { data, error } = await saveData(values);
-     // ...
-   }
-
-6. Hotovo!
-   ✅ Máš formulář s breadcrumbs
-   ✅ Máš common actions (Uložit, Zpět)
-   ✅ Máš podporu pro přílohy
-   ✅ Máš podporu pro historii
-   ✅ Máš unsaved warning
-
-
-================================================================================
-                              SOUBORY K PŘEČTENÍ
-================================================================================
-
-📖 STRUKTURA-ODPOVED.md
-   → Kompletní odpověď na tvůj dotaz (česky)
-   → Co bylo špatně, co je teď opraveno
-   → Jak to použít
-
-📖 docs/standardized-module-structure.md
-   → Technická dokumentace
-   → Kompletní příklady
-   → API reference
-
-📖 src/modules/000-sablona/
-   → Vzorový modul
-   → Ukázkové formuláře
-   → Copy-paste ready
-
-
-================================================================================
+SUMMARY
+-------
+✅ Structure is now standardized
+✅ No code duplication
+✅ Consistent UX across all modules
+✅ Documentation complete
+✅ All files syntactically correct
+✅ Ready for use
