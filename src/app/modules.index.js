@@ -16,5 +16,6 @@ export const MODULE_SOURCES = [
   // () => import('../modules/130-komunikace/module.config.js'),
   // () => import('../modules/900-nastaveni/module.config.js'),
   // () => import('../modules/990-help/module.config.js'),
+  () => import('../modules/999-test-moduly/module.config.js'),
 ];
 // Odkomentuj další řádky až budou moduly vytvořené.
