@@ -5,14 +5,14 @@ export async function getManifest() {
   return {
     id: '999-test-moduly',
     title: 'Test moduly',
-    icon: 'test',
+    icon: 'settings', // použití existující ikony
     defaultTile: 'prehled',
     tiles: [
       { id: 'prehled', title: 'Přehled', icon: 'list' },
-      { id: 'seznam', title: 'Seznam', icon: 'table' },
+      { id: 'seznam', title: 'Seznam', icon: 'grid' },
     ],
     forms: [
-      { id: 'detail', title: 'Detail', icon: 'view' },
+      { id: 'detail', title: 'Detail', icon: 'detail' },
       { id: 'edit', title: 'Editace', icon: 'edit' },
     ],
   };
