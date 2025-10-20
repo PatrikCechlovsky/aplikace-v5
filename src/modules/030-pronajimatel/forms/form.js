@@ -1,104 +1,161 @@
-// Sdílený univerzální formulář (pronajímatel). Použijeme ho i pro nájemník (proxy export).
+import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
+import { renderCommonActions } from '/src/ui/commonActions.js';
+import { navigateTo } from '/src/app.js';
+import { getSubject, upsertSubject } from '/src/modules/030-pronajimatel/db.js';
+import { showHistoryModal } from '/src/ui/history.js';
+import TYPE_SCHEMAS from '/src/modules/030-pronajimatel/type-schemas.js';
+import { lookupIco } from '/src/lib/ares.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
-import { getSubject, upsertSubject } from '/src/db/subjects.js';
-import { toast } from '/src/ui/commonActions.js';
+import { setUnsaved } from '/src/app.js';
 
-// Schemas per type — rozšiřuj podle tvého spreadsheetu
-const TYPE_SCHEMAS = {
-  osoba: [
-    { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
-    { key: 'jmeno', label: 'Křestní', type: 'text' },
-    { key: 'prijmeni', label: 'Příjmení', type: 'text' },
-    { key: 'typ_dokladu', label: 'Typ dokladu', type: 'select', options: [{value:'op',label:'Občanský průkaz'},{value:'pas',label:'Pas'},{value:'rid',label:'ŘP'}] },
-    { key: 'cislo_dokladu', label: 'Číslo dokladu', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' },
-    { key: 'zip', label: 'PSČ', type: 'text' }
-  ],
-  osvc: [
-    { key: 'display_name', label: 'Jméno / Firma', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' },
-    { key: 'dic', label: 'DIČ', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' }
-  ],
-  firma: [
-    { key: 'display_name', label: 'Název firmy', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' },
-    { key: 'dic', label: 'DIČ', type: 'text' },
-    { key: 'primary_phone', label: 'Telefon', type: 'text' },
-    { key: 'primary_email', label: 'E-mail', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' },
-    { key: 'zip', label: 'PSČ', type: 'text' }
-  ],
-  spolek: [
-    { key: 'display_name', label: 'Název spolku', type: 'text', required: true },
-    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' },
-    { key: 'telefon', label: 'Telefon', type: 'text' }
-  ],
-  stat: [
-    { key: 'display_name', label: 'Organizace', type: 'text', required: true },
-    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' }
-  ],
-  zastupce: [
-    { key: 'display_name', label: 'Jméno zástupce', type: 'text', required: true },
-    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' }
-  ]
-};
+// Helper to parse hash params
+function getHashParams() {
+  const q = (location.hash.split('?')[1] || '');
+  return Object.fromEntries(new URLSearchParams(q));
+}
 
-export async function render(root, params = {}) {
-  root.innerHTML = '';
-  const type = params?.type || 'osoba';
-  const schema = TYPE_SCHEMAS[type] || TYPE_SCHEMAS['osoba'];
+function formatCzechDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
+}
 
-  // načíst existující data pokud editujeme
-  let initial = {};
-  if (params?.id) {
-    const { data, error } = await getSubject(params.id);
+export async function render(root) {
+  const { id, type: qtype, mode: modeParam } = getHashParams();
+  const type = qtype || 'spolek';
+  const mode = (modeParam === 'read') ? 'read' : 'edit';
+
+  // set breadcrumb
+  try {
+    setBreadcrumb(document.getElementById('crumb'), [
+      { icon: 'home',  label: 'Domů', href: '#/' },
+      { icon: 'users', label: 'Pronajímatel', href: '#/m/030-pronajimatel' },
+      { icon: 'form',  label: 'Formulář' },
+      { icon: 'account', label: id ? 'Editace' : `Nový ${type.charAt(0).toUpperCase() + type.slice(1)}` }
+    ]);
+  } catch (e) {}
+
+  // Load existing data if editing
+  let data = {};
+  if (id) {
+    const { data: sub, error } = await getSubject(id);
     if (error) {
-      root.innerHTML = `<div class="error">Chyba při načtení: ${error.message || error}</div>`;
+      root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
       return;
     }
-    initial = data || {};
-  } else {
-    initial = { typ_subjektu: type, role: params?.role || 'pronajimatel' };
+    data = sub || {};
+    // format some readonly date fields
+    data.updated_at = formatCzechDate(data.updated_at);
+    data.created_at = formatCzechDate(data.created_at);
   }
 
-  renderForm(root, schema, initial, async (values) => {
-    const payload = {
-      ...values,
-      typ_subjektu: type,
-      role: params?.role || 'pronajimatel',
-      display_name: values.display_name || values.jmeno ? `${values.jmeno || ''} ${values.prijmeni || ''}`.trim() : values.primary_email
-    };
+  // build fields from TYPE_SCHEMAS for the given type
+  const schema = TYPE_SCHEMAS[type] || [];
+  const fields = schema.map(f => ({ ...f }));
 
-    const { data, error } = await upsertSubject(payload);
-    if (error) {
-      toast('Chyba při ukládání: ' + (error.message || JSON.stringify(error)), 'error');
+  const sections = [
+    { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
+    { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
+  ];
+
+  // Render form (hide internal submit buttons - commonActions will render Save)
+  renderForm(root, fields, data, async (values) => {
+    // submit handler
+    try {
+      // pass current user if available
+      const curUser = window.currentUser || null;
+      const { data: saved, error } = await upsertSubject(values, curUser);
+      if (error) {
+        alert('Chyba při ukládání: ' + (error.message || JSON.stringify(error)));
+        return false;
+      }
+      alert('Uloženo.');
+      setUnsaved(false);
+      // navigate to overview or keep editing
+      navigateTo('#/m/030-pronajimatel/t/prehled');
+      return true;
+    } catch (e) {
+      alert('Chyba při ukládání: ' + e.message);
       return false;
     }
-    toast('Uloženo', 'success');
-    // navigate back to list
-    window.navigateTo(`#/m/${params?.module || getModuleIdFromHash()}/t/prehled`);
-    return true;
+  }, {
+    readOnly: mode === 'read',
+    showSubmit: false, // submit moved to commonActions
+    layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
+    sections
   });
 
+  // attach unsaved helper
   const formEl = root.querySelector('form');
   if (formEl) useUnsavedHelper(formEl);
+
+  // add ARES lookup button if schema contains ico
+  const icoInput = root.querySelector('input[name="ico"]');
+  if (icoInput) {
+    const wrapper = icoInput.parentElement || icoInput;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.title = 'Načíst z ARES';
+    btn.className = 'ml-2 inline-flex items-center px-2 py-1 border rounded text-sm';
+    btn.innerHTML = '🔍';
+    btn.disabled = !icoInput.value;
+    icoInput.addEventListener('input', () => { btn.disabled = !icoInput.value.trim(); });
+    btn.addEventListener('click', async () => {
+      const val = (icoInput.value || '').trim();
+      if (!val) { alert('Zadejte IČO'); return; }
+      try {
+        const res = await lookupIco(val);
+        if (!res) { alert('ARES: nic nenalezeno'); return; }
+        const mapped = {};
+        if (res.name) mapped.display_name = res.name;
+        if (res.ico) mapped.ico = res.ico;
+        if (res.dic) mapped.dic = res.dic;
+        if (res.street) mapped.street = res.street;
+        if (res.city) mapped.city = res.city;
+        if (res.zip) mapped.zip = res.zip;
+        // set values into inputs and dispatch input events
+        Object.entries(mapped).forEach(([k,v]) => {
+          const el = root.querySelector(`[name="${k}"]`);
+          if (el) {
+            el.value = v;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        });
+        alert('Načteno z ARES.');
+      } catch (e) {
+        alert('Chyba ARES: ' + (e.message || e));
+      }
+    });
+    // place button after the input
+    wrapper.appendChild(btn);
+  }
+
+  // common actions (save, archive, history etc.)
+  const myRole = window.currentUserRole || 'admin';
+  const handlers = {
+    onSave: () => formEl ? formEl.requestSubmit() : null,
+    onAttach: () => id && window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: id }),
+    onHistory: () => {
+      if (!id) { alert('Historie dostupná po uložení'); return; }
+      showHistoryModal(async (subjectId) => {
+        return await (await import('/src/modules/030-pronajimatel/db.js')).getSubjectHistory(subjectId);
+      }, id);
+    },
+    onArchive: async () => {
+      if (!id) { alert('Uložte nejprve záznam.'); return; }
+      const { data, error } = await (await import('/src/modules/030-pronajimatel/db.js')).archiveSubject(id, window.currentUser);
+      if (error) alert('Chyba: ' + (error.message || JSON.stringify(error))); else { alert('Archivováno'); navigateTo('#/m/030-pronajimatel/t/prehled'); }
+    }
+  };
+
+  // render common actions in header area
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions: mode === 'read' ? ['edit','attach','history'] : ['save','attach','archive','history'],
+    userRole: myRole,
+    handlers
+  });
 }
 
-// helper to find current module from hash (used for navigation)
-function getModuleIdFromHash() {
-  try {
-    const m = (location.hash || '').match(/#\/m\/([^\/]+)/);
-    return m ? m[1] : null;
-  } catch (e) { return null; }
-}
+export default { render };
