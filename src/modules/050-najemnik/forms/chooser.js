@@ -1,18 +1,19 @@
-// safe chooser for 050: adds role=najemnik when navigating to form
+import { icon } from '/src/ui/icons.js';
+
 function safeNavigate(href) {
   if (typeof window.navigateTo === 'function') {
-    try { window.navigateTo(href); return; } catch (e) { /* fallback */ }
+    try { window.navigateTo(href); return; } catch (e) { /* fallback below */ }
   }
   location.hash = href;
 }
 
 const TILES = [
-  { id: 'osoba', label: 'Osoba' },
-  { id: 'osvc', label: 'OSVČ' },
-  { id: 'firma', label: 'Firma' },
-  { id: 'spolek', label: 'Spolek' },
-  { id: 'stat', label: 'Státní instituce' },
-  { id: 'zastupce', label: 'Zástupce' }
+  { id: 'osoba', label: 'Osoba', icon: 'person' },
+  { id: 'osvc', label: 'OSVČ', icon: 'briefcase' },
+  { id: 'firma', label: 'Firma', icon: 'building' },
+  { id: 'spolek', label: 'Spolek', icon: 'people' },
+  { id: 'stat', label: 'Státní instituce', icon: 'bank' },
+  { id: 'zastupce', label: 'Zástupce', icon: 'handshake' }
 ];
 
 export async function render(root) {
@@ -22,10 +23,9 @@ export async function render(root) {
 
   TILES.forEach(t => {
     const el = document.createElement('button');
-    el.className = 'tile small';
-    el.style.padding = '18px';
+    el.className = 'tile small flex items-center gap-2 p-3 rounded-md border hover:shadow-sm';
     el.style.minWidth = '140px';
-    el.textContent = t.label;
+    el.innerHTML = `<span style="font-size:20px">${icon(t.icon)}</span><span style="font-weight:600">${t.label}</span>`;
     el.addEventListener('click', () => {
       safeNavigate(`#/m/${moduleId}/f/form?type=${t.id}&role=najemnik`);
     });

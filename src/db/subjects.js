@@ -1,5 +1,7 @@
 // src/db/subjects.js
 // DB helpery pro "subjects" / subjekty (pronajímatel, nájemník, zástupce, ...)
+// Používá Supabase klienta exportovaného z /src/supabase.js
+
 import { supabase } from '/src/supabase.js';
 
 /** Helper: zjistí aktuální auth UID (supabase user id) nebo vrátí null */
@@ -10,11 +12,11 @@ async function getAuthUid() {
     }
     if (supabase && supabase.auth && typeof supabase.auth.getUser === 'function') {
       const res = await supabase.auth.getUser();
-      if (res && res.data && res.data.user && res.data.user.id) return res.data.user.id;
+      return res?.data?.user?.id || res?.user?.id || null;
     }
     if (supabase && supabase.auth && typeof supabase.auth.user === 'function') {
       const u = supabase.auth.user();
-      if (u && u.id) return u.id;
+      return u?.id || null;
     }
   } catch (e) {
     // ignore
@@ -22,10 +24,14 @@ async function getAuthUid() {
   return null;
 }
 
+function _toStringOrNull(v) {
+  return v == null ? null : String(v);
+}
+
 /**
  * listSubjects(options)
  * options: { q, type, role, profileId, limit, offset, orderBy }
- * - pokud profileId není zadáno, použije se aktuální auth.uid()
+ * pokud profileId není zadáno, použije se aktuální auth.uid()
  */
 export async function listSubjects(options = {}) {
   const { q, type, role, profileId: pProfileId, limit = 50, offset = 0, orderBy = 'display_name' } = options;
@@ -88,19 +94,77 @@ export async function getSubject(id) {
 }
 
 /**
+ * getSubjectHistory(subjectId)
+ */
+export async function getSubjectHistory(subjectId) {
+  if (!subjectId) return { data: null, error: new Error('subjectId required') };
+  try {
+    const { data, error } = await supabase
+      .from('subjects_history')
+      .select('*')
+      .eq('subject_id', subjectId)
+      .order('changed_at', { ascending: false });
+    return { data, error };
+  } catch (e) {
+    return { data: null, error: e };
+  }
+}
+
+/**
+ * logSubjectHistory(subjectId, currentUser, oldData, newData)
+ * - uloží rozdíly mezi oldData a newData do subjects_history
+ * - currentUser může být objekt (s display_name/email) nebo null
+ */
+export async function logSubjectHistory(subjectId, currentUser = null, oldData = {}, newData = {}) {
+  if (!subjectId) return { data: null, error: new Error('subjectId required') };
+  try {
+    let changed_by = null;
+    if (currentUser) {
+      changed_by = currentUser.display_name || currentUser.username || currentUser.email || String(currentUser);
+    } else if (typeof window !== 'undefined' && window.currentUser) {
+      const cu = window.currentUser;
+      changed_by = cu.display_name || cu.username || cu.email || null;
+    }
+
+    const changed_at = new Date().toISOString();
+    const inserts = [];
+
+    const keys = Array.from(new Set([...Object.keys(oldData || {}), ...Object.keys(newData || {})]));
+    for (const key of keys) {
+      const oldv = _toStringOrNull(oldData ? oldData[key] : null);
+      const newv = _toStringOrNull(newData ? newData[key] : null);
+      if (oldv !== newv) {
+        inserts.push({
+          subject_id: subjectId,
+          field: key,
+          old_value: oldv,
+          new_value: newv,
+          changed_by,
+          changed_at
+        });
+      }
+    }
+
+    if (!inserts.length) return { data: null, error: null };
+
+    const { data, error } = await supabase.from('subjects_history').insert(inserts).select();
+    return { data, error };
+  } catch (e) {
+    return { data: null, error: e };
+  }
+}
+
+/**
  * upsertSubject(payload)
  * - payload may contain id to update, otherwise insert.
  * - maps main fields to top-level columns and stores rest in data JSONB
- * - returns inserted/updated row
- *
- * Nově: pokud dojde k insertu (nebo update a nechceme skipAssign),
- *       funkce automaticky přiřadí subjekt k aktuálnímu uživateli pomocí assignSubjectToProfile.
+ * - logs history (app-level) by comparing old vs new values
  */
-export async function upsertSubject(payload = {}) {
+export async function upsertSubject(payload = {}, currentUser = null) {
   try {
     const p = { ...payload };
 
-    // map hlavních polí (uprav podle potřeby)
+    // map hlavních polí
     const main = {
       id: p.id || undefined,
       typ_subjektu: p.typ_subjektu || p.type || 'osoba',
@@ -117,12 +181,14 @@ export async function upsertSubject(payload = {}) {
       dic: p.dic || null,
       zastupce_id: p.zastupce_id || null,
       zastupuje_id: p.zastupuje_id || null,
-      owner_id: p.owner_id || null
+      owner_id: p.owner_id || null,
+      source_module: p.source_module || p.module || null,
+      archived: typeof p.archived !== 'undefined' ? !!p.archived : undefined
     };
 
     // vytvoříme "data" – zkopírujeme payload a odstraníme hlavní klíče
     const data = { ...(p.data || {}) };
-    const mainKeys = ['id','typ_subjektu','type','role','display_name','primary_email','email','primary_phone','telefon','country','stat','city','mesto','zip','psc','street','ulice','cislo_popisne','house_number','ico','dic','zastupce_id','zastupuje_id','owner_id'];
+    const mainKeys = ['id','typ_subjektu','type','role','display_name','primary_email','email','primary_phone','telefon','country','stat','city','mesto','zip','psc','street','ulice','cislo_popisne','house_number','ico','dic','zastupce_id','zastupuje_id','owner_id','source_module','module','archived'];
     mainKeys.forEach(k => { if (k in data) delete data[k]; if (k in p) delete p[k]; });
 
     // sloučit zbytek payloadu do data
@@ -130,7 +196,14 @@ export async function upsertSubject(payload = {}) {
 
     const row = { ...main, data };
 
-    // upsert (vrací representation)
+    // pokud update (id present) -> načíst starý záznam pro historií
+    let oldRecord = null;
+    if (row.id) {
+      const oldRes = await getSubject(row.id);
+      if (oldRes && !oldRes.error) oldRecord = oldRes.data || null;
+    }
+
+    // upsert
     const { data: result, error } = await supabase
       .from('subjects')
       .upsert(row, { returning: 'representation' });
@@ -140,13 +213,20 @@ export async function upsertSubject(payload = {}) {
     const returned = Array.isArray(result) ? result[0] : result;
     const insertedId = returned && returned.id ? returned.id : null;
 
-    // pokud chceme, automaticky přiřadit nový/aktualizovaný subjekt k aktuálnímu profilu
-    // použití: payload.skipAssign = true zabrání tomu
+    // log history (app-level) - porovnat relevantní pole a data.jsonb
+    try {
+      const newForLog = { ...returned, ...(returned.data || {}) };
+      const oldForLog = oldRecord ? { ...oldRecord, ...(oldRecord.data || {}) } : {};
+      await logSubjectHistory(insertedId, currentUser || null, oldForLog, newForLog);
+    } catch (e) {
+      // ignore logging errors
+      console.warn('logSubjectHistory failed', e);
+    }
+
+    // přiřadit k current user pokud nově vloženo a skipAssign isn't true
     if (insertedId && !payload.skipAssign) {
       try {
-        // přiřadit k auth uid (pokud existuje)
-        const assignRes = await assignSubjectToProfile(insertedId, null, 'owner');
-        // ignore assign error here (vrátíme původní výsledky)
+        await assignSubjectToProfile(insertedId, null, 'owner');
       } catch (e) {
         // ignore
       }
@@ -159,8 +239,48 @@ export async function upsertSubject(payload = {}) {
 }
 
 /**
- * assignSubjectToProfile(subjectId, profileId?, roleInSubject)
- * - pokud profileId není poskytnut, použije aktuální auth.uid()
+ * archiveSubject(id, currentUser)
+ */
+export async function archiveSubject(id, currentUser = null) {
+  if (!id) return { data: null, error: new Error('id required') };
+  try {
+    const { data: oldRec } = await getSubject(id);
+    const { data, error } = await supabase
+      .from('subjects')
+      .update({ archived: true })
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error) {
+      await logSubjectHistory(id, currentUser, oldRec || {}, { archived: true });
+    }
+    return { data, error };
+  } catch (e) {
+    return { data: null, error: e };
+  }
+}
+
+export async function unarchiveSubject(id, currentUser = null) {
+  if (!id) return { data: null, error: new Error('id required') };
+  try {
+    const { data: oldRec } = await getSubject(id);
+    const { data, error } = await supabase
+      .from('subjects')
+      .update({ archived: false })
+      .eq('id', id)
+      .select()
+      .single();
+    if (!error) {
+      await logSubjectHistory(id, currentUser, oldRec || {}, { archived: false });
+    }
+    return { data, error };
+  } catch (e) {
+    return { data: null, error: e };
+  }
+}
+
+/**
+ * assign / unassign
  */
 export async function assignSubjectToProfile(subjectId, profileId = null, roleInSubject = 'owner') {
   if (!subjectId) return { data: null, error: new Error('subjectId required') };
@@ -173,13 +293,11 @@ export async function assignSubjectToProfile(subjectId, profileId = null, roleIn
     const { data, error } = await supabase.from('user_subjects').insert(payload).select().single();
     return { data, error };
   } catch (e) {
+    // ignore unique constraint errors (already assigned)
     return { data: null, error: e };
   }
 }
 
-/**
- * unassignSubjectFromProfile(subjectId, profileId?)
- */
 export async function unassignSubjectFromProfile(subjectId, profileId = null) {
   if (!subjectId) return { data: null, error: new Error('subjectId required') };
   try {
@@ -193,3 +311,15 @@ export async function unassignSubjectFromProfile(subjectId, profileId = null) {
     return { data: null, error: e };
   }
 }
+
+export default {
+  listSubjects,
+  getSubject,
+  getSubjectHistory,
+  logSubjectHistory,
+  upsertSubject,
+  archiveSubject,
+  unarchiveSubject,
+  assignSubjectToProfile,
+  unassignSubjectFromProfile
+};
