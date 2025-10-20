@@ -34,17 +34,34 @@ Tato aplikace používá **jednotnou strukturu modulů** pro zajištění konzis
 ✅ 010-sprava-uzivatelu  (REFERENČNÍ - VZOR pro ostatní)
 ✅ 020-muj-ucet          (potřebuje rozšíření)
 ⚠️ 030-pronajimatel      (potřebuje doplnit historii, breadcrumbs)
-❌ 040-nemovitost        (prázdné soubory - nutná reimplementace)
+📋 040-nemovitost        (NOVÁ kompletní specifikace připravena! viz SOUHRN-ZMENY.md)
 ⚠️ 050-najemnik          (potřebuje doplnit historii, breadcrumbs)
 ❌ 060-990 moduly        (zakomentované, zatím nepřipravené)
 ```
 
 ### 🎯 Priority:
 
-1. **KRITICKÉ**: Opravit modul 040-nemovitost (prázdné soubory)
+1. ✅ **DOKONČENO**: Specifikace modulu 040-nemovitost (45+ stran dokumentace)
 2. **KRITICKÉ**: Přidat historii změn do modulů 030, 050
 3. **DŮLEŽITÉ**: Sjednotit commonActions ve všech modulech
 4. **DŮLEŽITÉ**: Přidat breadcrumbs všude kde chybí
+
+### 🆕 Nově přidáno (2025-10-20):
+
+**Kompletní specifikace Modulu 040 - Nemovitosti:**
+- 📖 `src/modules/040-nemovitost/assets/README.md` - Přehled modulu
+- 🗄️ `src/modules/040-nemovitost/assets/datovy-model.md` - Databázové schéma (419 řádků)
+- ✅ `src/modules/040-nemovitost/assets/checklist.md` - Implementační checklist (427 řádků, 11 fází)
+- 🔒 `src/modules/040-nemovitost/assets/permissions.md` - Katalog oprávnění (355 řádků)
+- 📋 `SOUHRN-ZMENY.md` - Český souhrn změn
+- ⚠️ `MANUAL_TASKS.md` - Instrukce pro uzavření PR #7 a #8
+
+**Statistiky:**
+- 7 souborů vytvořeno/aktualizováno
+- 1,806 řádků dokumentace
+- ~55 KB nové dokumentace
+- 0 bezpečnostních chyb (CodeQL validated)
+- Implementační plán: 6-8 týdnů
 
 ### 🔧 Struktura aplikace:
 
