@@ -1,74 +1,18 @@
 // Sdílený univerzální formulář (pronajímatel). Použijeme ho i pro nájemník (proxy export)
-import { renderForm } from '/src/ui/form.js';
-import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { getSubject, upsertSubject } from '/src/db/subjects.js';
+import { getSubjectTypeSchema } from '/src/db/type-schemas.js';
 import { toast } from '/src/ui/commonActions.js';
-
-// Schemas per type — rozšiřuj podle tvého spreadsheetu
-const TYPE_SCHEMAS = {
-  osoba: [
-    { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
-    { key: 'jmeno', label: 'Křestní', type: 'text' },
-    { key: 'prijmeni', label: 'Příjmení', type: 'text' },
-    { key: 'typ_dokladu', label: 'Typ dokladu', type: 'select', options: [{value:'op',label:'Občanský průkaz'},{value:'pas',label:'Pas'},{value:'rid',label:'ŘP'}] },
-    { key: 'cislo_dokladu', label: 'Číslo dokladu', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' },
-    { key: 'zip', label: 'PSČ', type: 'text' }
-  ],
-  osvc: [
-    { key: 'display_name', label: 'Jméno / Firma', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' },
-    { key: 'dic', label: 'DIČ', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' }
-  ],
-  firma: [
-    { key: 'display_name', label: 'Název firmy', type: 'text', required: true },
-    { key: 'ico', label: 'IČO', type: 'text' },
-    { key: 'dic', label: 'DIČ', type: 'text' },
-    { key: 'primary_phone', label: 'Telefon', type: 'text' },
-    { key: 'primary_email', label: 'E-mail', type: 'email' },
-    { key: 'street', label: 'Ulice', type: 'text' },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
-    { key: 'city', label: 'Město', type: 'text' },
-    { key: 'zip', label: 'PSČ', type: 'text' }
-  ],
-  spolek: [
-    { key: 'display_name', label: 'Název spolku', type: 'text', required: true },
-    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' },
-    { key: 'telefon', label: 'Telefon', type: 'text' }
-  ],
-  stat: [
-    { key: 'display_name', label: 'Organizace', type: 'text', required: true },
-    { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email' }
-  ],
-  zastupce: [
-    { key: 'display_name', label: 'Jméno zástupce', type: 'text', required: true },
-    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text' },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'email', label: 'E-mail', type: 'email' }
-  ]
-};
-
-// helper to find current module from hash (used for navigation / default role)
-function getModuleIdFromHash() {
-  try {
-    const m = (location.hash || '').match(/#\/m\/([^\/]+)/);
-    return m ? m[1] : null;
-  } catch (e) { return null; }
-}
+import { renderUniversalForm, navigateToModuleOverview, getModuleIdFromHash } from '/src/ui/universal-form.js';
 
 export async function render(root, params = {}) {
   root.innerHTML = '';
   const type = params?.type || 'osoba';
-  const schema = TYPE_SCHEMAS[type] || TYPE_SCHEMAS['osoba'];
+  const schema = getSubjectTypeSchema(type);
 
   // načíst existující data pokud editujeme
   let initial = {};
+  let entityId = null;
+  
   if (params?.id) {
     const { data, error } = await getSubject(params.id);
     if (error) {
@@ -76,32 +20,62 @@ export async function render(root, params = {}) {
       return;
     }
     initial = data || {};
+    entityId = params.id;
   } else {
-    initial = { typ_subjektu: type, role: params?.role || (getModuleIdFromHash()?.startsWith('050') ? 'najemnik' : 'pronajimatel') };
+    // Auto-detect role based on module
+    const inferredRole = params?.role || (getModuleIdFromHash()?.startsWith('050') ? 'najemnik' : 'pronajimatel');
+    initial = { typ_subjektu: type, role: inferredRole };
   }
 
-  renderForm(root, schema, initial, async (values) => {
-    const inferredRole = params?.role || (getModuleIdFromHash()?.startsWith('050') ? 'najemnik' : 'pronajimatel');
-    const payload = {
-      ...values,
-      typ_subjektu: type,
-      role: inferredRole,
-      display_name: (values.display_name && values.display_name.trim()) ||
-                    ((values.jmeno || values.prijmeni) ? `${values.jmeno || ''} ${values.prijmeni || ''}`.trim() : values.primary_email || '')
-    };
+  // Breadcrumbs
+  const breadcrumbs = [
+    { icon: 'home', label: 'Domů', href: '#/' },
+    { icon: 'users', label: 'Nájemník', href: '#/m/050-najemnik/t/prehled' },
+    { label: entityId ? 'Úprava' : 'Nový záznam' }
+  ];
 
-    const { data, error } = await upsertSubject(payload);
-    if (error) {
-      toast('Chyba při ukládání: ' + (error.message || JSON.stringify(error)), 'error');
-      return false;
+  // Render using universal form wrapper
+  await renderUniversalForm({
+    root,
+    schema,
+    initialData: initial,
+    breadcrumbs,
+    onSave: async (values) => {
+      const inferredRole = params?.role || (getModuleIdFromHash()?.startsWith('050') ? 'najemnik' : 'pronajimatel');
+      const payload = {
+        ...values,
+        typ_subjektu: type,
+        role: inferredRole,
+        display_name: (values.display_name && values.display_name.trim()) ||
+                      ((values.jmeno || values.prijmeni) ? `${values.jmeno || ''} ${values.prijmeni || ''}`.trim() : values.primary_email || '')
+      };
+
+      if (entityId) {
+        payload.id = entityId;
+      }
+
+      const { data, error } = await upsertSubject(payload);
+      if (error) {
+        toast('Chyba při ukládání: ' + (error.message || JSON.stringify(error)), 'error');
+        return { success: false, error };
+      }
+      
+      toast('Uloženo', 'success');
+      const moduleId = params?.module || getModuleIdFromHash();
+      navigateToModuleOverview(moduleId);
+      return { success: true, data };
+    },
+    options: {
+      entity: 'subject',
+      entityId: entityId,
+      showAttachments: !!entityId, // Only show for existing records
+      showHistory: !!entityId,     // Only show for existing records
+      showArchive: false,          // Can enable if archive functionality is needed
+      onCancel: () => {
+        const moduleId = params?.module || getModuleIdFromHash();
+        navigateToModuleOverview(moduleId);
+      }
     }
-    toast('Uloženo', 'success');
-    // navigate back to list for the same module
-    const moduleId = params?.module || getModuleIdFromHash();
-    if (moduleId) window.navigateTo(`#/m/${moduleId}/t/prehled`);
-    return true;
   });
-
-  const formEl = root.querySelector('form');
-  if (formEl) useUnsavedHelper(formEl);
 }
+
