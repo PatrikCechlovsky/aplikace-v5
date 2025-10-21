@@ -76,21 +76,53 @@ Podle `README.md` a dalších souborů je v main již implementováno:
 
 ## ❌ Co NENÍ v main (uzavřené PR s konflikty)
 
-### Z PR #7 (Standardizace modulů)
-Tyto změny byly v PR #7, ale není jasné, zda byly integrovány do main:
+### Z PR #7 (Standardizace modulů) - ✅ OVĚŘENO: CHYBÍ
+**13 souborů změněno | +1,355 řádků | -212 řádků**
 
-1. **`src/db/type-schemas.js`** - Centralizované schémata pro typy subjektů
-2. **`src/ui/universal-form.js`** - Univerzální wrapper pro formuláře
-3. **Refaktorované formuláře** v modulech 030, 040, 050
-4. **Dokumentace:**
-   - `STRUKTURA-ODPOVED.md`
-   - `STRUKTURA-VIZUALIZACE.txt`
-   - `docs/standardized-module-structure.md`
+**Nové soubory (5):**
+1. **`src/db/type-schemas.js`** (107 řádků) - Centralizované schémata
+   - SUBJECT_TYPE_SCHEMAS (osoba, osvc, firma, spolek, stat, zastupce)
+   - PROPERTY_SCHEMA (nemovitosti)
+   - getSubjectTypeSchema(), getPropertySchema() funkce
+   
+2. **`src/ui/universal-form.js`** (253 řádků) - Univerzální formulářový wrapper
+   - renderUniversalForm() - automatické breadcrumbs, actions, attachments, history
+   - Podpora read-only režimu
+   - Unsaved changes warning
+   - getModuleIdFromHash(), navigateToModuleOverview() helpers
+   
+3. **`STRUKTURA-ODPOVED.md`** (206 řádků) - Český souhrn změn
+4. **`STRUKTURA-VIZUALIZACE.txt`** (98 řádků) - Vizualizace struktury
+5. **`docs/standardized-module-structure.md`** (215 řádků) - Kompletní dokumentace
 
-### Z PR #8 (Testovací modul)
-Tento modul byl určen pro větev `test-moduly`, nikoli main:
+**Refaktorované moduly (7 souborů):**
+- **Modul 030** (pronajimatel/forms/form.js): -78, +49 řádků
+- **Modul 050** (najemnik/forms/form.js): -83, +57 řádků
+- **Modul 040** (nemovitost):
+  - forms/edit.js: +59 řádků (bylo prázdné)
+  - forms/detail.js: +48 řádků (bylo prázdné)
+- **Modul 000** (šablona):
+  - forms/edit.js: -24, +90 řádků
+  - forms/detail.js: -12, +77 řádků
+  - assets/README.md: -9, +61 řádků
+  - assets/checklist.md: -6, +35 řádků
 
-1. **Modul 999-test-moduly** - Testovací modul pro vývoj
+**Výhody těchto změn:**
+- ✅ Eliminuje 110+ řádků duplikovaného kódu (TYPE_SCHEMAS)
+- ✅ Jednotná struktura a UX napříč všemi moduly
+- ✅ Automatické funkce: breadcrumbs, actions, attachments, history
+- ✅ Rychlejší vývoj nových modulů
+- ✅ Snadná údržba
+
+### Z PR #8 (Testovací modul) - ✅ OVĚŘENO: CHYBÍ
+**12 souborů | +367 řádků**
+
+Tento modul byl určen pro větev `test-moduly`, nikoli main. Obsah:
+1. **Modul 999-test-moduly** - Kompletní testovací modul pro vývoj
+   - Tiles: prehled.js, seznam.js
+   - Forms: detail.js, edit.js
+   - Services: api.js (demo)
+   - Dokumentace v assets/
 
 ---
 
@@ -231,4 +263,58 @@ Pokud PR #7 a #8 byly uzavřeny záměrně (změny již nejsou potřeba):
 
 3. **Tento PR můžete použít pro integraci těchto změn**, nebo jej uzavřít a vytvořit nový.
 
-**Chcete, abych reimplementoval změny z PR #7 a/nebo PR #8 do tohoto PR?**
+---
+
+## 🎯 Akční plán - Co dělat dál?
+
+### Možnost A: ⭐ **DOPORUČENO** - Reimplementovat PR #7 (standardizace)
+
+**Proč:**
+- PR #7 obsahuje důležitou standardizaci modulů (1,355+ řádků)
+- Eliminuje duplikaci kódu
+- Vytváří jednotnou strukturu pro všechny moduly
+- Usnadňuje budoucí vývoj
+
+**Co by se stalo:**
+1. Vytvořím `src/db/type-schemas.js` (centralizované schémata)
+2. Vytvořím `src/ui/universal-form.js` (univerzální wrapper)
+3. Refaktoruji moduly 030, 040, 050, 000 aby používaly novou strukturu
+4. Přidám dokumentaci (3 soubory)
+5. Otestuji syntaxi a bezpečnost pomocí CodeQL
+6. Commit a push do tohoto PR
+
+**Čas: ~30-45 minut práce**
+
+### Možnost B: Reimplementovat pouze část
+
+**Pokud chcete jen některé změny:**
+- Pouze type-schemas.js a universal-form.js (bez refaktoringu modulů)
+- Pouze dokumentaci
+- Pouze refaktoring vybraných modulů
+
+### Možnost C: Přidat testovací modul z PR #8
+
+**Volitelně:**
+- Modul 999-test-moduly (367 řádků)
+- Užitečný pro vývoj a testování
+- Neovlivňuje produkční moduly
+
+### Možnost D: Zavřít tento PR a ponechat main jak je
+
+**Pokud:**
+- Aktuální stav main je dostačující
+- Standardizace není priorita
+- Chcete řešit později
+
+---
+
+## ❓ Co preferujete?
+
+**Odpovězte prosím jednou z možností:**
+
+1. **"Možnost A"** - Reimplementuj kompletní standardizaci z PR #7
+2. **"Možnost A + C"** - Standardizace + testovací modul
+3. **"Možnost B"** - Jen určité části (upřesněte které)
+4. **"Možnost D"** - Zavřít PR, nic nedělat
+
+**Nebo mi dejte vlastní instrukce co chcete udělat.**
