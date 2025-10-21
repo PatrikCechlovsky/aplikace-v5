@@ -30,18 +30,19 @@ function _toStringOrNull(v) {
 
 /**
  * listSubjects(options)
- * options: { q, type, role, profileId, limit, offset, orderBy }
- * pokud profileId není zadáno, použije se aktuální auth.uid()
+ * options: { q, type, role, profileId, limit, offset, orderBy, filterByProfile }
+ * pokud filterByProfile === true a profileId není zadáno, použije se aktuální auth.uid()
+ * pokud filterByProfile === false nebo není nastaveno, vrátí všechny subjekty (s filtry type/role)
  */
 export async function listSubjects(options = {}) {
-  const { q, type, role, profileId: pProfileId, limit = 50, offset = 0, orderBy = 'display_name' } = options;
+  const { q, type, role, profileId: pProfileId, limit = 50, offset = 0, orderBy = 'display_name', filterByProfile = false } = options;
 
   try {
     let profileId = pProfileId;
-    if (!profileId) profileId = await getAuthUid();
+    if (!profileId && filterByProfile) profileId = await getAuthUid();
 
     // pokud chceme pouze subjekty spojené s profileId -> nejprve vyber subject_id
-    if (profileId) {
+    if (profileId && filterByProfile) {
       const { data: linkRows, error: linkErr } = await supabase
         .from('user_subjects')
         .select('subject_id')

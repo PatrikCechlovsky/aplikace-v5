@@ -21,7 +21,7 @@ export async function render(root) {
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="subject-table"></div>`;
 
-  const { data, error } = await listSubjects({ type: 'stat', limit: 500 });
+  const { data, error } = await listSubjects({ role: 'pronajimatel', type: 'stat', limit: 500 });
   if (error) { root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; return; }
   const rows = data || [];
 
