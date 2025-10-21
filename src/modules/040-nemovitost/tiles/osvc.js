@@ -1,12 +1,20 @@
 import { renderTable } from '/src/ui/table.js';
 import { listSubjects } from '/src/db/subjects.js';
+import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 
 export async function render(root) {
-  root.innerHTML = '<h2>OSVČ</h2>';
-  const profileId = (window.currentUser && window.currentUser.id) || null;
-  const { data, error } = await listSubjects({ type: 'osvc', profileId, limit: 500 });
+  try {
+    setBreadcrumb(document.getElementById('crumb'), [
+      { icon: 'home', label: 'Domů', href: '#/' },
+      { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
+      { icon: 'briefcase', label: 'OSVČ' }
+    ]);
+  } catch (e) {}
+  
+  root.innerHTML = '<div class="p-4 bg-white rounded-2xl shadow"><h2 class="text-xl font-semibold mb-4">OSVČ</h2><div id="table-content"></div></div>';
+  const { data, error } = await listSubjects({ type: 'osvc', limit: 500 });
   if (error) {
-    root.innerHTML += `<div class="error">Chyba: ${error.message || error}</div>`;
+    root.querySelector('#table-content').innerHTML = `<div class="text-red-600">Chyba: ${error.message || error}</div>`;
     return;
   }
   const columns = [
@@ -16,5 +24,8 @@ export async function render(root) {
     { key: 'primary_phone', label: 'Telefon' },
     { key: 'city', label: 'Město' }
   ];
-  renderTable(root, { columns, rows: data || [] });
+  renderTable(root.querySelector('#table-content'), { columns, rows: data || [] });
 }
+
+export default { render };
+
