@@ -11,7 +11,7 @@
 
 export const TYPE_SCHEMAS = {
   osoba: [
-    { key: 'display_name', label: 'Tituly / Jméno', type: 'text', required: true },
+    { key: 'display_name', label: 'Jméno a příjmení', type: 'text', required: true },
     { key: 'titul_pred', label: 'Titul před jménem', type: 'text' },
     { key: 'jmeno', label: 'Křestní jméno', type: 'text', required: true },
     { key: 'prijmeni', label: 'Příjmení', type: 'text', required: true },
@@ -20,18 +20,18 @@ export const TYPE_SCHEMAS = {
         { value: 'op', label: 'Občanský průkaz' },
         { value: 'pas', label: 'Pas' },
         { value: 'rid', label: 'Řidičský průkaz' }
-      ], required: true },
-    { key: 'cislo_dokladu', label: 'Číslo dokladu', type: 'text', required: true },
+      ], required: false },
+    { key: 'cislo_dokladu', label: 'Číslo dokladu', type: 'text', required: false },
     { key: 'datum_narozeni', label: 'Datum narození', type: 'date' },
 
     // address
-    { key: 'stat', label: 'Stát', type: 'select', options: [], required: true, note: 'výběr ze státu' },
-    { key: 'zip', label: 'PSČ', type: 'text', required: true },
-    { key: 'city', label: 'Město', type: 'text', required: true },
-    { key: 'street', label: 'Ulice', type: 'text', required: true },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text', required: true },
+    { key: 'country', label: 'Stát', type: 'text', required: false },
+    { key: 'zip', label: 'PSČ', type: 'text', required: false },
+    { key: 'city', label: 'Město', type: 'text', required: false },
+    { key: 'street', label: 'Ulice', type: 'text', required: false },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text', required: false },
 
-    { key: 'telefon', label: 'Telefon', type: 'text', required: true, note: 'předvolba podle státu' },
+    { key: 'primary_phone', label: 'Telefon', type: 'text', required: false },
     { key: 'primary_email', label: 'E-mail', type: 'email', required: true },
 
     // banking / login
@@ -50,11 +50,13 @@ export const TYPE_SCHEMAS = {
     { key: 'dic', label: 'DIČ', type: 'text' },
 
     // address & contact
-    { key: 'telefon', label: 'Telefon', type: 'text', required: true },
+    { key: 'primary_phone', label: 'Telefon', type: 'text', required: false },
     { key: 'primary_email', label: 'E-mail', type: 'email', required: true },
-    { key: 'street', label: 'Ulice', type: 'text', required: true },
-    { key: 'city', label: 'Město', type: 'text', required: true },
-    { key: 'zip', label: 'PSČ', type: 'text', required: true },
+    { key: 'country', label: 'Stát', type: 'text', required: false },
+    { key: 'street', label: 'Ulice', type: 'text', required: false },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text', required: false },
+    { key: 'city', label: 'Město', type: 'text', required: false },
+    { key: 'zip', label: 'PSČ', type: 'text', required: false },
 
     // banking / login
     { key: 'bankovni_ucet', label: 'Bankovní účet / číslo', type: 'text' }
@@ -69,27 +71,37 @@ export const TYPE_SCHEMAS = {
     { key: 'primary_email', label: 'E-mail', type: 'email', required: true },
 
     // address
-    { key: 'street', label: 'Ulice', type: 'text', required: true },
-    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text', required: true },
-    { key: 'city', label: 'Město', type: 'text', required: true },
-    { key: 'zip', label: 'PSČ', type: 'text', required: true },
+    { key: 'country', label: 'Stát', type: 'text', required: false },
+    { key: 'street', label: 'Ulice', type: 'text', required: false },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text', required: false },
+    { key: 'city', label: 'Město', type: 'text', required: false },
+    { key: 'zip', label: 'PSČ', type: 'text', required: false },
 
     { key: 'bankovni_ucet', label: 'Bankovní účet / číslo', type: 'text' }
   ],
 
   spolek: [
     { key: 'display_name', label: 'Název spolku / skupiny', type: 'text', required: true },
+    { key: 'ico', label: 'IČO', type: 'text', required: false },
+    { key: 'dic', label: 'DIČ', type: 'text' },
     { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email', required: true },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
+    { key: 'primary_phone', label: 'Telefon', type: 'text' },
+    { key: 'country', label: 'Stát', type: 'text', required: false },
     { key: 'street', label: 'Ulice', type: 'text' },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
     { key: 'city', label: 'Město', type: 'text' },
     { key: 'zip', label: 'PSČ', type: 'text' }
   ],
 
   stat: [
     { key: 'display_name', label: 'Název organizace', type: 'text', required: true },
+    { key: 'ico', label: 'IČO', type: 'text', required: false },
+    { key: 'dic', label: 'DIČ', type: 'text' },
     { key: 'primary_email', label: 'Kontakt (e-mail)', type: 'email', required: true },
+    { key: 'primary_phone', label: 'Telefon', type: 'text' },
+    { key: 'country', label: 'Stát', type: 'text', required: false },
     { key: 'street', label: 'Ulice', type: 'text' },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
     { key: 'city', label: 'Město', type: 'text' },
     { key: 'zip', label: 'PSČ', type: 'text' }
   ],
@@ -98,9 +110,14 @@ export const TYPE_SCHEMAS = {
     { key: 'display_name', label: 'Jméno zástupce', type: 'text', required: true },
     { key: 'jmeno', label: 'Křestní jméno', type: 'text', required: true },
     { key: 'prijmeni', label: 'Příjmení', type: 'text', required: true },
-    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text', required: true },
-    { key: 'telefon', label: 'Telefon', type: 'text' },
-    { key: 'primary_email', label: 'E-mail', type: 'email' }
+    { key: 'zastupuje_id', label: 'Zastupuje (ID subjektu)', type: 'text', required: false },
+    { key: 'primary_phone', label: 'Telefon', type: 'text' },
+    { key: 'primary_email', label: 'E-mail', type: 'email' },
+    { key: 'country', label: 'Stát', type: 'text', required: false },
+    { key: 'street', label: 'Ulice', type: 'text' },
+    { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
+    { key: 'city', label: 'Město', type: 'text' },
+    { key: 'zip', label: 'PSČ', type: 'text' }
   ]
 };
 

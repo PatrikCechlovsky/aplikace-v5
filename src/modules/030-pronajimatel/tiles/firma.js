@@ -27,7 +27,7 @@ export async function render(root) {
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="subject-table"></div>`;
 
   // Načti pouze firmy
-  const { data, error } = await listSubjects({ type: 'firma', limit: 500 });
+  const { data, error } = await listSubjects({ role: 'pronajimatel', type: 'firma', limit: 500 });
   if (error) {
     root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
     return;
