@@ -19,14 +19,14 @@ export async function render(root) {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
       { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
-      { icon: 'list', label: 'Přehled' }
+      { icon: 'list', label: 'Přehled', href: '#/m/040-nemovitost/t/prehled' },
+      { icon: 'grid', label: 'Jiný objekt' }
     ]);
-  } catch (e) {}
+  } catch (e) { /* ignore if crumb missing */ }
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-table"></div>`;
 
-  // Načti všechny nemovitosti
-  const { data, error } = await listProperties({ showArchived, limit: 500 });
+  const { data, error } = await listProperties({ type: 'jiny_objekt', showArchived, limit: 500 });
   if (error) {
     root.querySelector('#property-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
     return;
@@ -34,22 +34,20 @@ export async function render(root) {
   const rows = data || [];
 
   const columns = [
-    { key: 'id', label: 'ID', width: '6%' },
+    { key: 'id', label: 'ID', width: '8%' },
     {
       key: 'nazev',
       label: 'Název',
-      width: '20%',
+      width: '25%',
       render: (r) => {
         const name = escapeHtml(r.nazev || '—');
         return `<a href="#/m/040-nemovitost/f/detail?id=${encodeURIComponent(r.id)}">${name}</a>`;
       }
     },
-    { key: 'typ_nemovitosti', label: 'Typ', width: '12%' },
-    { key: 'ulice', label: 'Ulice', width: '15%' },
-    { key: 'mesto', label: 'Město', width: '12%' },
-    { key: 'pocet_podlazi', label: 'Podlaží', width: '8%' },
-    { key: 'pocet_jednotek', label: 'Jednotky', width: '8%' },
-    { key: 'archivedLabel', label: 'Archivován', width: '10%' }
+    { key: 'ulice', label: 'Ulice', width: '20%' },
+    { key: 'mesto', label: 'Město', width: '15%' },
+    { key: 'pocet_podlazi', label: 'Podlaží', width: '10%' },
+    { key: 'archivedLabel', label: 'Archivován', width: '12%' }
   ];
 
   function drawActions() {
@@ -62,7 +60,7 @@ export async function render(root) {
       moduleActions: ['add', 'edit', 'archive', 'attach', 'refresh', 'history'],
       userRole,
       handlers: {
-        onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser'),
+        onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser?returnType=jiny_objekt'),
         onEdit: hasSel ? () => navigateTo(`#/m/040-nemovitost/f/edit?id=${selectedRow.id}`) : undefined,
         onArchive: (perms.includes('archive') && hasSel) ? async () => {
           const { archiveProperty } = await import('/src/modules/040-nemovitost/db.js');
