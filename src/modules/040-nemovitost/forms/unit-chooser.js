@@ -9,14 +9,14 @@ function safeNavigate(href) {
 }
 
 const UNIT_TYPES = [
-  { id: 'byt', label: 'Byt', icon: 'home' },
-  { id: 'kancelar', label: 'Kancelář', icon: 'briefcase' },
+  { id: 'byt', label: 'Byt', icon: 'apartment-unit' },
+  { id: 'kancelar', label: 'Kancelář', icon: 'office' },
   { id: 'obchod', label: 'Obchodní prostor', icon: 'shopping-cart' },
-  { id: 'sklad', label: 'Sklad', icon: 'warehouse' },
+  { id: 'sklad', label: 'Sklad', icon: 'storage' },
   { id: 'garaz', label: 'Garáž/Parking', icon: 'car' },
-  { id: 'sklep', label: 'Sklep', icon: 'archive' },
-  { id: 'puda', label: 'Půda', icon: 'home' },
-  { id: 'jina_jednotka', label: 'Jiná jednotka', icon: 'grid' }
+  { id: 'sklep', label: 'Sklep', icon: 'basement' },
+  { id: 'puda', label: 'Půda', icon: 'attic' },
+  { id: 'jina_jednotka', label: 'Jiná jednotka', icon: 'unit-key' }
 ];
 
 export async function render(root, params) {

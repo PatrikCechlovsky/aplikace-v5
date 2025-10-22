@@ -69,6 +69,24 @@ export const ICONS = {
   bank: '🏦',
   handshake: '🤝',
   grid: '🟦',
+
+  // NEMOVITOSTI - Property Types (modul 040)
+  'building-2': '🏢',      // Bytový dům
+  'warehouse': '🏭',       // Průmyslový objekt / Sklad
+  'map': '🗺️',            // Pozemek
+  'office-building': '🏬', // Administrativní budova (alternativní k briefcase)
+  'apartment': '🏘️',      // Jiný objekt nemovitosti
+  
+  // JEDNOTKY - Unit Types (modul 040)
+  'shopping-cart': '🛒',   // Obchodní prostor
+  'car': '🚗',             // Garáž/Parking
+  'basement': '🔒',        // Sklep (unikátní, nepoužívat archive)
+  'attic': '🏚️',          // Půda (unikátní, odlišná od home)
+  'apartment-unit': '🚪',  // Byt (unikátní, odlišná od home)
+  'office': '💼',          // Kancelář (stejný jako briefcase, ale alias)
+  'storage': '📦',         // Sklad (unikátní)
+  'unit-key': '🔑',        // Jiná jednotka (unikátní klíč)
+  'pencil-alt': '✏️',      // Ikona tužky pro editaci (alias na edit)
 };
 
  // Aliasy – pohodlnější klíče na totéž

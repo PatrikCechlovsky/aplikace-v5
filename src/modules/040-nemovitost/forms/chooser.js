@@ -11,10 +11,10 @@ function safeNavigate(href) {
 const PROPERTY_TYPES = [
   { id: 'bytovy_dum', label: 'Bytový dům', icon: 'building-2' },
   { id: 'rodinny_dum', label: 'Rodinný dům', icon: 'home' },
-  { id: 'admin_budova', label: 'Administrativní budova', icon: 'briefcase' },
+  { id: 'admin_budova', label: 'Administrativní budova', icon: 'office-building' },
   { id: 'prumyslovy_objekt', label: 'Průmyslový objekt', icon: 'warehouse' },
   { id: 'pozemek', label: 'Pozemek', icon: 'map' },
-  { id: 'jiny_objekt', label: 'Jiný objekt', icon: 'grid' }
+  { id: 'jiny_objekt', label: 'Jiný objekt', icon: 'apartment' }
 ];
 
 export async function render(root, params) {
