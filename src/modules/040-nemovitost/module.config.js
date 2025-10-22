@@ -21,10 +21,16 @@ export async function getManifest() {
       { id: 'chooser', title: 'Výběr typu nemovitosti', icon: 'grid' },
       { id: 'edit', title: 'Úprava / Nová nemovitost', icon: 'edit' },
       { id: 'detail', title: 'Detail nemovitosti', icon: 'eye' },
+      { id: 'unit-chooser', title: 'Výběr typu jednotky', icon: 'grid' },
+      { id: 'unit-edit', title: 'Úprava / Nová jednotka', icon: 'edit' },
+      { id: 'property-type', title: 'Správa typů nemovitostí', icon: 'settings' },
+      { id: 'unit-type', title: 'Správa typů jednotek', icon: 'settings' },
     ],
   };
 }
 
 export default { getManifest };
+
+
 
 

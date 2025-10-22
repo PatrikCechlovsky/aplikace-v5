@@ -1,6 +1,6 @@
 import { renderTable } from '/src/ui/table.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
-import { listProperties } from '/src/modules/040-nemovitost/db.js';
+import { listProperties, listPropertyTypes } from '/src/modules/040-nemovitost/db.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { navigateTo } from '/src/app.js';
 import { getUserPermissions } from '/src/security/permissions.js';
@@ -33,6 +33,10 @@ export async function render(root) {
   }
   const rows = data || [];
 
+  // Načti typy nemovitostí (včetně barvy)
+  const { data: types = [] } = await listPropertyTypes();
+  const typeMap = Object.fromEntries(types.map(t => [t.slug, t]));
+
   const columns = [
     { key: 'id', label: 'ID', width: '6%' },
     {
@@ -44,7 +48,29 @@ export async function render(root) {
         return `<a href="#/m/040-nemovitost/f/detail?id=${encodeURIComponent(r.id)}">${name}</a>`;
       }
     },
-    { key: 'typ_nemovitosti', label: 'Typ', width: '12%' },
+    {
+      key: 'typ_nemovitosti',
+      label: 'Typ',
+      width: '12%',
+      sortable: true,
+      render: (row) => {
+        const type = typeMap[row.typ_nemovitosti];
+        if (!type) return `<span>${row.typ_nemovitosti || '—'}</span>`;
+        return `<span style="
+          background:${type.color};
+          color:#222;
+          padding:2px 12px;
+          border-radius:14px;
+          font-size:0.97em;
+          font-weight:600;
+          display:inline-block;
+          min-width:60px;
+          text-align:center;
+          box-shadow:0 1px 3px 0 #0001;
+          letter-spacing:0.01em;
+        ">${type.label}</span>`;
+      }
+    },
     { key: 'ulice', label: 'Ulice', width: '15%' },
     { key: 'mesto', label: 'Město', width: '12%' },
     { key: 'pocet_podlazi', label: 'Podlaží', width: '8%' },
