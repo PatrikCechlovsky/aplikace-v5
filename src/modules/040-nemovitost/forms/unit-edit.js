@@ -2,7 +2,7 @@ import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
 import { navigateTo } from '/src/app.js';
-import { getProperty, upsertProperty, archiveProperty } from '/src/modules/040-nemovitost/db.js';
+import { getUnit, upsertUnit, archiveUnit, getProperty } from '/src/modules/040-nemovitost/db.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
 import { setUnsaved } from '/src/app.js';
@@ -23,22 +23,28 @@ function formatCzechDate(dateStr) {
 
 // Definice polí formuláře
 const FIELDS = [
-  { key: 'nazev', label: 'Název nemovitosti', type: 'text', required: true },
-  { key: 'typ_nemovitosti', label: 'Typ nemovitosti', type: 'select', required: true, options: [
-    { value: 'bytovy_dum', label: 'Bytový dům' },
-    { value: 'rodinny_dum', label: 'Rodinný dům' },
-    { value: 'admin_budova', label: 'Administrativní budova' },
-    { value: 'prumyslovy_objekt', label: 'Průmyslový objekt' },
-    { value: 'pozemek', label: 'Pozemek' },
-    { value: 'jiny_objekt', label: 'Jiný objekt' }
+  { key: 'oznaceni', label: 'Označení jednotky', type: 'text', required: true, placeholder: 'např. 1.01, A12' },
+  { key: 'typ_jednotky', label: 'Typ jednotky', type: 'select', required: true, options: [
+    { value: 'byt', label: 'Byt' },
+    { value: 'kancelar', label: 'Kancelář' },
+    { value: 'obchod', label: 'Obchodní prostor' },
+    { value: 'sklad', label: 'Sklad' },
+    { value: 'garaz', label: 'Garáž/Parking' },
+    { value: 'sklep', label: 'Sklep' },
+    { value: 'puda', label: 'Půda' },
+    { value: 'jina_jednotka', label: 'Jiná jednotka' }
   ]},
-  { key: 'ulice', label: 'Ulice', type: 'text', required: true },
-  { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text', required: true },
-  { key: 'mesto', label: 'Město', type: 'text', required: true },
-  { key: 'psc', label: 'PSČ', type: 'text', required: true },
-  { key: 'pocet_podlazi', label: 'Počet podlaží', type: 'number' },
-  { key: 'rok_vystavby', label: 'Rok výstavby', type: 'number' },
-  { key: 'pocet_jednotek', label: 'Počet jednotek', type: 'number' },
+  { key: 'podlazi', label: 'Podlaží', type: 'number', required: true },
+  { key: 'plocha', label: 'Plocha (m²)', type: 'number', required: true },
+  { key: 'pocet_mistnosti', label: 'Počet místností', type: 'number' },
+  { key: 'dispozice', label: 'Dispozice', type: 'text', placeholder: 'např. 2+kk, 3+1' },
+  { key: 'stav', label: 'Stav', type: 'select', required: true, options: [
+    { value: 'volna', label: 'Volná' },
+    { value: 'obsazena', label: 'Obsazená' },
+    { value: 'rezervovana', label: 'Rezervovaná' },
+    { value: 'rekonstrukce', label: 'Rekonstrukce' }
+  ]},
+  { key: 'mesicni_najem', label: 'Měsíční nájem (Kč)', type: 'number' },
   { key: 'poznamka', label: 'Poznámka', type: 'textarea', fullWidth: true },
   { key: 'archived', label: 'Archivní', type: 'checkbox' },
   { key: 'updated_at', label: 'Poslední úprava', type: 'label', readOnly: true, format: formatCzechDate },
@@ -47,21 +53,28 @@ const FIELDS = [
 ];
 
 export async function render(root, params) {
-  const { id, type } = params || getHashParams();
+  const { id, propertyId, type } = params || getHashParams();
   
-  // Načtení dat nemovitosti z DB, pokud máme id
-  let data = {};
+  if (!propertyId && !id) {
+    root.innerHTML = `<div class="p-4 text-red-600">Chybí ID nemovitosti. Jednotka musí být přiřazena k nemovitosti.</div>`;
+    return;
+  }
+  
+  // Načtení dat jednotky z DB, pokud máme id
+  let data = { nemovitost_id: propertyId };
+  let propertyData = null;
+  
   if (id) {
-    const { data: propertyData, error } = await getProperty(id);
+    const { data: unitData, error } = await getUnit(id);
     if (error) {
-      root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání nemovitosti: ${error.message}</div>`;
+      root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání jednotky: ${error.message}</div>`;
       return;
     }
-    if (!propertyData) {
-      root.innerHTML = `<div class="p-4 text-red-600">Nemovitost nenalezena.</div>`;
+    if (!unitData) {
+      root.innerHTML = `<div class="p-4 text-red-600">Jednotka nenalezena.</div>`;
       return;
     }
-    data = { ...propertyData };
+    data = { ...unitData };
     // Formátování datumů pro readonly pole a nahrazení null za '--'
     for (const f of FIELDS) {
       if (f.readOnly) {
@@ -77,21 +90,32 @@ export async function render(root, params) {
     if (typeof data.archived === 'undefined') data.archived = false;
   } else if (type) {
     // Pre-fill type if creating new
-    data.typ_nemovitosti = type;
+    data.typ_jednotky = type;
+    data.stav = 'volna'; // Default state
+  }
+  
+  // Load property data for breadcrumb
+  if (data.nemovitost_id) {
+    const result = await getProperty(data.nemovitost_id);
+    if (result.data) {
+      propertyData = result.data;
+    }
   }
 
-  const nazev = data.nazev || id || 'Nová nemovitost';
+  const oznaceni = data.oznaceni || id || 'Nová jednotka';
+  const propertyName = propertyData ? propertyData.nazev : data.nemovitost_id;
   
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
       { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
+      { icon: 'building', label: propertyName, href: `#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}` },
       { icon: 'form', label: 'Formulář' },
-      { icon: 'edit', label: nazev }
+      { icon: 'edit', label: oznaceni }
     ]);
   } catch (e) {}
 
-  root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-form"></div>`;
+  root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="unit-form"></div>`;
 
   const myRole = window.currentUserRole || 'admin';
 
@@ -110,6 +134,9 @@ export async function render(root, params) {
         window.currentUser.email;
     }
     
+    // Ensure nemovitost_id is set
+    values.nemovitost_id = data.nemovitost_id;
+    
     // If creating new, ensure we have an ID
     if (!id) {
       values.id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
@@ -117,7 +144,7 @@ export async function render(root, params) {
       values.id = id;
     }
     
-    const { data: updated, error } = await upsertProperty(values);
+    const { data: updated, error } = await upsertUnit(values);
     if (error) {
       alert('Chyba při ukládání: ' + error.message);
       return;
@@ -125,55 +152,23 @@ export async function render(root, params) {
     alert('Uloženo.');
     setUnsaved(false);
     
-    // After saving, navigate to detail or refresh
-    if (!id) {
-      navigateTo(`#/m/040-nemovitost/f/detail?id=${updated.id}`);
-    } else {
-      // Po uložení znovu načti data a aktualizuj formulář
-      const { data: refreshed } = await getProperty(id);
-      if (refreshed) {
-        // Formátuj readonly pole (včetně "--" pro null)
-        for (const f of FIELDS) {
-          if (f.readOnly) {
-            if (f.format && refreshed[f.key]) {
-              refreshed[f.key] = f.format(refreshed[f.key]);
-            }
-            if (!refreshed[f.key]) {
-              refreshed[f.key] = '--';
-            }
-          }
-        }
-        renderForm(root.querySelector('#property-form'), FIELDS, refreshed, async () => true, {
-          readOnly: false,
-          showSubmit: false,
-          layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
-          sections: [
-            { id: 'zakladni', label: 'Základní údaje', fields: [
-              'nazev', 'typ_nemovitosti', 'ulice', 'cislo_popisne', 'mesto', 'psc',
-              'pocet_podlazi', 'rok_vystavby', 'pocet_jednotek'
-            ] },
-            { id: 'system', label: 'Systém', fields: [
-              'archived', 'poznamka', 'updated_at', 'updated_by', 'created_at'
-            ] },
-          ]
-        });
-      }
-    }
+    // After saving, navigate back to property detail
+    navigateTo(`#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}`);
   };
   
-  handlers.onReject = () => navigateTo('#/m/040-nemovitost/t/prehled');
+  handlers.onReject = () => navigateTo(`#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}`);
   
   // Archivace (jen pokud není již archivovaný)
   if (id && !data.archived) {
     handlers.onArchive = async () => {
-      await archiveProperty(id);
-      alert('Nemovitost byla archivována.');
-      navigateTo('#/m/040-nemovitost/t/prehled');
+      await archiveUnit(id);
+      alert('Jednotka byla archivována.');
+      navigateTo(`#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}`);
     };
   }
 
   // Přílohy
-  handlers.onAttach = () => id && showAttachmentsModal({ entity: 'properties', entityId: id });
+  handlers.onAttach = () => id && showAttachmentsModal({ entity: 'units', entityId: id });
 
   // Historie změn
   handlers.onHistory = () => id && alert('Historie - implementovat');
@@ -186,14 +181,14 @@ export async function render(root, params) {
   });
 
   // Vykreslení formuláře
-  renderForm(root.querySelector('#property-form'), FIELDS, data, async () => true, {
+  renderForm(root.querySelector('#unit-form'), FIELDS, data, async () => true, {
     readOnly: false,
     showSubmit: false,
     layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
     sections: [
       { id: 'zakladni', label: 'Základní údaje', fields: [
-        'nazev', 'typ_nemovitosti', 'ulice', 'cislo_popisne', 'mesto', 'psc',
-        'pocet_podlazi', 'rok_vystavby', 'pocet_jednotek'
+        'oznaceni', 'typ_jednotky', 'podlazi', 'plocha', 'pocet_mistnosti', 'dispozice',
+        'stav', 'mesicni_najem'
       ] },
       { id: 'system', label: 'Systém', fields: [
         'archived', 'poznamka', 'updated_at', 'updated_by', 'created_at'
@@ -218,4 +213,3 @@ function grabValues(scopeEl) {
 }
 
 export default { render };
-

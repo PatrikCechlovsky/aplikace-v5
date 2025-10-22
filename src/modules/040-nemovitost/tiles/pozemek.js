@@ -1,6 +1,6 @@
 import { renderTable } from '/src/ui/table.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
-import { listProperties, listPropertyTypes } from '/src/modules/040-nemovitost/db.js';
+import { listProperties } from '/src/modules/040-nemovitost/db.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { navigateTo } from '/src/app.js';
 import { getUserPermissions } from '/src/security/permissions.js';
@@ -19,63 +19,35 @@ export async function render(root) {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
       { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
-      { icon: 'list', label: 'Přehled' }
+      { icon: 'list', label: 'Přehled', href: '#/m/040-nemovitost/t/prehled' },
+      { icon: 'map', label: 'Pozemek' }
     ]);
-  } catch (e) {}
+  } catch (e) { /* ignore if crumb missing */ }
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-table"></div>`;
 
-  // Načti všechny nemovitosti
-  const { data, error } = await listProperties({ showArchived, limit: 500 });
+  const { data, error } = await listProperties({ type: 'pozemek', showArchived, limit: 500 });
   if (error) {
     root.querySelector('#property-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
     return;
   }
   const rows = data || [];
 
-  // Načti typy nemovitostí (včetně barvy)
-  const { data: types = [] } = await listPropertyTypes();
-  const typeMap = Object.fromEntries(types.map(t => [t.slug, t]));
-
   const columns = [
-    { key: 'id', label: 'ID', width: '6%' },
+    { key: 'id', label: 'ID', width: '8%' },
     {
       key: 'nazev',
       label: 'Název',
-      width: '20%',
+      width: '25%',
       render: (r) => {
         const name = escapeHtml(r.nazev || '—');
         return `<a href="#/m/040-nemovitost/f/detail?id=${encodeURIComponent(r.id)}">${name}</a>`;
       }
     },
-    {
-      key: 'typ_nemovitosti',
-      label: 'Typ',
-      width: '12%',
-      sortable: true,
-      render: (row) => {
-        const type = typeMap[row.typ_nemovitosti];
-        if (!type) return `<span>${row.typ_nemovitosti || '—'}</span>`;
-        return `<span style="
-          background:${type.color};
-          color:#222;
-          padding:2px 12px;
-          border-radius:14px;
-          font-size:0.97em;
-          font-weight:600;
-          display:inline-block;
-          min-width:60px;
-          text-align:center;
-          box-shadow:0 1px 3px 0 #0001;
-          letter-spacing:0.01em;
-        ">${type.label}</span>`;
-      }
-    },
-    { key: 'ulice', label: 'Ulice', width: '15%' },
-    { key: 'mesto', label: 'Město', width: '12%' },
-    { key: 'pocet_podlazi', label: 'Podlaží', width: '8%' },
-    { key: 'pocet_jednotek', label: 'Jednotky', width: '8%' },
-    { key: 'archivedLabel', label: 'Archivován', width: '10%' }
+    { key: 'ulice', label: 'Ulice', width: '20%' },
+    { key: 'mesto', label: 'Město', width: '15%' },
+    { key: 'rozloha', label: 'Rozloha', width: '10%' },
+    { key: 'archivedLabel', label: 'Archivován', width: '12%' }
   ];
 
   function drawActions() {
@@ -88,7 +60,7 @@ export async function render(root) {
       moduleActions: ['add', 'edit', 'archive', 'attach', 'refresh', 'history'],
       userRole,
       handlers: {
-        onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser'),
+        onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser?returnType=pozemek'),
         onEdit: hasSel ? () => navigateTo(`#/m/040-nemovitost/f/edit?id=${selectedRow.id}`) : undefined,
         onArchive: (perms.includes('archive') && hasSel) ? async () => {
           const { archiveProperty } = await import('/src/modules/040-nemovitost/db.js');
