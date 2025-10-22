@@ -37,17 +37,8 @@ export async function render(root) {
   const { data: types = [] } = await listPropertyTypes();
   const typeMap = Object.fromEntries(types.map(t => [t.slug, t]));
 
+  // Task 02: Type badge in FIRST column for visual consistency
   const columns = [
-    { key: 'id', label: 'ID', width: '6%' },
-    {
-      key: 'nazev',
-      label: 'Název',
-      width: '20%',
-      render: (r) => {
-        const name = escapeHtml(r.nazev || '—');
-        return `<a href="#/m/040-nemovitost/f/detail?id=${encodeURIComponent(r.id)}">${name}</a>`;
-      }
-    },
     {
       key: 'typ_nemovitosti',
       label: 'Typ',
@@ -69,6 +60,15 @@ export async function render(root) {
           box-shadow:0 1px 3px 0 #0001;
           letter-spacing:0.01em;
         ">${type.label}</span>`;
+      }
+    },
+    {
+      key: 'nazev',
+      label: 'Název',
+      width: '22%',
+      render: (r) => {
+        const name = escapeHtml(r.nazev || '—');
+        return `<a href="#/m/040-nemovitost/f/detail?id=${encodeURIComponent(r.id)}">${name}</a>`;
       }
     },
     { key: 'ulice', label: 'Ulice', width: '15%' },
