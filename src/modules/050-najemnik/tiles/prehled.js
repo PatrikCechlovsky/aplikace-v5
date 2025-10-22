@@ -8,6 +8,17 @@ import { showAttachmentsModal } from '/src/ui/attachments.js';
 
 let selectedRow = null;
 let filterValue = '';
+let showArchived = false; // Task 04: Add archived filter
+
+// Task 02: Type badge configuration
+const typeBadges = {
+  'osoba': { color: '#3B82F6', label: 'FO', title: 'Fyzická osoba' },
+  'osvc': { color: '#8B5CF6', label: 'OSVČ', title: 'OSVČ' },
+  'firma': { color: '#10B981', label: 'PO', title: 'Právnická osoba' },
+  'spolek': { color: '#F59E0B', label: 'Spolek', title: 'Spolek / Skupina' },
+  'stat': { color: '#EF4444', label: 'Stát', title: 'Státní instituce' },
+  'zastupce': { color: '#6B7280', label: 'Zástupce', title: 'Zástupce' }
+};
 
 export async function render(root) {
   try {
@@ -20,22 +31,53 @@ export async function render(root) {
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="subject-table"></div>`;
 
-  const { data, error } = await listSubjects({ role: 'najemnik', limit: 500 });
-  if (error) { root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; return; }
+  // Task 04: Include archived filter
+  const { data, error } = await listSubjects({ 
+    role: 'najemnik', 
+    showArchived,
+    limit: 500 
+  });
+  if (error) { 
+    root.querySelector('#subject-table').innerHTML = `<div class="p-4 text-red-600">Chyba: ${error.message}</div>`; 
+    return; 
+  }
   const rows = data || [];
 
+  // Task 02: Type badge as FIRST column
   const columns = [
-    { key:'id', label:'ID' },
-    { key:'display_name', label:'Název / Jméno' },
-    { key:'typ_subjektu', label:'Typ' },
-    { key:'ico', label:'IČO' },
-    { key:'primary_email', label:'E-mail' },
-    { key:'primary_phone', label:'Telefon' },
-    { key:'city', label:'Město' }
+    {
+      key: 'typ_subjektu',
+      label: 'Typ',
+      width: '10%',
+      sortable: true,
+      render: (row) => {
+        const badge = typeBadges[row.typ_subjektu] || { color: '#6B7280', label: row.typ_subjektu, title: row.typ_subjektu };
+        return `<span style="
+          background:${badge.color};
+          color:#fff;
+          padding:2px 12px;
+          border-radius:14px;
+          font-size:0.97em;
+          font-weight:600;
+          display:inline-block;
+          min-width:60px;
+          text-align:center;
+          box-shadow:0 1px 3px 0 #0001;
+          letter-spacing:0.01em;
+        " title="${badge.title}">${badge.label}</span>`;
+      }
+    },
+    { key:'display_name', label:'Název / Jméno', width: '20%' },
+    { key:'ico', label:'IČO', width: '10%' },
+    { key:'primary_email', label:'E-mail', width: '18%' },
+    { key:'primary_phone', label:'Telefon', width: '15%' },
+    { key:'city', label:'Město', width: '15%' },
+    { key:'archivedLabel', label:'Archivován', width: '10%' }
   ];
 
   function drawActions() {
-    const ca = document.getElementById('commonactions'); if (!ca) return;
+    const ca = document.getElementById('commonactions'); 
+    if (!ca) return;
     const hasSel = !!selectedRow;
     const userRole = window.currentUserRole || 'admin';
     const perms = getUserPermissions(userRole);
@@ -56,13 +98,41 @@ export async function render(root) {
   drawActions();
 
   renderTable(root.querySelector('#subject-table'), {
-    columns, rows,
+    columns, 
+    rows: rows.map(r => ({
+      ...r,
+      archivedLabel: r.archived ? 'Ano' : '' // Task 04: Show archived status
+    })),
     options: {
       moduleId: '050-najemnik',
       filterValue,
       showFilter: true,
-      onRowSelect: row => { selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row; drawActions(); },
-      onRowDblClick: row => { selectedRow = row; navigateTo(`#/m/050-najemnik/f/form?id=${row.id}&type=${row.typ_subjektu}`); }
+      // Task 04: Custom header with archived checkbox
+      customHeader: ({ filterInputHtml }) => `
+        <div class="flex items-center gap-4">
+          ${filterInputHtml}
+          <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
+            <input type="checkbox" id="toggle-archived" ${showArchived ? 'checked' : ''}/>
+            Zobrazit archivované
+          </label>
+        </div>
+      `,
+      onRowSelect: row => { 
+        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row; 
+        drawActions(); 
+      },
+      onRowDblClick: row => { 
+        selectedRow = row; 
+        navigateTo(`#/m/050-najemnik/f/form?id=${row.id}&type=${row.typ_subjektu}`); 
+      }
+    }
+  });
+
+  // Task 04: Handle archived checkbox toggle
+  root.querySelector('#subject-table').addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'toggle-archived') {
+      showArchived = e.target.checked;
+      render(root);
     }
   });
 }
