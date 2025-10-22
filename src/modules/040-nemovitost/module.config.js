@@ -12,10 +12,10 @@ export async function getManifest() {
       { id: 'seznam', title: 'Seznam nemovitostí', icon: 'grid' },
       { id: 'bytovy-dum', title: 'Bytový dům', icon: 'building-2' },
       { id: 'rodinny-dum', title: 'Rodinný dům', icon: 'home' },
-      { id: 'admin-budova', title: 'Administrativní budova', icon: 'briefcase' },
+      { id: 'admin-budova', title: 'Administrativní budova', icon: 'office-building' },
       { id: 'prumyslovy-objekt', title: 'Průmyslový objekt', icon: 'warehouse' },
       { id: 'pozemek', title: 'Pozemek', icon: 'map' },
-      { id: 'jiny-objekt', title: 'Jiný objekt', icon: 'grid' },
+      { id: 'jiny-objekt', title: 'Jiný objekt', icon: 'apartment' },
     ],
     forms: [
       { id: 'chooser', title: 'Výběr typu nemovitosti', icon: 'grid' },
