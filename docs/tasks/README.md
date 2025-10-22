@@ -1,6 +1,6 @@
 # 📋 Úkoly z agent-task.md
 
-Tento adresář obsahuje rozpracované úkoly z hlavního dokumentu `agent-task.md`. Každý úkol je samostatný soubor s detailním popisem implementace.
+Tento adresář obsahuje rozpracované úkoly z hlavního dokumentu `agent-task.md`. Každý úkol je samostatný soubor s detailním popisem implementace. nic nemazej jen opravuj a doplňuj
 
 ## 🎯 Přehled úkolů
 
