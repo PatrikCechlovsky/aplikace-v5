@@ -77,6 +77,8 @@ Každý úkol obsahuje:
 - Uživatel může jednotku editovat, archivovat, odstranit a **přidat další jednotky kdykoliv v budoucnu**.
 - Implementovat v datové vrstvě i v UI (formulář pro novou nemovitost → backend → vytvoření nemovitosti + jednotky v jedné transakci).
 
+📝 **Detailní úkol:** [docs/tasks/task-09-auto-create-unit.md](docs/tasks/task-09-auto-create-unit.md)
+
 ## 10. Tlačítko "Načíst z ARES" — automatické vyplnění firemních údajů
 - Ve formuláři pro subjekt (030, 050, další) viditelně zobrazit **velké tlačítko "Načíst z ARES"** (viz ![image8](image8)), ne jen malou lupu.
 - Po kliknutí na "Načíst z ARES" se podle IČO (nebo jiného identifikátoru) načtou všechny dostupné údaje z ARES (název, adresa, DIČ, telefon, e-mail...).
