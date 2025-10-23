@@ -1,3 +1,66 @@
+# Manuální úkoly (pro tebe)
+
+Tento soubor obsahuje povinné manuální kroky, které agent (Copilot) nemůže provést přes GitHub API z bezpečnostních důvodů. Proveď je prosím přes GitHub UI nebo lokálně přes git.
+
+DŮLEŽITÉ (povinné)
+1) Uzavření (Close) starých Pull Requestů
+- PR #7 — "Standardize module structure with shared schemas and universal form wrapper"  
+  URL: https://github.com/PatrikCechlovsky/aplikace-v5/pull/7  
+  Akce: pokud chcete čistou historii a reimplementaci, klikněte "Close pull request".
+- PR #8 — "Add test module (999-test-moduly)"  
+  URL: https://github.com/PatrikCechlovsky/aplikace-v5/pull/8  
+  Akce: klikněte "Close pull request".
+
+Poznámka: pokud místo zavření preferujete, aby Git historie zachovala PRy, stačí je nechat otevřené a vytvořit nové PR z čisté branch — doporučuji PR uzavřít a otevřít nové s reimplementací.
+
+2) Smazání nepotřebných větví (po uzavření PRů)
+- Branchy ke smazání:
+  - copilot/add-test-module
+  - copilot/validate-module-structure
+  - test-moduly
+
+Jak smazat přes GitHub UI:
+- Repo → Code → Branches → klik na ikonu koše u větve.
+
+Jak smazat lokálně + remote (git):
+```bash
+# Lokálně
+git branch -d copilot/add-test-module
+git branch -d copilot/validate-module-structure
+git branch -d test-moduly
+
+# Na remote
+git push origin --delete copilot/add-test-module
+git push origin --delete copilot/validate-module-structure
+git push origin --delete test-moduly
+```
+
+3) Vytvoření nové pracovní větve (doporučeno před reimplementací)
+- Název: feature/reimplement-pr7
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/reimplement-pr7
+```
+
+4) Nasazení SQL migrace (po reimplementaci)
+- Po vytvoření a review PR a před produkčním nasazením spusťte migraci v Supabase:
+  - Otevřete Supabase Dashboard → SQL Editor → vložte obsah souboru docs/tasks/supabase-migrations/002_update_properties_and_units_schema.sql → Run.
+- Ověřte existence tabulek: properties, units; view: properties_with_stats; funkce create_property_with_unit.
+
+5) Merge a deploy
+- Po review a úspěšném testování proveďte merge PR do main.  
+- Proveďte nasazení podle standardního workflow (tag/release + CI).
+
+Kontrolní checklist po vašich manuálních krocích:
+- [ ] PR #7 uzavřen/archivován
+- [ ] PR #8 uzavřen/archivován
+- [ ] Nepotřebné větve smazány
+- [ ] Nová branch feature/reimplement-pr7 vytvořena
+- [ ] SQL migrace připravena v docs a otestována v stagingu
+
+Kontakt: pokud chcete, mohu připravit kompletní PR (včetně commitů) — potvrďte a já připravím změny, které pak pouze zkontrolujete a mergnete.
+OLD
 # Manuální úkoly, které vyžadují akci uživatele
 
 ## ⚠️ DŮLEŽITÉ: Úkoly, které agent nemůže provést
