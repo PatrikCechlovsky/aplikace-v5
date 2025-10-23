@@ -1,3 +1,123 @@
+# SOUHRN ZMĚN — Úkoly pro agenta (Copilot) — Reimplementace Option A + C
+
+Datum: 2025-10-23  
+Cíl: Kompletní reimplementace standardizace modulů (PR #7) + přidání testovacího modulu (PR #8) + nasazení migračního SQL (properties, units).
+
+---
+
+1) Příprava pracovní větve
+- Vytvoř novou branch z main:
+  - feature/reimplement-pr7
+
+git:
+```bash
+git fetch origin
+git checkout origin/main -b feature/reimplement-pr7
+```
+
+2) Přidání infrastruktury (soubory, které agent vytvoří)
+- src/db/type-schemas.js — centralizované schémata typů (subjects, properties, units)
+  - exportovat: getSubjectTypeSchema(type), getPropertySchema()
+  - obsah: popis polí, mapování na DB, validační metadata, defaulty
+
+- src/ui/universal-form.js — univerzální wrapper
+  - API:
+    - renderUniversalForm({ container, moduleId, formId, recordId, mode })
+    - onSave, onCancel, onAttach, onArchive, onHistory hooks
+  - features:
+    - automatic breadcrumbs
+    - commonActions render (Save, Attach, Archive, History)
+    - unsaved changes guard
+    - read-only rendering mode
+    - independant styles (no global side-effects)
+
+3) Refaktoring modulů (konkrétní změny)
+- Modul 030 (pronajimatel)
+  - soubor: src/modules/030-pronajimatel/forms/form.js
+  - změna: replace custom form rendering with renderUniversalForm() + use getSubjectTypeSchema('...') for fields
+  - zajistit: zachovat existing filters role:'pronajimatel'
+
+- Modul 050 (najemnik)
+  - soubor: src/modules/050-najemnik/forms/form.js
+  - změna: analogicky jako 030, použít universal-form a central schema
+
+- Modul 040 (nemovitost)
+  - soubory:
+    - src/modules/040-nemovitost/forms/edit.js
+    - src/modules/040-nemovitost/forms/detail.js
+  - změna:
+    - implementovat full universal-form usage (read/write modes)
+    - fields driven by getPropertySchema()
+    - attach unit chooser flow (unit auto-create hook)
+
+- Šablona 000
+  - update examples to use universal-form wrapper
+
+4) Přidání testovacího modulu (volitelně, Option C)
+- Vytvoř adresář: src/modules/999-test-moduly/
+  - tiles/prehled.js — jednoduchý přehled s fake data
+  - tiles/seznam.js — seznam s filtrem
+  - forms/edit.js, forms/detail.js — simple universal-form usage
+  - services/api.js — demo API (fetch mock)
+  - assets/README.md — krátká dokumentace
+
+5) SQL migrace (doplňující)
+- Přidat/aktualizovat: docs/tasks/supabase-migrations/002_update_properties_and_units_schema.sql
+  - Podmíněné změny (ALTER TABLE IF NOT EXISTS, ADD COLUMN IF NOT EXISTS, perform renames using pg_column_size checks)
+  - Zachovat data (idempotentní skript)
+  - Přidat triggery pro updated_at a funkce create_property_with_unit()
+
+6) Tests & quality
+- Spusť lint & format:
+  - npm/yarn eslint fix
+  - prettier
+- Připrav CodeQL scan (CI job) — ověřit, že žádné nové varování.
+- Locally run quick app smoke tests (open /app.html and navigace moduly) — ověření že universal-form se renderuje.
+
+7) Commity a PR
+- Doporučené commity (oddělené):
+  1. feat(infra): add src/db/type-schemas.js
+  2. feat(infra): add src/ui/universal-form.js
+  3. refactor(030/050/040): adopt universal-form and centralized schemas
+  4. feat(test-module): add src/modules/999-test-moduly
+  5. chore(sql): add docs/tasks/supabase-migrations/002_update_properties_and_units_schema.sql
+  6. chore: run lint & fix
+
+- PR name: "Reimplement: standardize modules (type-schemas + universal-form) + optional test module"
+- PR body: přidej:
+  - seznam souborů
+  - odkaz na tento SOUHRN-ZMENY.md
+  - checklist (lint, CodeQL, run migrations in staging, manual review)
+
+8) Review checklist (pro vás)
+- [ ] Projít diff a ověřit že žádné business-critical změny nejsou odstraněny
+- [ ] Spustit migraci v staging, ověřit tabulky a views
+- [ ] Ověřit UI: moduly 030, 040, 050 — přehled, edit/detail formuláře, breadcrumbs, badges
+- [ ] Ověřit ARES tlačítko (pokud nebylo změněno)
+- [ ] Po testech merge do main
+
+9) Pokud chcete, mohu automaticky:
+- připravit všechny soubory s implementací (stubs + konkrétní funkce), vytvořit branch a otevřít PR — potvrďte to tady a já připravím kompletní sadu commitů připravených k pushnutí.
+
+---
+
+Poznámky pro implementaci kódu (rychlé tipy)
+- type-schemas.js: struktura návrhu:
+```js
+export const SUBJECT_TYPE_SCHEMAS = {
+  osoba: { fields: [ { name:'firstName', label:'Jméno', type:'text', required:true }, ... ] },
+  firma: { fields: [ ... ] },
+  ...
+};
+
+export function getSubjectTypeSchema(type){ return SUBJECT_TYPE_SCHEMAS[type] || DEFAULT; }
+```
+- universal-form.js:
+  - musí přijímat metadata fieldů z type-schemas a vykreslovat mapovaná políčka
+  - zachovat commonActions hook (save/attach/archive/history) jako volitelné callbacky
+
+Děkuji — až potvrdíte, připravím kompletní sadu souborů (stubs + migrace + test-modul) připravenou k pushi do feature/reimplement-pr7.
+OLD:
 # 📋 Souhrn změn - Aktualizace specifikace Modulu 040 (Nemovitosti)
 
 **Datum:** 2025-10-20  
