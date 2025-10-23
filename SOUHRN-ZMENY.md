@@ -1,12 +1,48 @@
-# SOUHRN ZMĚN — Úkoly pro agenta (Copilot) — Reimplementace Option A + C
+# SOUHRN ZMĚN — Úkoly pro agenta (Copilot)
 
 Datum: 2025-10-23  
-Cíl: Kompletní reimplementace standardizace modulů (PR #7) + přidání testovacího modulu (PR #8) + nasazení migračního SQL (properties, units).
+Status: ✅ Dokončena kontrola a úklid repositáře
 
 ---
 
-1) Příprava pracovní větve
-- Vytvoř novou branch z main:
+## ✅ DOKONČENO (PR #20)
+
+### Kontrola starších úkolů (z OLD: sekcí)
+- ✅ PR #7 a #8 byly uzavřeny (kvůli merge konfliktům)
+- ✅ Větve `copilot/add-test-module`, `copilot/validate-module-structure`, `test-moduly` byly smazány
+- ✅ Všechny manuální úkoly z `MANUAL_TASKS.md` dokončeny
+
+### Úklid repositáře
+- ✅ Přesunuto 10 zastaralých dokumentačních souborů do `archive/`:
+  - `ANALYSIS-SUMMARY.md` (PR #13)
+  - `STAV-REPOZITARE.md` (PR #13)
+  - `STATUS-OVERVIEW.txt` (PR #13)
+  - `MANUAL_TASKS.md` (dokončené úkoly)
+  - `REFACTOR-040-SUMMARY.md` (PR #15)
+  - `SUMMARY-DOKONCENI-UKOLU.md` (staré úkoly)
+  - `VIZUALNI-SOUHRN.md` (staré shrnutí)
+  - `ZMENY-OPRAVA.md` (PR #14)
+  - `agent-task.md` (rozdělen do docs/tasks/)
+  - `app-v5_kontrolni-checklist.md` (starý checklist)
+
+### Kontrola duplicit
+- ✅ Zkontrolovány všechny JavaScript soubory - žádné reálné duplicity
+- ℹ️ `type-schemas.js` v modulech 030/050 jsou jen 3-řádkové wrappery (OK)
+- ℹ️ `db.js` soubory jsou module-specific (OK)
+- ℹ️ SQL migrace `002_update_properties_and_units_schema.sql` existuje (PR #19)
+
+### Zbývající dokumentace v kořeni
+- ✅ `README.md` - hlavní dokumentace repositáře (KEEP)
+- ✅ `SOUHRN-ZMENY.md` - tento soubor (KEEP)
+
+---
+
+## 🔄 NEVYŘEŠENÉ ÚKOLY (Option A + C)
+
+Tyto úkoly z původních PR #7 a #8 NEBYLY reimplementovány:
+
+### 1) Příprava pracovní větve
+- ❌ Vytvoř novou branch z main:
   - feature/reimplement-pr7
 
 git:
@@ -15,12 +51,12 @@ git fetch origin
 git checkout origin/main -b feature/reimplement-pr7
 ```
 
-2) Přidání infrastruktury (soubory, které agent vytvoří)
-- src/db/type-schemas.js — centralizované schémata typů (subjects, properties, units)
+### 2) Přidání infrastruktury
+- ❌ src/db/type-schemas.js — centralizované schémata typů (subjects, properties, units)
   - exportovat: getSubjectTypeSchema(type), getPropertySchema()
   - obsah: popis polí, mapování na DB, validační metadata, defaulty
 
-- src/ui/universal-form.js — univerzální wrapper
+- ❌ src/ui/universal-form.js — univerzální wrapper
   - API:
     - renderUniversalForm({ container, moduleId, formId, recordId, mode })
     - onSave, onCancel, onAttach, onArchive, onHistory hooks
@@ -31,17 +67,17 @@ git checkout origin/main -b feature/reimplement-pr7
     - read-only rendering mode
     - independant styles (no global side-effects)
 
-3) Refaktoring modulů (konkrétní změny)
-- Modul 030 (pronajimatel)
+### 3) Refaktoring modulů
+- ❌ Modul 030 (pronajimatel)
   - soubor: src/modules/030-pronajimatel/forms/form.js
   - změna: replace custom form rendering with renderUniversalForm() + use getSubjectTypeSchema('...') for fields
   - zajistit: zachovat existing filters role:'pronajimatel'
 
-- Modul 050 (najemnik)
+- ❌ Modul 050 (najemnik)
   - soubor: src/modules/050-najemnik/forms/form.js
   - změna: analogicky jako 030, použít universal-form a central schema
 
-- Modul 040 (nemovitost)
+- ❌ Modul 040 (nemovitost)
   - soubory:
     - src/modules/040-nemovitost/forms/edit.js
     - src/modules/040-nemovitost/forms/detail.js
@@ -50,31 +86,28 @@ git checkout origin/main -b feature/reimplement-pr7
     - fields driven by getPropertySchema()
     - attach unit chooser flow (unit auto-create hook)
 
-- Šablona 000
+- ❌ Šablona 000
   - update examples to use universal-form wrapper
 
-4) Přidání testovacího modulu (volitelně, Option C)
-- Vytvoř adresář: src/modules/999-test-moduly/
+### 4) Přidání testovacího modulu (volitelně, Option C)
+- ❌ Vytvoř adresář: src/modules/999-test-moduly/
   - tiles/prehled.js — jednoduchý přehled s fake data
   - tiles/seznam.js — seznam s filtrem
   - forms/edit.js, forms/detail.js — simple universal-form usage
   - services/api.js — demo API (fetch mock)
   - assets/README.md — krátká dokumentace
 
-5) SQL migrace (doplňující)
-- Přidat/aktualizovat: docs/tasks/supabase-migrations/002_update_properties_and_units_schema.sql
-  - Podmíněné změny (ALTER TABLE IF NOT EXISTS, ADD COLUMN IF NOT EXISTS, perform renames using pg_column_size checks)
-  - Zachovat data (idempotentní skript)
-  - Přidat triggery pro updated_at a funkce create_property_with_unit()
+### 5) SQL migrace
+- ✅ docs/tasks/supabase-migrations/002_update_properties_and_units_schema.sql (EXISTUJE z PR #19)
+  - ℹ️ Soubor obsahuje všechny potřebné migrace
+  - ℹ️ Nutno spustit v Supabase (manuálně)
 
-6) Tests & quality
-- Spusť lint & format:
-  - npm/yarn eslint fix
-  - prettier
-- Připrav CodeQL scan (CI job) — ověřit, že žádné nové varování.
-- Locally run quick app smoke tests (open /app.html and navigace moduly) — ověření že universal-form se renderuje.
+### 6) Tests & quality (NEVYŘEŠENO)
+- ❌ Spusť lint & format
+- ❌ CodeQL scan
+- ❌ Quick app smoke tests
 
-7) Commity a PR
+### 7) PR Creation (NEVYŘEŠENO)
 - Doporučené commity (oddělené):
   1. feat(infra): add src/db/type-schemas.js
   2. feat(infra): add src/ui/universal-form.js
@@ -89,15 +122,44 @@ git checkout origin/main -b feature/reimplement-pr7
   - odkaz na tento SOUHRN-ZMENY.md
   - checklist (lint, CodeQL, run migrations in staging, manual review)
 
-8) Review checklist (pro vás)
+### 8) Review checklist (NEVYŘEŠENO)
 - [ ] Projít diff a ověřit že žádné business-critical změny nejsou odstraněny
 - [ ] Spustit migraci v staging, ověřit tabulky a views
 - [ ] Ověřit UI: moduly 030, 040, 050 — přehled, edit/detail formuláře, breadcrumbs, badges
 - [ ] Ověřit ARES tlačítko (pokud nebylo změněno)
 - [ ] Po testech merge do main
 
-9) Pokud chcete, mohu automaticky:
-- připravit všechny soubory s implementací (stubs + konkrétní funkce), vytvořit branch a otevřít PR — potvrďte to tady a já připravím kompletní sadu commitů připravených k pushnutí.
+---
+
+## 📝 SHRNUTÍ STAVU REPOSITÁŘE
+
+### Co bylo dokončeno v předchozích PRs:
+1. ✅ PR #17-19: Kompletní úkoly z `docs/tasks/` (UI konzistence, ARES, migraces)
+2. ✅ PR #15: Refaktoring modulu 040 (property types, unit types, choosers, colors)
+3. ✅ PR #14: Opravy viditelnosti a filtrace subjektů
+4. ✅ PR #13: Analýza stavu repositáře
+5. ✅ Všechny větve z PR #7/#8 byly smazány
+6. ✅ Úklid zastaralé dokumentace do `archive/`
+
+### Co je NEZODPOVĚZENÉ:
+❓ **Reimplementace Option A + C** (standardizace z PR #7 + test modul z PR #8)
+  - Tyto změny byly uzavřeny kvůli merge konfliktům
+  - Podle STAV-REPOZITARE.md měly přinést významné vylepšení (1,355+ řádků)
+  - Aktuálně NEJSOU v main větvi
+
+### Doporučení:
+**Option 1:** Ponechat současný stav (moduly fungují i bez centralizovaných schemat)
+**Option 2:** Reimplementovat Option A + C v novém PR (podle instrukcí níže)
+
+---
+
+## 🚀 INSTRUKCE PRO REIMPLEMENTACI (pokud chcete Option A + C)
+
+Pokud se rozhodnete implementovat centralizovaná schémata a universal form:
+
+9) Automatická příprava:
+- Můžu připravit všechny soubory s implementací, vytvořit branch a otevřít PR
+- Potvrďte to a já připravím kompletní sadu commitů
 
 ---
 
