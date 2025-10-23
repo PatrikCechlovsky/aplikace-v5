@@ -1,3 +1,63 @@
+# Stav repositáře — Akční stav pro reimplementaci (Option A + C + doplňky)
+
+Datum analýzy: 2025-10-23
+
+Shrnutí
+- Rozhodnutí: provést kompletní reimplementaci standardizace modulů (Option A) + přidat testovací modul (Option C) + nasadit doplňky (migrace, RLS).
+- Hlavní cíle:
+  1. Přidat centralizované type-schemas a universal-form infra.
+  2. Refaktorovat moduly 030, 040, 050 (a šablonu 000) pro použití nové infrastruktury.
+  3. Přidat testovací modul 999-test-moduly (volitelný, ale součást Option C).
+  4. Připravit a spustit SQL migraci pro properties/units.
+
+Aktuální stav (stav před provedením reimplementace)
+- main: produkční větev (aktuální)
+- copilot/prepare-compare-for-main: identická s main
+- PR #7: uzavřen kvůli konfliktům (změny NEJSOU v main)
+- PR #8: uzavřen (target test-moduly) — NEJSOU v main
+
+Manuální úkoly (musí provést vlastník repozitáře)
+1. Uzavřít (Close) PR #7 a PR #8 přes GitHub UI (doporučené pro čistý začátek reimplementace). (viz MANUAL_TASK.md)
+2. Smazat větve: copilot/add-test-module, copilot/validate-module-structure, test-moduly.
+3. Vytvořit branch feature/reimplement-pr7 z main.
+
+Plán práce (agent — Copilot)
+- Vytvořit branch: feature/reimplement-pr7
+- Přidat/inicializovat:
+  - src/db/type-schemas.js (centralizované schéma objektů a property)
+  - src/ui/universal-form.js (univerzální wrapper pro formuláře tiles/forms)
+  - Aktualizovat/refaktorovat:
+    - src/modules/030-pronajimatel/forms/form.js
+    - src/modules/050-najemnik/forms/form.js
+    - src/modules/040-nemovitost/forms/edit.js
+    - src/modules/040-nemovitost/forms/detail.js
+    - src/modules/000-sablona/forms/edit.js
+    - src/modules/000-sablona/forms/detail.js
+  - Přidat test modul:
+    - src/modules/999-test-moduly/tiles/prehled.js
+    - src/modules/999-test-moduly/tiles/seznam.js
+    - src/modules/999-test-moduly/forms/edit.js
+    - src/modules/999-test-moduly/forms/detail.js
+    - src/modules/999-test-moduly/services/api.js
+    - src/modules/999-test-moduly/assets/README.md
+  - Přidat/aktualizovat migrace:
+    - docs/tasks/supabase-migrations/002_update_properties_and_units_schema.sql
+- Spustit lokální lint & testy, připravit CodeQL scan output (CI job).
+- Otevřít PR: "Reimplement PR #7 — standardization + optional test module" s popisem, seznamem změn a checklistem.
+
+Kontrola a review (po agentu)
+- Projděte diff, spusťte quick tests (docs/tasks/README.md → Quick test checklist).
+- Spusťte migraci v staging Supabase, ověřte data.
+- Merge do main po review.
+
+Časové odhady
+- Infra files (type-schemas + universal-form): 30–45 minut
+- Refaktoring 3 modulů: 60–120 minut
+- Test modul: 20–40 minut
+- Migrace a testování: 60–120 minut
+
+Poznámka: pokud chcete, mohu připravit kompletní změny a PR (po vašem potvrzení), ale s ohledem na oprávnění budete muset provést manuální kroky popsané výše (uzavření původních PR / smazání větví) nebo schválit nový PR pro merge.
+OLD:
 # Stav repositáře - Analýza a doporučení
 
 **Datum analýzy:** 2025-10-21  
