@@ -31,6 +31,9 @@ const CATALOG = {
 
   // HISTORIE změn
   history: { key: 'history', icon: 'history',    label: 'Historie',  title: 'Zobrazit historii změn' },
+
+  // Jednotky (správa jednotek) - nově v katalogu
+  units:   { key: 'units',   icon: 'grid',       label: 'Jednotky',  title: 'Správa jednotek' },
 };
 
 // Když nepředáš moduleActions, odvozujeme je z názvů handlerů (onAdd → 'add'…)
@@ -50,20 +53,22 @@ function normalizeAllowed(input = [], fallbackKeys = []) {
       const k = a;
       return { ...(CATALOG[k] || { key: k, icon: k }), key: k };
     }
+    // pokud je objekt, podpůrně přeneseme href/icon/label/title
     const k = a.key || a.id;
     const base = CATALOG[k] || {};
     return {
       key: k,
       icon: a.icon || base.icon || k,
       label: a.label || base.label || k,
-      title: a.title || base.title || a.label || k
+      title: a.title || base.title || a.label || k,
+      href: a.href || base.href || null
     };
   });
 }
 
 /**
  * @param {HTMLElement} root
- * @param {{ moduleActions?:string[], userRole?:string, handlers?:Record<string,Function>, isStarred?:boolean }} param1
+ * @param {{ moduleActions?:string[]|object[], userRole?:string, handlers?:Record<string,Function>, isStarred?:boolean }} param1
  */
 export function renderCommonActions(
   root,
@@ -97,7 +102,7 @@ export function renderCommonActions(
   const PREFERRED_ORDER = [
     'save', 'approve', 'add', 'edit', 'invite', 'send', 'attach', 'history',
     'refresh', 'search', 'print', 'export', 'import', 'archive', 'delete',
-    'reject', 'exit', 'star', 'detail'
+    'reject', 'exit', 'star', 'detail', 'units'
   ];
   const LAST_KEYS = new Set(['reject', 'exit']);
 
@@ -120,29 +125,63 @@ export function renderCommonActions(
   wrap.className = 'flex items-center gap-2';
 
   acts.forEach(act => {
+    // handlerName podle klíče, např. 'onEdit', 'onUnits' atd.
+    const handlerName = 'on' + act.key.charAt(0).toUpperCase() + act.key.slice(1);
+    const handler = handlers[handlerName];
+
+    // Pokud máme handler -> renderovat button s handlerem
+    if (typeof handler === 'function') {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = [
+        'relative flex items-center justify-center w-8 h-8 rounded-md border transition',
+        'border-slate-200 bg-white hover:bg-slate-100',
+        'text-slate-700 text-lg'
+      ].join(' ');
+      btn.innerHTML = uiIcon(act.icon);
+      btn.title = act.title || act.label || act.key;
+      btn.setAttribute('aria-label', act.label || act.key);
+      btn.addEventListener('click', handler);
+      if (act.key === 'star' && isStarred) btn.classList.add('!bg-yellow-100');
+      wrap.appendChild(btn);
+      return;
+    }
+
+    // Pokud nemáme handler, ale máme href (nebo act obsahuje href), renderuj odkaz
+    if (act.href) {
+      const a = document.createElement('a');
+      a.href = act.href;
+      a.className = [
+        'relative inline-flex items-center justify-center w-8 h-8 rounded-md border transition',
+        'border-slate-200 bg-white hover:bg-slate-100',
+        'text-slate-700 text-lg no-underline'
+      ].join(' ');
+      a.innerHTML = uiIcon(act.icon);
+      a.title = act.title || act.label || act.key;
+      a.setAttribute('aria-label', act.label || act.key);
+      // pokud app poskytuje navigateTo, použij ji pro single-page navigation
+      if (typeof window.navigateTo === 'function') {
+        a.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          try { window.navigateTo(a.getAttribute('href')); } catch (e) { location.href = a.getAttribute('href'); }
+        });
+      }
+      wrap.appendChild(a);
+      return;
+    }
+
+    // fallback: žádný handler a žádný href -> render disabled button (star/other handled above)
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = [
       'relative flex items-center justify-center w-8 h-8 rounded-md border transition',
-      'border-slate-200 bg-white hover:bg-slate-100',
-      'text-slate-700 text-lg'
+      'border-slate-200 bg-white',
+      'text-slate-700 text-lg opacity-40 cursor-not-allowed'
     ].join(' ');
-
-    btn.innerHTML = uiIcon(act.icon); // ← použij aliasovaný import
-    btn.title = act.title || act.label || act.key;
+    btn.innerHTML = uiIcon(act.icon);
+    btn.title = (act.title || act.label || act.key) + ' – akce není dostupná';
     btn.setAttribute('aria-label', act.label || act.key);
-
-    const handlerName = 'on' + act.key.charAt(0).toUpperCase() + act.key.slice(1);
-    const handler = handlers[handlerName];
-    if (typeof handler === 'function') {
-      btn.addEventListener('click', handler);
-      if (act.key === 'star' && isStarred) btn.classList.add('!bg-yellow-100');
-    } else {
-      btn.disabled = true;
-      btn.classList.add('opacity-40', 'cursor-not-allowed');
-      btn.title = (btn.title + ' – akce není dostupná');
-    }
-
+    btn.disabled = true;
     wrap.appendChild(btn);
   });
 
