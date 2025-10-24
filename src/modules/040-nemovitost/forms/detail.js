@@ -6,6 +6,7 @@ import { getProperty, archiveProperty } from '/src/modules/040-nemovitost/db.js'
 import { showAttachmentsModal } from '/src/ui/attachments.js';
 import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js';
 
+
 // Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
