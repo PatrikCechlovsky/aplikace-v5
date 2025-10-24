@@ -119,6 +119,19 @@ export function getAllRoles() {
   return Object.keys(ROLE_PERMISSIONS);
 }
 
+// v ROLE_PERMISSIONS:
+admin: [
+  'add','edit','archive','attach','refresh',
+  'detail','search','print','export','import',
+  'delete','approve','reject',
+  'save','invite','history',
+  'units'   // <- přidáno: správa jednotek
+],
+pronajimatel: [
+  'add','edit','attach','refresh','detail','search','print',
+  'units'   // pokud chcete, aby pronajímatel také viděl tlačítko
+],
+  
 // ====== Pomocné: textový popis role (pro UI) ======
 export function describeRole(role) {
   switch (role) {
