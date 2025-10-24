@@ -133,6 +133,8 @@ export const ACTIONS_CONFIG = [
     requiresPermission: 'can_history',
     handler: 'showHistory'
   },
+
+  // Jednotky (správa jednotek)
   {
     key: 'units',
     label: 'Jednotky',
@@ -140,7 +142,7 @@ export const ACTIONS_CONFIG = [
     color: 'blue',
     requiresPermission: 'can_units',
     handler: 'openUnits'
-  },
+  }
 ];
 
 // 🔸 Pomocná funkce – najde definici akce podle klíče
