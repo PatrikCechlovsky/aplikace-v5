@@ -6,7 +6,7 @@ import { getProperty, upsertProperty, archiveProperty } from '/src/modules/040-n
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
 import { setUnsaved } from '/src/app.js';
-import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js';
+import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js'; // <- sdílená definice polí
 
 // Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
