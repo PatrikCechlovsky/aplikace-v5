@@ -1,145 +1,156 @@
-// src/security/permissions.js
-// Jednotná vrstva pro řízení oprávnění podle role uživatele
-// Verze 1.1 – umožněné dynamické načtení/registrace per-role oprávnění
+// src/logic/actions.config.js
+// Centrální registr všech akcí (tlačítek) v aplikaci
+// Každá akce má klíč, popis, ikonu, případně handler nebo vazbu na oprávnění
 
-import { ACTIONS_CONFIG } from '../logic/actions.config.js';
+export const ACTIONS_CONFIG = [
+  {
+    key: 'add',
+    label: 'Přidat',
+    icon: 'add',
+    color: 'green',
+    requiresPermission: 'can_add',
+    handler: 'openCreateForm'
+  },
+  {
+    key: 'edit',
+    label: 'Upravit',
+    icon: 'edit',
+    color: 'blue',
+    requiresPermission: 'can_edit',
+    handler: 'openEditForm'
+  },
+  {
+    key: 'archive',
+    label: 'Archivovat',
+    icon: 'archive',
+    color: 'amber',
+    requiresPermission: 'can_archive',
+    handler: 'archiveItem'
+  },
+  {
+    key: 'attach',
+    label: 'Příloha',
+    icon: 'paperclip',
+    color: 'gray',
+    requiresPermission: 'can_attach',
+    handler: 'openAttachments'
+  },
+  {
+    key: 'refresh',
+    label: 'Obnovit',
+    icon: 'refresh',
+    color: 'gray',
+    requiresPermission: 'can_refresh',
+    handler: 'refreshView'
+  },
+  {
+    key: 'detail',
+    label: 'Detail',
+    icon: 'detail',
+    color: 'blue',
+    requiresPermission: 'can_view',
+    handler: 'openDetail'
+  },
+  {
+    key: 'search',
+    label: 'Hledat',
+    icon: 'search',
+    color: 'gray',
+    requiresPermission: 'can_search',
+    handler: 'toggleSearch'
+  },
+  {
+    key: 'print',
+    label: 'Tisk',
+    icon: 'print',
+    color: 'gray',
+    requiresPermission: 'can_print',
+    handler: 'printData'
+  },
+  {
+    key: 'export',
+    label: 'Exportovat',
+    icon: 'export',
+    color: 'gray',
+    requiresPermission: 'can_export',
+    handler: 'exportData'
+  },
+  {
+    key: 'import',
+    label: 'Importovat',
+    icon: 'import',
+    color: 'gray',
+    requiresPermission: 'can_import',
+    handler: 'importData'
+  },
+  {
+    key: 'delete',
+    label: 'Smazat',
+    icon: 'delete',
+    color: 'red',
+    requiresPermission: 'can_delete',
+    handler: 'deleteItem'
+  },
+  {
+    key: 'approve',
+    label: 'Schválit',
+    icon: 'approve',
+    color: 'green',
+    requiresPermission: 'can_approve',
+    handler: 'approveItem'
+  },
+  {
+    key: 'reject',
+    label: 'Zamítnout',
+    icon: 'reject',
+    color: 'red',
+    requiresPermission: 'can_reject',
+    handler: 'rejectItem'
+  },
 
-// ====== START: výchozí statické demo (může být přepsáno dynamicky) ======
-let ROLE_PERMISSIONS = {
-  // Admin má nyní výchozí oprávnění i pro nové akce (save, invite, history)
-  admin: [
-    'add', 'edit', 'archive', 'attach', 'refresh',
-    'detail', 'search', 'print', 'export', 'import',
-    'delete', 'approve', 'reject',
-    // nové / UI-specifické akce
-    'save', 'invite', 'history',
-    'units'
-  ],
-  pronajimatel: [
-    'add', 'edit', 'attach', 'refresh', 'detail', 'search', 'print',
-    'units'
-  ],
-  najemnik: [
-    'detail', 'refresh', 'search'
-  ],
-  servisak: [
-    'detail', 'refresh', 'attach'
-  ]
-};
-// ====== END: výchozí statické demo ======
+  // --- DOPLNĚNÉ položky používané v UI ---
+  {
+    key: 'save',
+    label: 'Uložit',
+    icon: 'save',
+    color: 'green',
+    requiresPermission: 'can_save',
+    handler: 'saveItem'
+  },
+  {
+    key: 'invite',
+    label: 'Pozvat',
+    icon: 'invite',
+    color: 'blue',
+    requiresPermission: 'can_invite',
+    handler: 'inviteUser'
+  },
+  {
+    key: 'history',
+    label: 'Historie',
+    icon: 'history',
+    color: 'gray',
+    requiresPermission: 'can_history',
+    handler: 'showHistory'
+  },
 
-// Volitelná loader funkce, kterou lze zaregistrovat (např. v app.js nebo přes window)
-let _permissionsLoader = null;
-
-/**
- * Register callback for loading permissions for a role.
- * Callback must be: async function(role) => Array<string> | null
- */
-export function registerPermissionsLoader(fn) {
-  if (typeof fn === 'function') _permissionsLoader = fn;
-}
-
-/**
- * Explicitně nastavit oprávnění pro roli (přepíše/nahraď).
- */
-export function setRolePermissions(role, keys = []) {
-  ROLE_PERMISSIONS = { ...ROLE_PERMISSIONS, [role]: Array.isArray(keys) ? keys : [] };
-}
-
-/**
- * Merging helper – přidá chybějící položky k existujícímu seznamu.
- */
-export function mergeRolePermissions(role, keys = []) {
-  const existing = ROLE_PERMISSIONS[role] || [];
-  const merged = Array.from(new Set([...existing, ...(Array.isArray(keys) ? keys : [])]));
-  ROLE_PERMISSIONS = { ...ROLE_PERMISSIONS, [role]: merged };
-}
-
-/**
- * Pokusí se načíst oprávnění pro roli:
- * - pokud je registrovaný _permissionsLoader → zavolá ho
- * - jinak se pokusí dynamicky importovat '../db.js' a volat getRolePermissions(role) pokud existuje
- * - pokud nic nevrátí, zůstane použit výchozí ROLE_PERMISSIONS (statické)
- *
- * Vrací aktuální seznam povolených klíčů pro roli (pole stringů).
- */
-export async function loadPermissionsForRole(role) {
-  if (!role) return [];
-
-  try {
-    // 1) registrovaný loader (preferovaný)
-    if (typeof _permissionsLoader === 'function') {
-      const res = await _permissionsLoader(role);
-      if (Array.isArray(res)) {
-        setRolePermissions(role, res);
-        return getUserPermissions(role);
-      }
-    }
-
-    // 2) fallback: pokusit se dynamicky importovat db helper a zavolat getRolePermissions
-    try {
-      const db = await import('../db.js');
-      if (db && typeof db.getRolePermissions === 'function') {
-        const { data, error } = await db.getRolePermissions(role);
-        if (!error && Array.isArray(data)) {
-          setRolePermissions(role, data);
-          return getUserPermissions(role);
-        }
-      }
-    } catch (e) {
-      // ignoruj, není to kritické — použijeme lokální ROLE_PERMISSIONS
-    }
-  } catch (e) {
-    // swallow errors — nechceme, aby selhání načítání permissions zlomilo aplikaci
-    console.warn('[permissions] loadPermissionsForRole failed', e);
+  // Jednotky (správa jednotek)
+  {
+    key: 'units',
+    label: 'Jednotky',
+    icon: 'grid',
+    color: 'blue',
+    requiresPermission: 'can_units',
+    handler: 'openUnits'
   }
+];
 
-  // 3) fallback: vrať to, co máme lokálně
-  return getUserPermissions(role);
+// 🔸 Pomocná funkce – najde definici akce podle klíče
+export function getActionConfig(key) {
+  return ACTIONS_CONFIG.find(a => a.key === key);
 }
 
-// ====== Funkce: získat oprávnění podle role ======
-export function getUserPermissions(role) {
-  return ROLE_PERMISSIONS[role] || [];
+// 🔸 Vrátí seznam všech známých klíčů
+export function getAllActionKeys() {
+  return ACTIONS_CONFIG.map(a => a.key);
 }
-
-// ====== Funkce: zjistit, zda role smí provést konkrétní akci ======
-export function canPerform(role, actionKey) {
-  const allowed = getUserPermissions(role);
-  return allowed.includes(actionKey);
-}
-
-// ====== Funkce: vybrat povolené akce pro modul ======
-export function getAllowedActions(role, moduleActions = []) {
-  const allowedKeys = getUserPermissions(role);
-  const filtered = moduleActions.filter(a => allowedKeys.includes(a));
-  return ACTIONS_CONFIG.filter(cfg => filtered.includes(cfg.key));
-}
-
-// ====== Pomocné: seznam všech známých rolí ======
-export function getAllRoles() {
-  return Object.keys(ROLE_PERMISSIONS);
-}
-
-// ====== Pomocné: textový popis role (pro UI) ======
-export function describeRole(role) {
-  switch (role) {
-    case 'admin': return 'Administrátor – má plný přístup ke všem akcím.';
-    case 'pronajimatel': return 'Pronajímatel – běžná správa, úpravy a přehledy.';
-    case 'najemnik': return 'Nájemník – může pouze prohlížet a tisknout.';
-    case 'servisak': return 'Servisák – přístup k údržbě a přílohám.';
-    default: return 'Neznámá role';
-  }
-}
-
-export default {
-  getUserPermissions,
-  canPerform,
-  getAllowedActions,
-  getAllRoles,
-  describeRole,
-  setRolePermissions,
-  mergeRolePermissions,
-  loadPermissionsForRole,
-  registerPermissionsLoader
-};
