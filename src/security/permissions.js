@@ -12,10 +12,14 @@ let ROLE_PERMISSIONS = {
     'detail', 'search', 'print', 'export', 'import',
     'delete', 'approve', 'reject',
     // nové / UI-specifické akce
-    'save', 'invite', 'history'
+    'save', 'invite', 'history',
+    // přidáno: správa jednotek
+    'units'
   ],
   pronajimatel: [
-    'add', 'edit', 'attach', 'refresh', 'detail', 'search', 'print'
+    'add', 'edit', 'attach', 'refresh', 'detail', 'search', 'print',
+    // přidáno: správa jednotek pro pronajímatele
+    'units'
   ],
   najemnik: [
     'detail', 'refresh', 'search'
