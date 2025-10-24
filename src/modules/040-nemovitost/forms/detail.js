@@ -83,8 +83,6 @@ export async function render(root, params) {
   const handlers = {};
 
   handlers.onEdit = () => navigateTo(`#/m/040-nemovitost/f/edit?id=${id}`);
-
-
   handlers.onRefresh = () => render(root, params);
   
   // Archivace (jen pokud není již archivovaný)
