@@ -4,8 +4,7 @@ import { renderCommonActions } from '/src/ui/commonActions.js';
 import { navigateTo } from '/src/app.js';
 import { getProperty, archiveProperty } from '/src/modules/040-nemovitost/db.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
-import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js';
-
+import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js'; // <- sdílená definice polí
 
 // Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
@@ -20,42 +19,6 @@ function formatCzechDate(dateStr) {
   if (isNaN(d)) return '';
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
-
-// Definice polí formuláře (readonly mode)
-// DOPLNĚNO: kraj, stat, celkova_plocha, vybaveni, prilohy, pronajimatel (pokud data obsahují display name bude použito)
-const FIELDS = [
-  { key: 'nazev', label: 'Název nemovitosti', type: 'text' },
-  { key: 'typ_nemovitosti', label: 'Typ nemovitosti', type: 'text' },
-  { key: 'ulice', label: 'Ulice', type: 'text' },
-  { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text' },
-  { key: 'cislo_orientacni', label: 'Číslo orientační', type: 'text' },
-  { key: 'mesto', label: 'Město', type: 'text' },
-  { key: 'psc', label: 'PSČ', type: 'text' },
-  { key: 'kraj', label: 'Kraj', type: 'text' },
-  { key: 'stat', label: 'Stát', type: 'text' },
-  { key: 'pocet_podlazi', label: 'Počet podlaží', type: 'text' },
-  { key: 'rok_vystavby', label: 'Rok výstavby', type: 'text' },
-  { key: 'rok_rekonstrukce', label: 'Rok rekonstrukce', type: 'text' },
-  { key: 'celkova_plocha', label: 'Celková plocha', type: 'text' },
-  { key: 'pocet_jednotek', label: 'Počet jednotek', type: 'text' },
-
-  // metadata / poznámky
-  // OPRAVA: pole je v DB 'poznamky' (dříve 'poznamka' bylo překlep), zobrazíme jako textarea
-  { key: 'poznamky', label: 'Poznámka', type: 'textarea', fullWidth: true },
-
-  // dodatkové pole pro zobrazení, přílohy a vybavení
-  { key: 'vybaveni', label: 'Vybavení', type: 'text' },
-  { key: 'prilohy', label: 'Přílohy', type: 'text' },
-
-  // Pronajímatel - pokud getProperty vrátí display name použijeme ho, jinak zobrazíme id
-  { key: 'pronajimatel', label: 'Pronajímatel', type: 'text' },
-
-  // stav a audit
-  { key: 'archivedLabel', label: 'Archivní', type: 'text' },
-  { key: 'updated_at', label: 'Poslední úprava', type: 'label', readOnly: true, format: formatCzechDate },
-  { key: 'updated_by', label: 'Upravil', type: 'label', readOnly: true },
-  { key: 'created_at', label: 'Vytvořen', type: 'label', readOnly: true, format: formatCzechDate }
-];
 
 export async function render(root, params) {
   const { id } = params || getHashParams();
@@ -76,29 +39,25 @@ export async function render(root, params) {
     return;
   }
   
-  // Upravíme data: opravíme pole poznamky, sestavíme pronajimatel display value, formátujeme data
-  // Pokud DB vrací pronajimatel display name jako pronajimatel_name nebo pronajimatel_nazev, použijeme ho
+  // Upravy dat: pronajimatel, prilohy/vybaveni atd.
   data.pronajimatel = data.pronajimatel_nazev || data.pronajimatel_name || data.pronajimatel_id || null;
-
-  // Případ, kdy jsou prilohy/vybaveni uložené jako JSONB - zobrazíme jako string (můžete upravit)
   if (data.prilohy && typeof data.prilohy !== 'string') {
-    try { data.prilohy = JSON.stringify(data.prilohy); } catch(e){ /* ignore */ }
+    try { data.prilohy = JSON.stringify(data.prilohy); } catch(e){ }
   }
   if (data.vybaveni && typeof data.vybaveni !== 'string') {
-    try { data.vybaveni = Array.isArray(data.vybaveni) ? data.vybaveni.join(', ') : JSON.stringify(data.vybaveni); } catch(e){ /* ignore */ }
+    try { data.vybaveni = Array.isArray(data.vybaveni) ? data.vybaveni.join(', ') : JSON.stringify(data.vybaveni); } catch(e){ }
   }
 
   // Formátování datumů pro readonly pole a nahrazení null za '--'
   for (const f of FIELDS) {
     if (f.readOnly || f.format) {
       if (f.format && data[f.key]) {
-        data[f.key] = f.format(data[f.key]);
+        data[f.key] = f.format ? f.format(data[f.key]) : data[f.key];
       }
       if (!data[f.key]) {
         data[f.key] = '--';
       }
     } else {
-      // pro běžná pole také nahraďme null/undefined prázdným řetězcem, aby renderForm správně zobrazil hodnotu
       if (data[f.key] === undefined || data[f.key] === null) data[f.key] = '';
     }
   }
@@ -120,7 +79,6 @@ export async function render(root, params) {
   const myRole = window.currentUserRole || 'admin';
 
   // --- Akce v liště ---
-  // DOPLNĚNO: přidána akce 'units' pro přechod na seznam jednotek
   const moduleActions = ['edit', 'units', 'attach', 'archive', 'refresh', 'history'];
   const handlers = {};
 
@@ -142,9 +100,8 @@ export async function render(root, params) {
   // Historie změn
   handlers.onHistory = () => alert('Historie - implementovat');
 
-  // NOVÉ: navigace na seznam jednotek (upravit cílovou route podle vaší aplikace)
+  // Navigace na seznam jednotek
   handlers.onUnits = () => {
-    // tato cesta je návrh: přesměruje na stránku seznamu jednotek modulu s filtrem podle nemovitosti
     navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`);
   };
 
