@@ -18,7 +18,11 @@ function escapeHtml(s='') {
 export async function render(root) {
   try {
     setBreadcrumb(document.getElementById('crumb'), [
-@@ -25,121 +16,89 @@ export async function render(root) {
+      { icon: 'home', label: 'Domů', href: '#/' },
+      { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
+      { icon: 'list', label: 'Přehled' }
+    ]);
+  } catch (e) {}
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-table"></div>`;
 
@@ -33,8 +37,6 @@ export async function render(root) {
   // Načti typy nemovitostí (včetně barvy)
   const { data: types = [] } = await listPropertyTypes();
   const typeMap = Object.fromEntries(types.map(t => [t.slug, t]));
-
-
 
 
 
