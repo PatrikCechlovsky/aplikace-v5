@@ -132,17 +132,17 @@ export const ACTIONS_CONFIG = [
     color: 'gray',
     requiresPermission: 'can_history',
     handler: 'showHistory'
-  }
+  },
   {
     key: 'units',
     label: 'Jednotky',
     icon: 'grid',
     color: 'blue',
-    // requiresPermission je informativní, filtr provádí permissions.getUserPermissions
     requiresPermission: 'can_units',
     handler: 'openUnits'
   },
 ];
+
 // 🔸 Pomocná funkce – najde definici akce podle klíče
 export function getActionConfig(key) {
   return ACTIONS_CONFIG.find(a => a.key === key);
