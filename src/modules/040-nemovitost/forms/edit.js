@@ -95,12 +95,10 @@ export async function render(root, params) {
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-form"></div>`;
 
   const myRole = window.currentUserRole || 'admin';
-
-  // --- Akce v liště ---
-  const moduleActions = ['save', 'attach', 'archive', 'reject', 'history'];
+  // přidáno 'units' do moduleActions
+  const moduleActions = ['save', 'units', 'attach', 'archive', 'reject', 'history'];
   const handlers = {};
 
-  // Uložit (disketa)
   handlers.onSave = async () => {
     const values = grabValues(root);
     // Nastav pole "updated_by" podle požadavku
@@ -178,6 +176,17 @@ export async function render(root, params) {
 
   // Historie změn
   handlers.onHistory = () => id && alert('Historie - implementovat');
+
+  // NOVÉ: handler pro Jednotky (pracuje i pokud id undefined, můžete nasměrovat na chooser)
+  handlers.onUnits = () => {
+    const propertyId = id || (document.querySelector('[name="id"]') && document.querySelector('[name="id"]').value) || '';
+    if (propertyId) {
+      navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${propertyId}`);
+    } else {
+      // pokud nemáme id (je to nové), uživatel musí nejdřív uložit; můžeme otevřít chooser
+      navigateTo(`#/m/040-nemovitost/f/unit-chooser`);
+    }
+  };
 
   // Tlačítka a akce
   renderCommonActions(document.getElementById('commonactions'), {
