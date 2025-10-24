@@ -88,11 +88,12 @@ export async function render(root) {
     const userRole = window.currentUserRole || 'admin';
     const perms = getUserPermissions(userRole);
     renderCommonActions(ca, {
-      moduleActions: ['add', 'edit', 'archive', 'attach', 'refresh', 'history'],
+      moduleActions: ['add', 'edit', 'units', 'archive', 'attach', 'refresh', 'history'],
       userRole,
       handlers: {
         onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser'),
         onEdit: hasSel ? () => navigateTo(`#/m/040-nemovitost/f/edit?id=${selectedRow.id}`) : undefined,
+        onUnits: hasSel ? () => navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${selectedRow.id}`) : undefined,
         onArchive: (perms.includes('archive') && hasSel) ? async () => {
           const { archiveProperty } = await import('/src/modules/040-nemovitost/db.js');
           await archiveProperty(selectedRow.id);
