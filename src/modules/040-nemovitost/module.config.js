@@ -43,7 +43,11 @@ export async function getManifest() {
     forms: [
       // skryté ve sidebaru (zobrazí se jako drobečková navigace při výběru detailu/formy)
       { id: 'edit', title: 'Nová nemovitost', icon: 'add', showInSidebar: false },
+      { id: 'detail', title: 'Detail nemovitosti', icon: 'eye', showInSidebar: false },
       { id: 'unit-edit', title: 'Nová jednotka', icon: 'add', showInSidebar: false },
+      { id: 'unit-detail', title: 'Detail jednotky', icon: 'eye', showInSidebar: false },
+      { id: 'chooser', title: 'Výběr typu nemovitosti', icon: 'grid', showInSidebar: false },
+      { id: 'unit-chooser', title: 'Výběr typu jednotky', icon: 'grid', showInSidebar: false },
       { id: 'property-type', title: 'Správa typů nemovitostí', icon: 'settings', showInSidebar: false },
       { id: 'unit-type', title: 'Správa typů jednotek', icon: 'settings', showInSidebar: false }
     ],

@@ -34,8 +34,8 @@ const FIELDS = [
     { value: 'puda', label: 'Půda' },
     { value: 'jina_jednotka', label: 'Jiná jednotka' }
   ]},
-  { key: 'podlazi', label: 'Podlaží', type: 'number', required: true },
-  { key: 'plocha', label: 'Plocha (m²)', type: 'number', required: true },
+  { key: 'podlazi', label: 'Podlaží', type: 'text', placeholder: 'např. 1, přízemí, -1' },
+  { key: 'plocha', label: 'Plocha (m²)', type: 'number', required: true, step: '0.01' },
   { key: 'pocet_mistnosti', label: 'Počet místností', type: 'number' },
   { key: 'dispozice', label: 'Dispozice', type: 'text', placeholder: 'např. 2+kk, 3+1' },
   { key: 'stav', label: 'Stav', type: 'select', required: true, options: [
@@ -44,7 +44,14 @@ const FIELDS = [
     { value: 'rezervovana', label: 'Rezervovaná' },
     { value: 'rekonstrukce', label: 'Rekonstrukce' }
   ]},
-  { key: 'mesicni_najem', label: 'Měsíční nájem (Kč)', type: 'number' },
+  { key: 'mesicni_najem', label: 'Měsíční nájem (Kč)', type: 'number', step: '0.01' },
+  { key: 'kauce', label: 'Kauce (Kč)', type: 'number', step: '0.01' },
+  { key: 'najemce_id', label: 'Nájemce', type: 'chooser', entity: 'subjects', role: 'najemnik', 
+    buttonLabel: 'Vybrat nájemce', 
+    displayField: 'display_name',
+    helpText: 'Vyberte nájemce z modulu 050 (Nájemníci)' },
+  { key: 'datum_zahajeni_najmu', label: 'Začátek nájmu', type: 'date' },
+  { key: 'datum_ukonceni_najmu', label: 'Konec nájmu', type: 'date' },
   { key: 'poznamka', label: 'Poznámka', type: 'textarea', fullWidth: true },
   { key: 'archived', label: 'Archivní', type: 'checkbox' },
   { key: 'updated_at', label: 'Poslední úprava', type: 'label', readOnly: true, format: formatCzechDate },
@@ -187,11 +194,16 @@ export async function render(root, params) {
     layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
     sections: [
       { id: 'zakladni', label: 'Základní údaje', fields: [
-        'oznaceni', 'typ_jednotky', 'podlazi', 'plocha', 'pocet_mistnosti', 'dispozice',
-        'stav', 'mesicni_najem'
+        'oznaceni', 'typ_jednotky', 'podlazi', 'plocha', 'pocet_mistnosti', 'dispozice', 'stav'
+      ] },
+      { id: 'najem', label: 'Nájem a finance', fields: [
+        'mesicni_najem', 'kauce', 'najemce_id', 'datum_zahajeni_najmu', 'datum_ukonceni_najmu'
       ] },
       { id: 'system', label: 'Systém', fields: [
         'archived', 'poznamka', 'updated_at', 'updated_by', 'created_at'
+      ] },
+    ]
+  });
       ] },
     ]
   });
