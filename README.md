@@ -28,36 +28,68 @@ Tato aplikace používá **jednotnou strukturu modulů** pro zajištění konzis
    - Copy-paste šablony
    - Troubleshooting
 
+5. **[how-to-create-module.md](docs/how-to-create-module.md)** 🔧 NOVÝ MODUL KROK ZA KROKEM
+   - Kompletní návod pro vytvoření nového modulu
+   - Přehled všech zakomentovaných modulů (060-990)
+   - Příklady kódu pro všechny části modulu
+   - Checklist před commitem
+
+6. **[module-quick-reference.md](docs/module-quick-reference.md)** 📖 RYCHLÁ REFERENCE
+   - Struktura modulu na jedné stránce
+   - Code snippets pro rychlý start
+   - Checklist pro nový modul
+
+### 🗄️ Dokumentace databáze:
+
+7. **[database-schema.md](docs/database-schema.md)** 💾 DATABÁZOVÉ SCHÉMA
+   - Kompletní přehled všech Supabase tabulek
+   - Popisy sloupců, typů a vazeb
+   - Indexy, constraints, triggers, RLS policies
+   - Konvence a standardy
+
+8. **[database-schema-maintenance.md](docs/database-schema-maintenance.md)** 🔄 ÚDRŽBA DB DOKUMENTACE
+   - Workflow pro změny v databázi
+   - Návod na aktualizaci dokumentace
+   - Šablony pro nové tabulky
+   - Checklist před commitem
+
 ### 📊 Aktuální stav modulů:
 
 ```
 ✅ 010-sprava-uzivatelu  (REFERENČNÍ - VZOR pro ostatní)
 ✅ 020-muj-ucet          (potřebuje rozšíření)
 ⚠️ 030-pronajimatel      (potřebuje doplnit historii, breadcrumbs)
-📋 040-nemovitost        (NOVÁ kompletní specifikace připravena! viz SOUHRN-ZMENY.md)
+✅ 040-nemovitost        (DOKONČENO: units, propojení s 030/050, DB dokumentace)
 ⚠️ 050-najemnik          (potřebuje doplnit historii, breadcrumbs)
-❌ 060-990 moduly        (zakomentované, zatím nepřipravené)
+❌ 060-990 moduly        (připraveno k vytvoření - viz how-to-create-module.md)
 ```
 
 ### 🎯 Priority:
 
-1. ✅ **DOKONČENO**: Specifikace modulu 040-nemovitost (45+ stran dokumentace)
-2. **KRITICKÉ**: Přidat historii změn do modulů 030, 050
-3. **DŮLEŽITÉ**: Sjednotit commonActions ve všech modulech
-4. **DŮLEŽITÉ**: Přidat breadcrumbs všude kde chybí
+1. ✅ **DOKONČENO**: Modul 040 - jednotky, propojení s pronajímateli/nájemníky
+2. ✅ **DOKONČENO**: Dokumentace databázového schématu
+3. ✅ **DOKONČENO**: Návody na vytvoření nových modulů
+4. **DALŠÍ**: Přidat historii změn do modulů 030, 050
+5. **DALŠÍ**: Vytvořit modul 060 (Smlouvy) podle návodu
 
-### 🆕 Nově přidáno (2025-10-20):
+### 🆕 Nově přidáno (2025-10-24):
 
-**Kompletní specifikace Modulu 040 - Nemovitosti:**
-- 📖 `src/modules/040-nemovitost/assets/README.md` - Přehled modulu
-- 🗄️ `src/modules/040-nemovitost/assets/datovy-model.md` - Databázové schéma (419 řádků)
-- ✅ `src/modules/040-nemovitost/assets/checklist.md` - Implementační checklist (427 řádků, 11 fází)
-- 🔒 `src/modules/040-nemovitost/assets/permissions.md` - Katalog oprávnění (355 řádků)
-- 📋 `SOUHRN-ZMENY.md` - Český souhrn změn
-- ⚠️ `MANUAL_TASKS.md` - Instrukce pro uzavření PR #7 a #8
+**Modul 040 - Nemovitosti (dokončeno):**
+- ✅ Implementován seznam jednotek s filtry
+- ✅ Vytvořen detail view pro jednotky
+- ✅ Přidáno propojení jednotek s nájemníky (050)
+- ✅ Přidáno propojení nemovitostí s pronajímateli (030)
+- ✅ Rozšířen formulář jednotky o nájemní údaje
 
-**Statistiky:**
-- 7 souborů vytvořeno/aktualizováno
+**Databázová dokumentace:**
+- 📖 `docs/database-schema.md` - Kompletní přehled všech tabulek (500+ řádků)
+- 🔄 `docs/database-schema-maintenance.md` - Návod na údržbu dokumentace
+- Dokumentace pokrývá: profiles, subjects, properties, units, attachments, audit_log
+
+**Návody na vytváření modulů:**
+- 🚀 `docs/how-to-create-module.md` - Detailní krok-za-krokem návod (600+ řádků)
+- 📖 `docs/module-quick-reference.md` - Rychlá reference se code snippets
+- Obsahuje příklady pro: module.config.js, db.js, tiles, forms, SQL migrace
 - 1,806 řádků dokumentace
 - ~55 KB nové dokumentace
 - 0 bezpečnostních chyb (CodeQL validated)
