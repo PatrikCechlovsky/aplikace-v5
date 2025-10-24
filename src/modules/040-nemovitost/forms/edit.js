@@ -86,7 +86,12 @@ export async function render(root, params) {
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
-@@ -95,76 +34,37 @@
+      { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
+      { icon: 'form', label: 'Formulář' },
+      { icon: 'edit', label: nazev }
+    ]);
+  } catch (e) {}
+
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-form"></div>`;
 
   const myRole = window.currentUserRole || 'admin';
@@ -163,7 +168,8 @@ export async function render(root, params) {
   if (id && !data.archived) {
     handlers.onArchive = async () => {
       await archiveProperty(id);
-@@ -173,44 +73,45 @@
+      alert('Nemovitost byla archivována.');
+      navigateTo('#/m/040-nemovitost/t/prehled');
     };
   }
 
@@ -174,16 +180,6 @@ export async function render(root, params) {
   handlers.onHistory = () => id && alert('Historie - implementovat');
 
   // Tlačítka a akce
-
-
-
-
-
-
-
-
-
-
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
     userRole: myRole,
@@ -218,7 +214,8 @@ function grabValues(scopeEl) {
     const el = scopeEl.querySelector(`[name="${f.key}"]`);
     if (!el) continue;
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
-@@ -219,4 +120,3 @@
+  }
+  return obj;
 }
 
 export default { render };
