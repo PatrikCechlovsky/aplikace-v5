@@ -100,9 +100,9 @@ export function renderCommonActions(
 
   // 4.5) defaultní inteligentní řazení (intuitivní pořadí)
   const PREFERRED_ORDER = [
-    'save', 'approve', 'add', 'edit', 'invite', 'send', 'attach', 'history',
+    'save', 'approve', 'add', 'edit', 'invite', 'send', 'attach', 'units', 'history',
     'refresh', 'search', 'print', 'export', 'import', 'archive', 'delete',
-    'reject', 'exit', 'star', 'detail', 'units'
+    'reject', 'exit', 'star', 'detail'
   ];
   const LAST_KEYS = new Set(['reject', 'exit']);
 
