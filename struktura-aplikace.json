@@ -1,0 +1,2205 @@
+{
+  "modules": [
+    {
+      "id": "010-sprava-uzivatelu",
+      "title": "Uživatelé",
+      "icon": "users",
+      "tiles": [
+        {
+          "id": "prehled",
+          "title": "Přehled",
+          "icon": "list",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh"
+          ],
+          "columns": [
+            {
+              "key": "role",
+              "label": "Role",
+              "width": "15%",
+              "sortable": true
+            },
+            {
+              "key": "display_name",
+              "label": "Jméno",
+              "width": "25%",
+              "sortable": true
+            },
+            {
+              "key": "email",
+              "label": "E-mail",
+              "width": "25%",
+              "sortable": true
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivován",
+              "width": "10%",
+              "sortable": true
+            }
+          ]
+        }
+      ],
+      "forms": [
+        {
+          "id": "form",
+          "title": "Formulář",
+          "icon": "form",
+          "actions": [],
+          "fields": [
+            {
+              "key": "display_name",
+              "label": "Jméno a příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_pred",
+              "label": "Titul před jménem",
+              "type": "text"
+            },
+            {
+              "key": "jmeno",
+              "label": "Křestní jméno",
+              "type": "text"
+            },
+            {
+              "key": "prijmeni",
+              "label": "Příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_za",
+              "label": "Titul za jménem",
+              "type": "text"
+            },
+            {
+              "key": "typ_dokladu",
+              "label": "Typ dokladu",
+              "type": "select"
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "type": "text"
+            },
+            {
+              "key": "dic",
+              "label": "DIČ",
+              "type": "text"
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "type": "text"
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "type": "email"
+            },
+            {
+              "key": "country",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "street",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "zip",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "bankovni_ucet",
+              "label": "Bankovní účet / číslo",
+              "type": "text"
+            },
+            {
+              "key": "zastupuje_id",
+              "label": "Zastupuje (ID subjektu)",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "id": "create",
+          "title": "Nový / Pozvat",
+          "icon": "add",
+          "actions": [
+            "invite"
+          ],
+          "fields": [
+            {
+              "key": "display_name",
+              "label": "Jméno a příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_pred",
+              "label": "Titul před jménem",
+              "type": "text"
+            },
+            {
+              "key": "jmeno",
+              "label": "Křestní jméno",
+              "type": "text"
+            },
+            {
+              "key": "prijmeni",
+              "label": "Příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_za",
+              "label": "Titul za jménem",
+              "type": "text"
+            },
+            {
+              "key": "typ_dokladu",
+              "label": "Typ dokladu",
+              "type": "select"
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "type": "text"
+            },
+            {
+              "key": "dic",
+              "label": "DIČ",
+              "type": "text"
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "type": "text"
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "type": "email"
+            },
+            {
+              "key": "country",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "street",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "zip",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "bankovni_ucet",
+              "label": "Bankovní účet / číslo",
+              "type": "text"
+            },
+            {
+              "key": "zastupuje_id",
+              "label": "Zastupuje (ID subjektu)",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "id": "role",
+          "title": "Role & barvy",
+          "icon": "settings",
+          "actions": [
+            "save",
+            "delete",
+            "reject"
+          ],
+          "fields": [
+            {
+              "key": "display_name",
+              "label": "Jméno a příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_pred",
+              "label": "Titul před jménem",
+              "type": "text"
+            },
+            {
+              "key": "jmeno",
+              "label": "Křestní jméno",
+              "type": "text"
+            },
+            {
+              "key": "prijmeni",
+              "label": "Příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_za",
+              "label": "Titul za jménem",
+              "type": "text"
+            },
+            {
+              "key": "typ_dokladu",
+              "label": "Typ dokladu",
+              "type": "select"
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "type": "text"
+            },
+            {
+              "key": "dic",
+              "label": "DIČ",
+              "type": "text"
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "type": "text"
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "type": "email"
+            },
+            {
+              "key": "country",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "street",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "zip",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "bankovni_ucet",
+              "label": "Bankovní účet / číslo",
+              "type": "text"
+            },
+            {
+              "key": "zastupuje_id",
+              "label": "Zastupuje (ID subjektu)",
+              "type": "text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "020-muj-ucet",
+      "title": "Můj účet",
+      "icon": "account",
+      "tiles": [],
+      "forms": [
+        {
+          "id": "form",
+          "title": "Upravit profil",
+          "icon": "account",
+          "actions": [
+            "save",
+            "reject"
+          ],
+          "fields": [
+            {
+              "key": "display_name",
+              "label": "Jméno a příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_pred",
+              "label": "Titul před jménem",
+              "type": "text"
+            },
+            {
+              "key": "jmeno",
+              "label": "Křestní jméno",
+              "type": "text"
+            },
+            {
+              "key": "prijmeni",
+              "label": "Příjmení",
+              "type": "text"
+            },
+            {
+              "key": "titul_za",
+              "label": "Titul za jménem",
+              "type": "text"
+            },
+            {
+              "key": "typ_dokladu",
+              "label": "Typ dokladu",
+              "type": "select"
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "type": "text"
+            },
+            {
+              "key": "dic",
+              "label": "DIČ",
+              "type": "text"
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "type": "text"
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "type": "email"
+            },
+            {
+              "key": "country",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "street",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "zip",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "bankovni_ucet",
+              "label": "Bankovní účet / číslo",
+              "type": "text"
+            },
+            {
+              "key": "zastupuje_id",
+              "label": "Zastupuje (ID subjektu)",
+              "type": "text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "030-pronajimatel",
+      "title": "Pronajímatel",
+      "icon": "home",
+      "tiles": [
+        {
+          "id": "prehled",
+          "title": "Přehled",
+          "icon": "list",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "typ_subjektu",
+              "label": "Typ",
+              "width": "10%",
+              "sortable": true
+            },
+            {
+              "key": "display_name",
+              "label": "Název / Jméno",
+              "width": "20%",
+              "sortable": false
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "width": "10%",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "15%",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "Email",
+              "width": "18%",
+              "sortable": false
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "width": "15%",
+              "sortable": false
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivován",
+              "width": "10%",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "osoba",
+          "title": "Osoba",
+          "icon": "person",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "id",
+              "label": "ID",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "display_name",
+              "label": "Jméno",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "osvc",
+          "title": "OSVČ",
+          "icon": "briefcase",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Jméno / Firma",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "firma",
+          "title": "Firma",
+          "icon": "building",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "id",
+              "label": "ID",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "display_name",
+              "label": "Firma",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "spolek",
+          "title": "Spolek / Skupina",
+          "icon": "people",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Název",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "stat",
+          "title": "Státní instituce",
+          "icon": "bank",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Název",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "zastupce",
+          "title": "Zástupci",
+          "icon": "handshake",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Jméno zástupce",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "zastupuje_id",
+              "label": "Zastupuje (ID)",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "novy",
+          "title": "Nový subjekt",
+          "icon": "add",
+          "actions": [],
+          "columns": []
+        }
+      ],
+      "forms": [
+        {
+          "id": "chooser",
+          "title": "Nový subjekt",
+          "icon": "add",
+          "actions": [],
+          "fields": []
+        },
+        {
+          "id": "form",
+          "title": "Formulář",
+          "icon": "form",
+          "actions": [
+            "archive",
+            "attach",
+            "history",
+            "save"
+          ],
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "040-nemovitost",
+      "title": "Přehled",
+      "icon": "list",
+      "tiles": [],
+      "forms": [
+        {
+          "id": "edit",
+          "title": "Nová nemovitost",
+          "icon": "add",
+          "actions": [],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        },
+        {
+          "id": "detail",
+          "title": "Detail nemovitosti",
+          "icon": "eye",
+          "actions": [],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        },
+        {
+          "id": "unit-edit",
+          "title": "Nová jednotka",
+          "icon": "add",
+          "actions": [],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        },
+        {
+          "id": "unit-detail",
+          "title": "Detail jednotky",
+          "icon": "eye",
+          "actions": [],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        },
+        {
+          "id": "chooser",
+          "title": "Výběr typu nemovitosti",
+          "icon": "grid",
+          "actions": [],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        },
+        {
+          "id": "unit-chooser",
+          "title": "Výběr typu jednotky",
+          "icon": "grid",
+          "actions": [],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        },
+        {
+          "id": "property-type",
+          "title": "Správa typů nemovitostí",
+          "icon": "settings",
+          "actions": [
+            "add",
+            "save",
+            "refresh"
+          ],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        },
+        {
+          "id": "unit-type",
+          "title": "Správa typů jednotek",
+          "icon": "settings",
+          "actions": [
+            "add",
+            "save",
+            "refresh"
+          ],
+          "fields": [
+            {
+              "key": "nazev",
+              "label": "Název nemovitosti",
+              "type": "text"
+            },
+            {
+              "key": "typ_nemovitosti",
+              "label": "Typ nemovitosti",
+              "type": "select"
+            },
+            {
+              "key": "ulice",
+              "label": "Ulice",
+              "type": "text"
+            },
+            {
+              "key": "cislo_popisne",
+              "label": "Číslo popisné",
+              "type": "text"
+            },
+            {
+              "key": "cislo_orientacni",
+              "label": "Číslo orientační",
+              "type": "text"
+            },
+            {
+              "key": "mesto",
+              "label": "Město",
+              "type": "text"
+            },
+            {
+              "key": "psc",
+              "label": "PSČ",
+              "type": "text"
+            },
+            {
+              "key": "kraj",
+              "label": "Kraj",
+              "type": "text"
+            },
+            {
+              "key": "stat",
+              "label": "Stát",
+              "type": "text"
+            },
+            {
+              "key": "pocet_podlazi",
+              "label": "Počet podlaží",
+              "type": "number"
+            },
+            {
+              "key": "pocet_podzemních_podlazi",
+              "label": "Počet podzemních podlaží",
+              "type": "number"
+            },
+            {
+              "key": "rok_vystavby",
+              "label": "Rok výstavby",
+              "type": "number"
+            },
+            {
+              "key": "rok_rekonstrukce",
+              "label": "Rok rekonstrukce",
+              "type": "number"
+            },
+            {
+              "key": "celkova_plocha",
+              "label": "Celková plocha (m²)",
+              "type": "number"
+            },
+            {
+              "key": "pocet_jednotek",
+              "label": "Počet jednotek",
+              "type": "number"
+            },
+            {
+              "key": "spravce",
+              "label": "Správce",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámka",
+              "type": "textarea"
+            },
+            {
+              "key": "vybaveni",
+              "label": "Vybavení",
+              "type": "text"
+            },
+            {
+              "key": "prilohy",
+              "label": "Přílohy",
+              "type": "text"
+            },
+            {
+              "key": "pronajimatel",
+              "label": "Pronajímatel (legacy)",
+              "type": "text"
+            },
+            {
+              "key": "archived",
+              "label": "Archivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivní (text)",
+              "type": "text"
+            },
+            {
+              "key": "updated_at",
+              "label": "Poslední úprava",
+              "type": "label"
+            },
+            {
+              "key": "updated_by",
+              "label": "Upravil",
+              "type": "label"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořen",
+              "type": "label"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "050-najemnik",
+      "title": "Nájemník",
+      "icon": "users",
+      "tiles": [
+        {
+          "id": "prehled",
+          "title": "Přehled",
+          "icon": "list",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "typ_subjektu",
+              "label": "Typ",
+              "width": "10%",
+              "sortable": true
+            },
+            {
+              "key": "display_name",
+              "label": "Název / Jméno",
+              "width": "20%",
+              "sortable": false
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "width": "10%",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "18%",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "15%",
+              "sortable": false
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "width": "15%",
+              "sortable": false
+            },
+            {
+              "key": "archivedLabel",
+              "label": "Archivován",
+              "width": "10%",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "osoba",
+          "title": "Osoba",
+          "icon": "person",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Jméno",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "osvc",
+          "title": "OSVČ",
+          "icon": "briefcase",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Jméno / Firma",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "firma",
+          "title": "Firma",
+          "icon": "building",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "id",
+              "label": "ID",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "display_name",
+              "label": "Firma",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "ico",
+              "label": "IČO",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "Email",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "spolek",
+          "title": "Spolek / Skupina",
+          "icon": "people",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Název",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "stat",
+          "title": "Státní instituce",
+          "icon": "bank",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Název",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "city",
+              "label": "Město",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        },
+        {
+          "id": "zastupce",
+          "title": "Zástupci",
+          "icon": "handshake",
+          "actions": [
+            "add",
+            "edit",
+            "archive",
+            "attach",
+            "refresh",
+            "history"
+          ],
+          "columns": [
+            {
+              "key": "display_name",
+              "label": "Jméno zástupce",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "zastupuje_id",
+              "label": "Zastupuje (ID)",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_email",
+              "label": "E-mail",
+              "width": "",
+              "sortable": false
+            },
+            {
+              "key": "primary_phone",
+              "label": "Telefon",
+              "width": "",
+              "sortable": false
+            }
+          ]
+        }
+      ],
+      "forms": [
+        {
+          "id": "chooser",
+          "title": "Nový nájemník",
+          "icon": "grid",
+          "actions": [],
+          "fields": []
+        },
+        {
+          "id": "form",
+          "title": "Formulář",
+          "icon": "form",
+          "actions": [
+            "archive",
+            "attach",
+            "history",
+            "save"
+          ],
+          "fields": []
+        }
+      ]
+    }
+  ]
+}
