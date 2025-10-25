@@ -47,17 +47,19 @@ export function renderSidebar(root, modules = [], opts = {}) {
                 `;
               }).join('');
 
-              const formLinks = (m.forms || []).map(f => {
-                const isActive = m.id === activeMod && activeKind === 'f' && f.id === activeSection;
-                return `
-                  <a href="#/m/${m.id}/f/${f.id}"
-                    class="block text-sm rounded px-2 py-1 transition font-medium
-                      ${isActive ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'}"
-                  >
-                    ${icon(f.icon || 'form')} ${f.title}
-                  </a>
-                `;
-              }).join('');
+              const formLinks = (m.forms || [])
+                .filter(f => f.showInSidebar !== false) // Only show forms with showInSidebar !== false
+                .map(f => {
+                  const isActive = m.id === activeMod && activeKind === 'f' && f.id === activeSection;
+                  return `
+                    <a href="#/m/${m.id}/f/${f.id}"
+                      class="block text-sm rounded px-2 py-1 transition font-medium
+                        ${isActive ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'}"
+                    >
+                      ${icon(f.icon || 'form')} ${f.title}
+                    </a>
+                  `;
+                }).join('');
 
               return `
                 <li>

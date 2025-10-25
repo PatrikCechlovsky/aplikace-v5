@@ -14,8 +14,23 @@ function escapeHtml(s='') {
   return (''+s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Pomocná funkce pro získání parametrů z hash části URL
+function getHashParams() {
+  const q = (location.hash.split('?')[1] || '');
+  return Object.fromEntries(new URLSearchParams(q));
+}
 
-export async function render(root) {
+export async function render(root, params = {}) {
+  // Získej parametry z URL nebo z předaných params
+  const urlParams = getHashParams();
+  const typeFilter = params.type || urlParams.type || null;
+  const archivedParam = params.archived || urlParams.archived;
+  
+  // Nastavení showArchived podle parametru
+  if (archivedParam !== undefined) {
+    showArchived = archivedParam === '1' || archivedParam === 'true' || archivedParam === true;
+  }
+
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
@@ -26,8 +41,12 @@ export async function render(root) {
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-table"></div>`;
 
-  // Načti všechny nemovitosti
-  const { data, error } = await listProperties({ showArchived, limit: 500 });
+  // Načti nemovitosti s filtrem podle typu (pokud je zadán)
+  const { data, error } = await listProperties({ 
+    type: typeFilter, 
+    showArchived, 
+    limit: 500 
+  });
   if (error) {
     root.querySelector('#property-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
     return;
@@ -98,10 +117,10 @@ export async function render(root) {
           const { archiveProperty } = await import('/src/modules/040-nemovitost/db.js');
           await archiveProperty(selectedRow.id);
           selectedRow = null;
-          await render(root);
+          await render(root, params);
         } : undefined,
         onAttach: hasSel ? () => showAttachmentsModal({ entity: 'properties', entityId: selectedRow.id }) : undefined,
-        onRefresh: () => render(root),
+        onRefresh: () => render(root, params),
         onHistory: hasSel ? () => alert('Historie - implementovat') : undefined
       }
     });
@@ -142,12 +161,10 @@ export async function render(root) {
   root.querySelector('#property-table').addEventListener('change', (e) => {
     if (e.target && e.target.id === 'toggle-archived') {
       showArchived = e.target.checked;
-      render(root);
+      render(root, params);
     }
-
-
-
-
+  });
+}
 
 
 

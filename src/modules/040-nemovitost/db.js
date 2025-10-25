@@ -265,10 +265,14 @@ export async function restoreProperty(id) {
 /**
  * List units for a property
  * @param {string} propertyId - Property ID
- * @param {boolean} showArchived - Include archived units
+ * @param {Object} options - Filter options
+ * @param {boolean} options.showArchived - Include archived units
+ * @param {boolean} options.onlyUnoccupied - Show only unoccupied units
  * @returns {Promise<{data: Array, error: Object}>}
  */
-export async function listUnits(propertyId, showArchived = false) {
+export async function listUnits(propertyId, options = {}) {
+  const { showArchived = false, onlyUnoccupied = false } = options;
+  
   try {
     let query = supabase
       .from('units')
@@ -279,6 +283,11 @@ export async function listUnits(propertyId, showArchived = false) {
     // Filter archived
     if (!showArchived) {
       query = query.or('archived.is.null,archived.eq.false');
+    }
+    
+    // Filter by occupied status - units with stav='volna' are unoccupied
+    if (onlyUnoccupied) {
+      query = query.eq('stav', 'volna');
     }
     
     const { data, error } = await query;

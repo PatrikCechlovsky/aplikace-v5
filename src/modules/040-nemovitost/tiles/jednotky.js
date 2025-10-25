@@ -9,6 +9,7 @@ import { showAttachmentsModal } from '/src/ui/attachments.js';
 
 let selectedRow = null;
 let showArchived = false;
+let onlyUnoccupied = false;
 let filterValue = '';
 
 function escapeHtml(s='') {
@@ -47,8 +48,8 @@ export async function render(root, params = {}) {
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="units-table"></div>`;
 
-  // Načti všechny jednotky pro tuto nemovitost
-  const { data, error } = await listUnits(propertyId, showArchived);
+  // Načti všechny jednotky pro tuto nemovitost s filtry
+  const { data, error } = await listUnits(propertyId, { showArchived, onlyUnoccupied });
   if (error) {
     root.querySelector('#units-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání jednotek: ${error.message || JSON.stringify(error)}</div>`;
     return;
@@ -169,6 +170,10 @@ export async function render(root, params = {}) {
         <div class="flex items-center gap-4">
           ${filterInputHtml}
           <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
+            <input type="checkbox" id="toggle-unoccupied" ${onlyUnoccupied ? 'checked' : ''}/>
+            Jen neobsazené
+          </label>
+          <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
             <input type="checkbox" id="toggle-archived" ${showArchived ? 'checked' : ''}/>
             Zobrazit archivované
           </label>
@@ -188,6 +193,10 @@ export async function render(root, params = {}) {
   root.querySelector('#units-table').addEventListener('change', (e) => {
     if (e.target && e.target.id === 'toggle-archived') {
       showArchived = e.target.checked;
+      render(root, { propertyId });
+    }
+    if (e.target && e.target.id === 'toggle-unoccupied') {
+      onlyUnoccupied = e.target.checked;
       render(root, { propertyId });
     }
   });
