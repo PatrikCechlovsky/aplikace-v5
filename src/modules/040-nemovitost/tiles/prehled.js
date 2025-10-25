@@ -31,12 +31,23 @@ export async function render(root, params = {}) {
     showArchived = archivedParam === '1' || archivedParam === 'true' || archivedParam === true;
   }
 
+  // Načti typy nemovitostí (včetně barvy) - PŘED breadcrumb
+  const { data: types = [] } = await listPropertyTypes();
+  const typeMap = Object.fromEntries(types.map(t => [t.slug, t]));
+
   try {
-    setBreadcrumb(document.getElementById('crumb'), [
+    const breadcrumbItems = [
       { icon: 'home', label: 'Domů', href: '#/' },
       { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
       { icon: 'list', label: 'Přehled' }
-    ]);
+    ];
+    
+    // Add type filter to breadcrumb if active
+    if (typeFilter && typeMap[typeFilter]) {
+      breadcrumbItems.push({ icon: typeMap[typeFilter].icon || 'building', label: typeMap[typeFilter].label });
+    }
+    
+    setBreadcrumb(document.getElementById('crumb'), breadcrumbItems);
   } catch (e) {}
 
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-table"></div>`;
@@ -52,10 +63,6 @@ export async function render(root, params = {}) {
     return;
   }
   const rows = data || [];
-
-  // Načti typy nemovitostí (včetně barvy)
-  const { data: types = [] } = await listPropertyTypes();
-  const typeMap = Object.fromEntries(types.map(t => [t.slug, t]));
 
 
 
@@ -139,8 +146,18 @@ export async function render(root, params = {}) {
       moduleId: '040-nemovitost',
       filterValue,
       customHeader: ({ filterInputHtml }) => `
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 flex-wrap">
           ${filterInputHtml}
+          ${typeFilter ? `
+            <div class="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
+              <span>Filtr: ${typeMap[typeFilter]?.label || typeFilter}</span>
+              <button 
+                onclick="location.hash='#/m/040-nemovitost/t/prehled'" 
+                class="text-blue-600 hover:text-blue-800 font-bold"
+                title="Zrušit filtr"
+              >×</button>
+            </div>
+          ` : ''}
           <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
             <input type="checkbox" id="toggle-archived" ${showArchived ? 'checked' : ''}/>
             Zobrazit archivované
