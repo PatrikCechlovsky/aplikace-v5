@@ -1,4 +1,3 @@
- (5).js
 // src/ui/icons.js
 // Jednoduchý registr ikon (emoji + SVG). Kdykoliv lze nahradit SVG/ikony dalším setem.
 // Rozšířeno: přidáno ~90 běžných ikon (emoji fallback) a několik SVG pro lepší rendering.
@@ -27,8 +26,7 @@ export const ICONS = {
   table: '📋',
   columns: '📑',
   bell: '🔔',
-  notification: '🔔',
-  bell-slash: '🔕',
+  'bell-slash': '🔕',
   help: '❓',
   info: 'ℹ️',
   search: '🔍',
@@ -122,10 +120,10 @@ export const ICONS = {
   // DATA / CHARTS
   stats: '📊',
   chart: '📈',
-  chart-bar: '📊',
-  chart-pie: '🥧',
-  trend-up: '📈',
-  trend-down: '📉',
+  'chart-bar': '📊',
+  'chart-pie': '🥧',
+  'trend-up': '📈',
+  'trend-down': '📉',
 
   // CALENDAR / TIME
   calendar: '📅',
@@ -165,7 +163,7 @@ export const ICONS = {
   map: '🗺️',
   location: '📍',
   pin: '📌',
-  map-pin: '📍',
+  'map-pin': '📍',
   compass: '🧭',
   globe: '🌍',
   language: '🗣️',
@@ -183,12 +181,12 @@ export const ICONS = {
 
   // BUILDINGS / PROPERTY (modul 040)
   'building-2': '🏢',
-  'warehouse': '🏭',
+  warehouse: '🏭',
   'office-building': '🏬',
-  'apartment': '🏘️',
+  apartment: '🏘️',
   'apartment-unit': '🚪',
-  'basement': '🔒',
-  'attic': '🏚️',
+  basement: '🔒',
+  attic: '🏚️',
   garage: '🚗',
   storage: '📦',
   'unit-key': '🔑',
@@ -208,7 +206,7 @@ export const ICONS = {
   // DEVOPS / INFRA
   bug: '🐛',
   shield: '🛡️',
-  lock-shield: '🔐',
+  'lock-shield': '🔐',
   server: '🖥️',
   api: '🔗',
   webhook: '🔔',
@@ -216,9 +214,9 @@ export const ICONS = {
   // ACCESSIBILITY / UI TYPES
   tile: '🟦',
   grid: '🟦',
-  list-alt: '📋',
+  'list-alt': '📋',
   form: '📝',
-  menu-grid: '▦',
+  'menu-grid': '▦',
   avatar: '👤',
   badge: '🔰',
 
@@ -231,7 +229,7 @@ export const ICONS = {
   book: '📚',
   docs: '📑',
   note: '📝',
-  comment-alt: '💭',
+  'comment-alt': '💭',
   invite: '📨',
   report: '📝',
   export: '📤',
@@ -257,15 +255,15 @@ export const ICONS = {
   flag: '🚩',
   check: '✔️',
   clock2: '🕒',
-  search-alt: '🔎',
-  settings-alt: '🔧',
+  'search-alt': '🔎',
+  'settings-alt': '🔧',
   support: '🆘',
-  bug-report: '🐞',
+  'bug-report': '🐞',
   maintenance: '🛠️',
   'sort-asc': '🔼',
   'sort-desc': '🔽',
   'lock-open': '🔓',
-  'network': '🌐'
+  network: '🌐'
 };
 
  // Rozšířené aliasy – pohodlnější klíče na totéž
