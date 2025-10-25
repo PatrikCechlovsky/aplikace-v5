@@ -3,6 +3,11 @@
 
 import { listPropertyTypes, listProperties } from './db.js';
 
+function normalizeSlug(slug) {
+  if (!slug) return slug;
+  return String(slug).trim().toLowerCase().replace(/_/g, '-');
+}
+
 export async function getManifest() {
   const tiles = [
     { id: 'prehled', title: 'Přehled', icon: 'list' } // stále vždy dostupné
@@ -17,9 +22,11 @@ export async function getManifest() {
         const { data: items = [] } = await listProperties({ type: t.slug, limit: 500 });
         const count = Array.isArray(items) ? items.length : 0;
         if (count > 0) {
-          // Přidej tile do sidebaru pouze pokud existuje záznam, včetně počtu
+          // Normalize slug => match filename convention (admin-budova.js)
+          const id = normalizeSlug(t.slug || t.id || t.name);
+
           tiles.push({
-            id: t.slug,                // očekává se odpovídající soubor tiles/<slug>.js
+            id: id,                // nyní odpovídá souboru tiles/<slug-with-dashes>.js
             title: `${t.label || t.slug} (${count})`,
             icon: t.icon || 'building',
             count: count
@@ -27,13 +34,10 @@ export async function getManifest() {
         }
       } catch (e) {
         // Pokud dotaz na properties pro tento typ selže, ignoruj a pokračuj
-        // (nezpůsobí to pád celého manifestu)
-        // console.warn('[module.manifest] listProperties failed for', t.slug, e);
       }
     }
   } catch (e) {
-    // pokud načtení typů selže, vynechíme dynamické položky (fallback je jen 'prehled')
-    // console.warn('[module.manifest] listPropertyTypes failed', e);
+    // pokud načtení typů selže, vynecháme dynamické položky (fallback je jen 'prehled')
   }
 
   return {
@@ -43,12 +47,10 @@ export async function getManifest() {
     defaultTile: 'prehled',
     tiles,
     forms: [
-      // Viditelné ve sidebaru - pro správu
       { id: 'chooser', title: 'Nová nemovitost', icon: 'add', showInSidebar: true },
       { id: 'unit-chooser', title: 'Nová jednotka', icon: 'add', showInSidebar: true },
       { id: 'property-type', title: 'Správa typů nemovitostí', icon: 'settings', showInSidebar: true },
       { id: 'unit-type', title: 'Správa typů jednotek', icon: 'settings', showInSidebar: true },
-      // Skryté ve sidebaru (zobrazí se jako drobečková navigace při výběru detailu/formy)
       { id: 'edit', title: 'Editace nemovitosti', icon: 'edit', showInSidebar: false },
       { id: 'detail', title: 'Detail nemovitosti', icon: 'eye', showInSidebar: false },
       { id: 'unit-edit', title: 'Editace jednotky', icon: 'edit', showInSidebar: false },
