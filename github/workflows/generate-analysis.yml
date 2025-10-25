@@ -1,0 +1,82 @@
+name: Generate Application Analysis
+
+on:
+  workflow_dispatch:   # manuální tlačítko v Actions UI
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies (or exceljs fallback)
+        run: |
+          # If package-lock.json exists use npm ci, if package.json only use npm install,
+          # otherwise install exceljs so generate-excel.js can run.
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          else
+            npm install exceljs
+          fi
+
+      - name: Ensure scripts are executable
+        run: |
+          chmod +x analyze-structure.js || true
+          chmod +x generate-excel.js || true
+
+      - name: Run analysis (create JSON + MD)
+        run: node analyze-structure.js
+        env:
+          NODE_OPTIONS: "--max-old-space-size=2048"
+
+      - name: Check JSON exists and show head
+        run: |
+          echo "Listing files in workspace:"
+          ls -la
+          echo "If struktura-aplikace.json exists, show first 80 lines:"
+          if [ -f struktura-aplikace.json ]; then
+            head -n 80 struktura-aplikace.json || true
+          else
+            echo "struktura-aplikace.json not found"
+          fi
+
+      - name: Generate Excel
+        run: node generate-excel.js
+
+      - name: List generated files
+        run: ls -la struktura-aplikace.* || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-artifacts
+          path: |
+            struktura-aplikace.xlsx
+            struktura-aplikace.json
+            struktura-aplikace.md
+          # Pokud některé soubory chybí, upload failnout by neměl — ale pokud chceš,
+          # můžeš použít patterny nebo conditiony.
+
+      # --- Optional: commit generated files back to the repo (commented out by default)
+      # - name: Commit generated files back to repo
+      #   if: github.event_name == 'workflow_dispatch'
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add struktura-aplikace.* || true
+      #     git commit -m "chore: generated application analysis (CI)" || echo "no changes to commit"
+      #     git push
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
