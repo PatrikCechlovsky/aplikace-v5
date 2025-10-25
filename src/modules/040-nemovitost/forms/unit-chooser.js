@@ -9,6 +9,10 @@ function safeNavigate(href) {
   location.hash = href;
 }
 
+function escapeHtml(s='') {
+  return (''+s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 const UNIT_TYPES = [
   { id: 'byt', label: 'Byt', icon: 'apartment-unit' },
   { id: 'kancelar', label: 'Kancelář', icon: 'office' },
@@ -69,9 +73,9 @@ export async function render(root, params) {
             onclick="location.hash='#/m/040-nemovitost/f/unit-chooser?propertyId=${encodeURIComponent(p.id)}'"
             class="p-4 text-left border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition"
           >
-            <div class="font-semibold">${p.nazev || '—'}</div>
-            <div class="text-sm text-gray-600">${p.ulice || ''} ${p.mesto || ''}</div>
-            <div class="text-xs text-gray-500 mt-1">${p.typ_nemovitosti || ''}</div>
+            <div class="font-semibold">${escapeHtml(p.nazev) || '—'}</div>
+            <div class="text-sm text-gray-600">${escapeHtml(p.ulice || '')} ${escapeHtml(p.mesto || '')}</div>
+            <div class="text-xs text-gray-500 mt-1">${escapeHtml(p.typ_nemovitosti || '')}</div>
           </button>
         `).join('')}
       </div>
