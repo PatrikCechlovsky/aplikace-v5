@@ -1,11 +1,16 @@
 import { icon } from '/src/ui/icons.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
+import { listProperties } from '/src/modules/040-nemovitost/db.js';
 
 function safeNavigate(href) {
   if (typeof window.navigateTo === 'function') {
     try { window.navigateTo(href); return; } catch (e) { /* fallback below */ }
   }
   location.hash = href;
+}
+
+function escapeHtml(s='') {
+  return (''+s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 const UNIT_TYPES = [
@@ -22,11 +27,6 @@ const UNIT_TYPES = [
 export async function render(root, params) {
   const { propertyId, returnType } = params || {};
   
-  if (!propertyId) {
-    root.innerHTML = `<div class="p-4 text-red-600">Chybí ID nemovitosti. Jednotka musí být přiřazena k nemovitosti.</div>`;
-    return;
-  }
-  
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
@@ -38,7 +38,53 @@ export async function render(root, params) {
     console.warn('[unit-chooser] setBreadcrumb failed:', e);
   }
 
-  root.innerHTML = '<h2>Nová jednotka — vyber typ</h2><div class="tiles-row" style="display:flex;gap:12px;flex-wrap:wrap"></div>';
+  // If no propertyId, show property selector first
+  if (!propertyId) {
+    root.innerHTML = `
+      <div class="space-y-4">
+        <h2 class="text-xl font-semibold">Nová jednotka — krok 1: Vyberte nemovitost</h2>
+        <p class="text-sm text-gray-600">Jednotka musí být přiřazena k nemovitosti. Nejprve vyberte nemovitost.</p>
+        <div id="property-selector" class="space-y-2">
+          <div class="text-center py-4">Načítání nemovitostí...</div>
+        </div>
+      </div>
+    `;
+    
+    const { data: properties = [], error } = await listProperties({ showArchived: false, limit: 500 });
+    const selector = root.querySelector('#property-selector');
+    
+    if (error || !properties.length) {
+      selector.innerHTML = `
+        <div class="p-4 bg-red-50 text-red-800 rounded">
+          ${error ? `Chyba při načítání: ${error.message}` : 'Nebyly nalezeny žádné nemovitosti. Nejprve vytvořte nemovitost.'}
+        </div>
+        <a href="#/m/040-nemovitost/f/chooser" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          Vytvořit novou nemovitost
+        </a>
+      `;
+      return;
+    }
+    
+    // Show list of properties to select from
+    selector.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        ${properties.map(p => `
+          <button 
+            onclick="location.hash='#/m/040-nemovitost/f/unit-chooser?propertyId=${encodeURIComponent(p.id)}'"
+            class="p-4 text-left border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition"
+          >
+            <div class="font-semibold">${escapeHtml(p.nazev) || '—'}</div>
+            <div class="text-sm text-gray-600">${escapeHtml(p.ulice || '')} ${escapeHtml(p.mesto || '')}</div>
+            <div class="text-xs text-gray-500 mt-1">${escapeHtml(p.typ_nemovitosti || '')}</div>
+          </button>
+        `).join('')}
+      </div>
+    `;
+    return;
+  }
+  
+  // If propertyId exists, show unit type chooser
+  root.innerHTML = '<h2>Nová jednotka — krok 2: Vyberte typ jednotky</h2><div class="tiles-row" style="display:flex;gap:12px;flex-wrap:wrap"></div>';
   const row = root.querySelector('.tiles-row');
   const moduleId = (location.hash || '').match(/#\/m\/([^\/]+)/)?.[1] || '040-nemovitost';
 
