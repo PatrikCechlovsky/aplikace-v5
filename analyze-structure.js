@@ -274,7 +274,8 @@ function analyzeApplication() {
 // Generate Markdown documentation
 function generateMarkdown(analysis) {
   let md = '# Struktura aplikace - Analýza modulů\n\n';
-  md += `Datum vytvoření: ${new Date().toLocaleString('cs-CZ')}\n\n`;
+  md += `> **Tento soubor je automaticky generován.** Spustit: \`node analyze-structure.js\`\n\n`;
+  md += `Poslední aktualizace: ${new Date().toLocaleString('cs-CZ')}\n\n`;
   md += '## Obsah\n\n';
   
   for (const module of analysis.modules) {
