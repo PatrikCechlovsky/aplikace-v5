@@ -1,6 +1,6 @@
 # Struktura aplikace - Analýza modulů
 
-Datum vytvoření: 25. 10. 2025 4:46:31
+Datum vytvoření: 25. 10. 2025 4:50:06
 
 ## Obsah
 
