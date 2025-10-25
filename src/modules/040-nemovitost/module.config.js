@@ -3,8 +3,9 @@
 
 import { listPropertyTypes, listProperties } from './db.js';
 
+// Normalize slug to match filenames in tiles/ (lowercase, underscores -> dashes)
 function normalizeSlug(slug) {
-  if (!slug) return slug;
+  if (!slug && slug !== 0) return slug;
   return String(slug).trim().toLowerCase().replace(/_/g, '-');
 }
 
@@ -22,11 +23,11 @@ export async function getManifest() {
         const { data: items = [] } = await listProperties({ type: t.slug, limit: 500 });
         const count = Array.isArray(items) ? items.length : 0;
         if (count > 0) {
-          // Normalize slug => match filename convention (admin-budova.js)
+          // Normalize slug => match filename convention (e.g. admin-budova.js)
           const id = normalizeSlug(t.slug || t.id || t.name);
 
           tiles.push({
-            id: id,                // nyní odpovídá souboru tiles/<slug-with-dashes>.js
+            id: id,
             title: `${t.label || t.slug} (${count})`,
             icon: t.icon || 'building',
             count: count
