@@ -22,31 +22,6 @@ function formatCzechDate(dateStr) {
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
 
-// Definice polí formuláře
-const FIELDS = [
-  { key: 'nazev', label: 'Název nemovitosti', type: 'text', required: true },
-  { key: 'typ_nemovitosti', label: 'Typ nemovitosti', type: 'select', required: true, options: [
-    { value: 'bytovy_dum', label: 'Bytový dům' },
-    { value: 'rodinny_dum', label: 'Rodinný dům' },
-    { value: 'admin_budova', label: 'Administrativní budova' },
-    { value: 'prumyslovy_objekt', label: 'Průmyslový objekt' },
-    { value: 'pozemek', label: 'Pozemek' },
-    { value: 'jiny_objekt', label: 'Jiný objekt' }
-  ]},
-  { key: 'ulice', label: 'Ulice', type: 'text', required: true },
-  { key: 'cislo_popisne', label: 'Číslo popisné', type: 'text', required: true },
-  { key: 'mesto', label: 'Město', type: 'text', required: true },
-  { key: 'psc', label: 'PSČ', type: 'text', required: true },
-  { key: 'pocet_podlazi', label: 'Počet podlaží', type: 'number' },
-  { key: 'rok_vystavby', label: 'Rok výstavby', type: 'number' },
-  { key: 'pocet_jednotek', label: 'Počet jednotek', type: 'number' },
-  { key: 'poznamka', label: 'Poznámka', type: 'textarea', fullWidth: true },
-  { key: 'archived', label: 'Archivní', type: 'checkbox' },
-  { key: 'updated_at', label: 'Poslední úprava', type: 'label', readOnly: true, format: formatCzechDate },
-  { key: 'updated_by', label: 'Upravil', type: 'label', readOnly: true },
-  { key: 'created_at', label: 'Vytvořen', type: 'label', readOnly: true, format: formatCzechDate }
-];
-
 export async function render(root, params) {
   const { id, type } = params || getHashParams();
   
