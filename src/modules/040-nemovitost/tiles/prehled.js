@@ -1,18 +1,11 @@
-import { renderTable } from '/src/ui/table.js';
-import { renderCommonActions } from '/src/ui/commonActions.js';
-import { listProperties, listPropertyTypes } from '/src/modules/040-nemovitost/db.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
+import { renderForm } from '/src/ui/form.js';
+import { renderCommonActions } from '/src/ui/commonActions.js';
 import { navigateTo } from '/src/app.js';
-import { getUserPermissions } from '/src/security/permissions.js';
+import { getUnit, upsertUnit, archiveUnit, getProperty } from '/src/modules/040-nemovitost/db.js';
+import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
-
-let selectedRow = null;
-let showArchived = false;
-let filterValue = '';
-
-function escapeHtml(s='') {
-  return (''+s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+import { setUnsaved } from '/src/app.js';
 
 // Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
@@ -20,188 +13,212 @@ function getHashParams() {
   return Object.fromEntries(new URLSearchParams(q));
 }
 
-export async function render(root, params = {}) {
-  // Získej parametry z URL nebo z předaných params
-  const urlParams = getHashParams();
-  const typeFilter = params.type || urlParams.type || null;
-  const archivedParam = params.archived || urlParams.archived;
-  
-  // Nastavení showArchived podle parametru
-  if (archivedParam !== undefined) {
-    showArchived = archivedParam === '1' || archivedParam === 'true' || archivedParam === true;
-  }
-
-  // Načti typy nemovitostí (včetně barvy) - PŘED breadcrumb
-  const { data: types = [] } = await listPropertyTypes();
-  const typeMap = Object.fromEntries(types.map(t => [t.slug, t]));
-
-  try {
-    const breadcrumbItems = [
-      { icon: 'home', label: 'Domů', href: '#/' },
-      { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
-      { icon: 'list', label: 'Přehled' }
-    ];
-    
-    // Add type filter to breadcrumb if active
-    if (typeFilter && typeMap[typeFilter]) {
-      breadcrumbItems.push({ icon: typeMap[typeFilter].icon || 'building', label: typeMap[typeFilter].label });
-    }
-    
-    setBreadcrumb(document.getElementById('crumb'), breadcrumbItems);
-  } catch (e) {}
-
-  root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-table"></div>`;
-
-  // Načti nemovitosti s filtrem podle typu (pokud je zadán)
-  const { data, error } = await listProperties({ 
-    type: typeFilter, 
-    showArchived, 
-    limit: 500 
-  });
-  if (error) {
-    root.querySelector('#property-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
-    return;
-  }
-  const rows = data || [];
-
-
-
-  // Task 02: Type badge in FIRST column for visual consistency
-  const columns = [
-    {
-      key: 'typ_nemovitosti',
-      label: 'Typ',
-      width: '12%',
-      sortable: true,
-      render: (row) => {
-        const type = typeMap[row.typ_nemovitosti];
-        if (!type) return `<span>${row.typ_nemovitosti || '—'}</span>`;
-        return `<span style="
-          background:${type.color};
-          color:#222;
-          padding:2px 12px;
-          border-radius:14px;
-          font-size:0.97em;
-          font-weight:600;
-          display:inline-block;
-          min-width:60px;
-          text-align:center;
-          box-shadow:0 1px 3px 0 #0001;
-          letter-spacing:0.01em;
-        ">${type.label}</span>`;
-      }
-    },
-    {
-      key: 'nazev',
-      label: 'Název',
-      width: '22%',
-      render: (r) => {
-        const name = escapeHtml(r.nazev || '—');
-        return `<a href="#/m/040-nemovitost/f/detail?id=${encodeURIComponent(r.id)}">${name}</a>`;
-      }
-    },
-    { key: 'ulice', label: 'Ulice', width: '15%' },
-    { key: 'mesto', label: 'Město', width: '12%' },
-    { key: 'pocet_podlazi', label: 'Podlaží', width: '8%' },
-    { key: 'pocet_jednotek', label: 'Jednotky', width: '8%' },
-    { key: 'archivedLabel', label: 'Archivován', width: '10%' }
-  ];
-
-  function drawActions() {
-    const ca = document.getElementById('commonactions');
-    if (!ca) return;
-    const hasSel = !!selectedRow && !selectedRow.archived;
-    const userRole = window.currentUserRole || 'admin';
-    const perms = getUserPermissions(userRole);
-    renderCommonActions(ca, {
-      moduleActions: ['add', 'edit', 'units', 'archive', 'attach', 'refresh', 'history'],
-      userRole,
-      handlers: {
-        onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser'),
-        onEdit: hasSel ? () => navigateTo(`#/m/040-nemovitost/f/edit?id=${selectedRow.id}`) : undefined,
-        onUnits: hasSel ? () => navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${selectedRow.id}`) : undefined,
-        onArchive: (perms.includes('archive') && hasSel) ? async () => {
-          const { archiveProperty } = await import('/src/modules/040-nemovitost/db.js');
-          await archiveProperty(selectedRow.id);
-          selectedRow = null;
-          await render(root, params);
-        } : undefined,
-        onAttach: hasSel ? () => showAttachmentsModal({ entity: 'properties', entityId: selectedRow.id }) : undefined,
-        onRefresh: () => render(root, params),
-        onHistory: hasSel ? () => alert('Historie - implementovat') : undefined
-      }
-    });
-  }
-
-  drawActions();
-
-
-  renderTable(root.querySelector('#property-table'), {
-    columns,
-    rows: rows.map(r => ({
-      ...r,
-      archivedLabel: r.archived ? 'Ano' : ''
-    })),
-    options: {
-      moduleId: '040-nemovitost',
-      filterValue,
-      customHeader: ({ filterInputHtml }) => `
-        <div class="flex items-center gap-4 flex-wrap">
-          ${filterInputHtml}
-          ${typeFilter ? `
-            <div class="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
-              <span>Filtr: ${typeMap[typeFilter]?.label || typeFilter}</span>
-              <button 
-                onclick="location.hash='#/m/040-nemovitost/t/prehled'" 
-                class="text-blue-600 hover:text-blue-800 font-bold"
-                title="Zrušit filtr"
-              >×</button>
-            </div>
-          ` : ''}
-          <label class="flex items-center gap-1 text-sm cursor-pointer ml-2">
-            <input type="checkbox" id="toggle-archived" ${showArchived ? 'checked' : ''}/>
-            Zobrazit archivované
-          </label>
-        </div>
-      `,
-      onRowSelect: row => {
-        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
-        drawActions();
-      },
-      onRowDblClick: row => {
-        selectedRow = row;
-        navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`);
-      }
-    }
-  });
-
-  root.querySelector('#property-table').addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'toggle-archived') {
-      showArchived = e.target.checked;
-      render(root, params);
-    }
-  });
+// Pomocná funkce pro formátování českého data+času
+function formatCzechDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
 
+// Definice polí formuláře
+const FIELDS = [
+  { key: 'oznaceni', label: 'Označení jednotky', type: 'text', required: true, placeholder: 'např. 1.01, A12' },
+  { key: 'typ_jednotky', label: 'Typ jednotky', type: 'select', required: true, options: [
+    { value: 'byt', label: 'Byt' },
+    { value: 'kancelar', label: 'Kancelář' },
+    { value: 'obchod', label: 'Obchodní prostor' },
+    { value: 'sklad', label: 'Sklad' },
+    { value: 'garaz', label: 'Garáž/Parking' },
+    { value: 'sklep', label: 'Sklep' },
+    { value: 'puda', label: 'Půda' },
+    { value: 'jina_jednotka', label: 'Jiná jednotka' }
+  ]},
+  { key: 'podlazi', label: 'Podlaží', type: 'text', placeholder: 'např. 1, přízemí, -1' },
+  { key: 'plocha', label: 'Plocha (m²)', type: 'number', required: true, step: '0.01' },
+  { key: 'pocet_mistnosti', label: 'Počet místností', type: 'number' },
+  { key: 'dispozice', label: 'Dispozice', type: 'text', placeholder: 'např. 2+kk, 3+1' },
+  { key: 'stav', label: 'Stav', type: 'select', required: true, options: [
+    { value: 'volna', label: 'Volná' },
+    { value: 'obsazena', label: 'Obsazená' },
+    { value: 'rezervovana', label: 'Rezervovaná' },
+    { value: 'rekonstrukce', label: 'Rekonstrukce' }
+  ]},
+  { key: 'mesicni_najem', label: 'Měsíční nájem (Kč)', type: 'number', step: '0.01' },
+  { key: 'kauce', label: 'Kauce (Kč)', type: 'number', step: '0.01' },
+  { key: 'najemce_id', label: 'Nájemce', type: 'chooser', entity: 'subjects', role: 'najemnik', 
+    buttonLabel: 'Vybrat nájemce', 
+    displayField: 'display_name',
+    helpText: 'Vyberte nájemce z modulu 050 (Nájemníci)' },
+  { key: 'datum_zahajeni_najmu', label: 'Začátek nájmu', type: 'date' },
+  { key: 'datum_ukonceni_najmu', label: 'Konec nájmu', type: 'date' },
+  { key: 'poznamka', label: 'Poznámka', type: 'textarea', fullWidth: true },
+  { key: 'archived', label: 'Archivní', type: 'checkbox' },
+  { key: 'updated_at', label: 'Poslední úprava', type: 'label', readOnly: true, format: formatCzechDate },
+  { key: 'updated_by', label: 'Upravil', type: 'label', readOnly: true },
+  { key: 'created_at', label: 'Vytvořen', type: 'label', readOnly: true, format: formatCzechDate }
+];
 
+export async function render(root, params) {
+  const { id, propertyId, type } = params || getHashParams();
+  
+  if (!propertyId && !id) {
+    root.innerHTML = `<div class="p-4 text-red-600">Chybí ID nemovitosti. Jednotka musí být přiřazena k nemovitosti.</div>`;
+    return;
+  }
+  
+  // Načtení dat jednotky z DB, pokud máme id
+  let data = { nemovitost_id: propertyId };
+  let propertyData = null;
+  
+  if (id) {
+    const { data: unitData, error } = await getUnit(id);
+    if (error) {
+      root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání jednotky: ${error.message}</div>`;
+      return;
+    }
+    if (!unitData) {
+      root.innerHTML = `<div class="p-4 text-red-600">Jednotka nenalezena.</div>`;
+      return;
+    }
+    data = { ...unitData };
+    // Formátování datumů pro readonly pole a nahrazení null za '--'
+    for (const f of FIELDS) {
+      if (f.readOnly) {
+        if (f.format && data[f.key]) {
+          data[f.key] = f.format(data[f.key]);
+        }
+        if (!data[f.key]) {
+          data[f.key] = '--';
+        }
+      }
+    }
+    // Zajistit, že archived má boolean (ne null/undefined)
+    if (typeof data.archived === 'undefined') data.archived = false;
+  } else if (type) {
+    // Pre-fill type if creating new
+    data.typ_jednotky = type;
+    data.stav = 'volna'; // Default state
+  }
+  
+  // Load property data for breadcrumb
+  if (data.nemovitost_id) {
+    const result = await getProperty(data.nemovitost_id);
+    if (result.data) {
+      propertyData = result.data;
+    }
+  }
 
+  const oznaceni = data.oznaceni || id || 'Nová jednotka';
+  const propertyName = propertyData ? propertyData.nazev : data.nemovitost_id;
+  
+  try {
+    setBreadcrumb(document.getElementById('crumb'), [
+      { icon: 'home', label: 'Domů', href: '#/' },
+      { icon: 'building', label: 'Nemovitosti', href: '#/m/040-nemovitost' },
+      { icon: 'building', label: propertyName, href: `#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}` },
+      { icon: 'form', label: 'Formulář' },
+      { icon: 'edit', label: oznaceni }
+    ]);
+  } catch (e) {}
 
+  root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="unit-form"></div>`;
 
+  const myRole = window.currentUserRole || 'admin';
 
+  // --- Akce v liště ---
+  const moduleActions = ['save', 'attach', 'archive', 'reject', 'history'];
+  const handlers = {};
 
+  // Uložit (disketa)
+  handlers.onSave = async () => {
+    const values = grabValues(root);
+    // Nastav pole "updated_by" podle požadavku
+    if (window.currentUser) {
+      values.updated_by =
+        window.currentUser.display_name ||
+        window.currentUser.username ||
+        window.currentUser.email;
+    }
+    
+    // Ensure nemovitost_id is set
+    values.nemovitost_id = data.nemovitost_id;
+    
+    // If creating new, ensure we have an ID
+    if (!id) {
+      values.id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+    } else {
+      values.id = id;
+    }
+    
+    const { data: updated, error } = await upsertUnit(values);
+    if (error) {
+      alert('Chyba při ukládání: ' + error.message);
+      return;
+    }
+    alert('Uloženo.');
+    setUnsaved(false);
+    
+    // After saving, navigate back to property detail
+    navigateTo(`#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}`);
+  };
+  
+  handlers.onReject = () => navigateTo(`#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}`);
+  
+  // Archivace (jen pokud není již archivovaný)
+  if (id && !data.archived) {
+    handlers.onArchive = async () => {
+      await archiveUnit(id);
+      alert('Jednotka byla archivována.');
+      navigateTo(`#/m/040-nemovitost/f/detail?id=${data.nemovitost_id}`);
+    };
+  }
 
+  // Přílohy
+  handlers.onAttach = () => id && showAttachmentsModal({ entity: 'units', entityId: id });
 
+  // Historie změn
+  handlers.onHistory = () => id && alert('Historie - implementovat');
 
-
-
-
-
-
+  // Tlačítka a akce
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions,
+    userRole: myRole,
+    handlers
   });
 
+  // Vykreslení formuláře
+  renderForm(root.querySelector('#unit-form'), FIELDS, data, async () => true, {
+    readOnly: false,
+    showSubmit: false,
+    layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
+    sections: [
+      { id: 'zakladni', label: 'Základní údaje', fields: [
+        'oznaceni', 'typ_jednotky', 'podlazi', 'plocha', 'pocet_mistnosti', 'dispozice', 'stav'
+      ] },
+      { id: 'najem', label: 'Nájem a finance', fields: [
+        'mesicni_najem', 'kauce', 'najemce_id', 'datum_zahajeni_najmu', 'datum_ukonceni_najmu'
+      ] },
+      { id: 'system', label: 'Systém', fields: [
+        'archived', 'poznamka', 'updated_at', 'updated_by', 'created_at'
+      ] },
+    ]
+  });
 
+  const formEl = root.querySelector("form");
+  if (formEl) useUnsavedHelper(formEl);
+}
 
-
+// Pomocná funkce pro získání hodnot z formuláře
+function grabValues(scopeEl) {
+  const obj = {};
+  for (const f of FIELDS) {
+    if (f.readOnly) continue; // readonly pole nikdy neukládat!
+    const el = scopeEl.querySelector(`[name="${f.key}"]`);
+    if (!el) continue;
+    obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
+  }
+  return obj;
 }
 
 export default { render };
