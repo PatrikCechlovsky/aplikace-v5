@@ -204,9 +204,6 @@ export async function render(root, params) {
       ] },
     ]
   });
-      ] },
-    ]
-  });
 
   const formEl = root.querySelector("form");
   if (formEl) useUnsavedHelper(formEl);
