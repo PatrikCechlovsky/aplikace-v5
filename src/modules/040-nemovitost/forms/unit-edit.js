@@ -60,7 +60,11 @@ const FIELDS = [
 ];
 
 export async function render(root, params) {
-  const { id, propertyId, type } = params || getHashParams();
+  // Robustní parsování parametrů: přijmeme více variant (id, unitId, propertyId, property_id, nemovitost_id)
+  const rawParams = params || getHashParams() || {};
+  const id = rawParams.id || rawParams.unitId || rawParams.unit_id || null;
+  const propertyId = rawParams.propertyId || rawParams.property_id || rawParams.nemovitost_id || rawParams.property || null;
+  const type = rawParams.type || null;
   
   if (!propertyId && !id) {
     root.innerHTML = `<div class="p-4 text-red-600">Chybí ID nemovitosti. Jednotka musí být přiřazena k nemovitosti.</div>`;
@@ -95,6 +99,8 @@ export async function render(root, params) {
     }
     // Zajistit, že archived má boolean (ne null/undefined)
     if (typeof data.archived === 'undefined') data.archived = false;
+    // ensure nemovitost_id is set from either params or data
+    if (!data.nemovitost_id && propertyId) data.nemovitost_id = propertyId;
   } else if (type) {
     // Pre-fill type if creating new
     data.typ_jednotky = type;
