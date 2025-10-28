@@ -58,15 +58,6 @@ window.registry = (window.registry instanceof Map) ? window.registry : registry;
 
 // ... všechny importy atd.
 
-export function navigateTo(hash) {
-  if (!hash.startsWith('#')) hash = '#' + hash;
-  if (location.hash === hash) {
-    route(); // vynutit rerender
-  } else {
-    location.hash = hash;
-  }
-}
-
 // ========== Layout – inicializace hlavních částí ==========
 function renderLayout() {
   renderHeaderActions($id('headeractions'));
@@ -124,15 +115,41 @@ export async function route() {
   }
 
   try {
+    // zachováme dynamické importy přes pathWithCb (bez změny chování načítání)
     const imported = await import(pathWithCb);
-    const renderFn = imported.render || imported.default?.render;
+
+    // ROZŠÍŘENÁ DETEKCE render() FUNKCE
+    // Podporujeme:
+    // - export function render(...) { ... }             (named export)
+    // - export default function(...) { ... }           (default export as function)
+    // - export default { render(...) { ... } }         (default export object with render)
+    // - export const render = async (...) => { ... }   (named async arrow fn)
+    let renderFn = null;
+
+    if (imported && typeof imported.render === 'function') {
+      // named export
+      renderFn = imported.render;
+    } else if (imported && typeof imported.default === 'function') {
+      // default exported directly as a function -> treat it as render
+      renderFn = imported.default;
+    } else if (imported && imported.default && typeof imported.default.render === 'function') {
+      // default is object with render() method
+      renderFn = imported.default.render;
+    } else if (imported && imported.default && typeof imported.default === 'object' && typeof imported.default.default === 'function') {
+      // some bundlers may wrap default again -> try to be tolerant
+      renderFn = imported.default.default;
+    }
+
     if (typeof renderFn !== 'function') {
       c.innerHTML = `<div style="color: red;">Modul je poškozen: chybí exportovaná funkce <code>render</code>.</div>`;
       return;
     }
+
     await renderFn(c, params);
   } catch (err) {
+    // detailní chybová hláška pro debug
     c.innerHTML = `<div style="color: red;">Chyba načtení modulu: ${err?.message || err}</div>`;
+    console.error('[route] import/render error for', pathWithCb, err);
   }
 }
 
@@ -200,13 +217,3 @@ window.addEventListener('hashchange', function () {
     if (c) c.innerHTML = `<div style="color: red;">Inicializace selhala: ${err?.message || err}</div>`;
   }
 })();
-
-/*
-Optional: example of registering a custom loader (uncomment and implement in your env)
-import { fetchRolePermissionsFromServer } from './db.js'
-registerPermissionsLoader(async (role) => {
-  const { data, error } = await fetchRolePermissionsFromServer(role);
-  if (!error && Array.isArray(data)) return data;
-  return null;
-});
-*/
