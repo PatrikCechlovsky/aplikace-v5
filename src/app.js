@@ -56,8 +56,6 @@ async function initModules() {
 }
 window.registry = (window.registry instanceof Map) ? window.registry : registry;
 
-// ... všechny importy atd.
-
 // ========== Layout – inicializace hlavních částí ==========
 function renderLayout() {
   renderHeaderActions($id('headeractions'));
@@ -115,36 +113,50 @@ export async function route() {
   }
 
   try {
-    // zachováme dynamické importy přes pathWithCb (bez změny chování načítání)
+    // dynamický import (zachováme chování načítání)
     const imported = await import(pathWithCb);
 
-    // ROZŠÍŘENÁ DETEKCE render() FUNKCE
+    // ROZŠÍŘENÁ A TOLERANTNÍ DETEKCE render() FUNKCE
     // Podporujeme:
-    // - export function render(...) { ... }             (named export)
-    // - export default function(...) { ... }           (default export as function)
-    // - export default { render(...) { ... } }         (default export object with render)
-    // - export const render = async (...) => { ... }   (named async arrow fn)
+    // - named export: export function render(...) { ... }
+    // - default export as function: export default async function(...) { ... }
+    // - default export as object: export default { render(...) { ... } }
+    // - případné obalení bundlerem: default.default
     let renderFn = null;
 
+    // 1) named export
     if (imported && typeof imported.render === 'function') {
-      // named export
       renderFn = imported.render;
-    } else if (imported && typeof imported.default === 'function') {
-      // default exported directly as a function -> treat it as render
+    }
+
+    // 2) default is function -> use it (many modules export default function root() {...})
+    else if (imported && typeof imported.default === 'function') {
       renderFn = imported.default;
-    } else if (imported && imported.default && typeof imported.default.render === 'function') {
-      // default is object with render() method
+    }
+
+    // 3) default is object with .render
+    else if (imported && imported.default && typeof imported.default.render === 'function') {
       renderFn = imported.default.render;
-    } else if (imported && imported.default && typeof imported.default === 'object' && typeof imported.default.default === 'function') {
-      // some bundlers may wrap default again -> try to be tolerant
+    }
+
+    // 4) bundler double-wrap (rare)
+    else if (imported && imported.default && typeof imported.default.default === 'function') {
       renderFn = imported.default.default;
+    }
+
+    // 5) fallback: if module exported only default object with many keys, try to find 'render' by name inside it
+    else if (imported && imported.default && typeof imported.default === 'object') {
+      const maybe = Object.values(imported.default).find(v => typeof v === 'function');
+      if (maybe) renderFn = maybe;
     }
 
     if (typeof renderFn !== 'function') {
       c.innerHTML = `<div style="color: red;">Modul je poškozen: chybí exportovaná funkce <code>render</code>.</div>`;
+      console.error('[route] render function not found in imported module', pathWithCb, 'exports:', Object.keys(imported || {}), 'defaultType:', typeof (imported?.default));
       return;
     }
 
+    // zavolej render
     await renderFn(c, params);
   } catch (err) {
     // detailní chybová hláška pro debug
@@ -215,5 +227,6 @@ window.addEventListener('hashchange', function () {
   } catch (err) {
     const c = $id('content');
     if (c) c.innerHTML = `<div style="color: red;">Inicializace selhala: ${err?.message || err}</div>`;
+    console.error('[start] fatal init error', err);
   }
 })();
