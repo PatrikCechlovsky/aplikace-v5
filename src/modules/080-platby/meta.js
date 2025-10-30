@@ -21,27 +21,35 @@ export const moduleMeta = {
       icon: 'visibility',
       fields: [
         { key: 'id', label: 'ID', type: 'text', readOnly: true },
-        { key: 'cislo_platby', label: 'Číslo platby', type: 'text' },
+        { key: 'payment_reference', label: 'Reference platby', type: 'text' },
         { key: 'amount', label: 'Částka', type: 'number', step: '0.01', required: true },
+        { key: 'currency', label: 'Měna', type: 'text', readOnly: true },
         { key: 'payment_date', label: 'Datum platby', type: 'date', required: true },
+        { key: 'value_date', label: 'Valuta', type: 'date' },
         { key: 'payment_type', label: 'Typ platby', type: 'select', required: true, options: [
-          { value: 'prevodem', label: 'Převodem' },
-          { value: 'hotove', label: 'Hotově' },
+          { value: 'najem', label: 'Nájem' },
+          { value: 'sluzba', label: 'Služba' },
+          { value: 'kauce', label: 'Kauce' },
+          { value: 'poplatek', label: 'Poplatek' },
+          { value: 'vratka', label: 'Vrátka' }
+        ]},
+        { key: 'payment_method', label: 'Způsob platby', type: 'select', options: [
+          { value: 'bankovni_prevod', label: 'Bankovní převod' },
+          { value: 'direct_debit', label: 'Direct debit' },
           { value: 'kartou', label: 'Kartou' },
-          { value: 'jine', label: 'Jiné' }
+          { value: 'hotove', label: 'Hotově' },
+          { value: 'jinak', label: 'Jinak' }
         ]},
         { key: 'status', label: 'Stav', type: 'select', required: true, options: [
-          { value: 'prijata', label: 'Přijatá' },
-          { value: 'ceka_na_zpracovani', label: 'Čeká na zpracování' },
-          { value: 'alokovana', label: 'Alokovaná' },
-          { value: 'vracena', label: 'Vrácená' },
-          { value: 'storno', label: 'Storno' }
+          { value: 'cekajici', label: 'Čekající' },
+          { value: 'potvrzeno', label: 'Potvrzeno' },
+          { value: 'uspesne_rekoncilovano', label: 'Úspěšně reconcilováno' },
+          { value: 'selhalo', label: 'Selhalo' },
+          { value: 'vraceno', label: 'Vráceno' }
         ]},
         { key: 'contract_id', label: 'Smlouva', type: 'chooser', entity: 'contracts' },
         { key: 'party_id', label: 'Strana', type: 'chooser', entity: 'subjects' },
-        { key: 'variabilni_symbol', label: 'Variabilní symbol', type: 'text' },
-        { key: 'specificky_symbol', label: 'Specifický symbol', type: 'text' },
-        { key: 'konstantni_symbol', label: 'Konstantní symbol', type: 'text' },
+        { key: 'bank_transaction_id', label: 'ID bankovní transakce', type: 'text' },
         { key: 'poznamky', label: 'Poznámky', type: 'textarea', fullWidth: true },
         { key: 'created_at', label: 'Vytvořeno', type: 'text', readOnly: true },
         { key: 'created_by', label: 'Vytvořil', type: 'text', readOnly: true },
@@ -54,30 +62,37 @@ export const moduleMeta = {
       title: 'Vložit platbu',
       icon: 'add',
       fields: [
-        { key: 'cislo_platby', label: 'Číslo platby', type: 'text', 
-          helpText: 'Interní číslo platby pro evidenci' },
+        { key: 'payment_reference', label: 'Reference platby', type: 'text', 
+          helpText: 'Variabilní symbol, zpráva pro příjemce' },
         { key: 'amount', label: 'Částka (Kč)', type: 'number', step: '0.01', required: true },
         { key: 'payment_date', label: 'Datum platby', type: 'date', required: true },
+        { key: 'value_date', label: 'Valuta', type: 'date' },
         { key: 'payment_type', label: 'Typ platby', type: 'select', required: true, options: [
-          { value: 'prevodem', label: 'Převodem' },
-          { value: 'hotove', label: 'Hotově' },
+          { value: 'najem', label: 'Nájem' },
+          { value: 'sluzba', label: 'Služba' },
+          { value: 'kauce', label: 'Kauce' },
+          { value: 'poplatek', label: 'Poplatek' },
+          { value: 'vratka', label: 'Vrátka' }
+        ]},
+        { key: 'payment_method', label: 'Způsob platby', type: 'select', options: [
+          { value: 'bankovni_prevod', label: 'Bankovní převod' },
+          { value: 'direct_debit', label: 'Direct debit' },
           { value: 'kartou', label: 'Kartou' },
-          { value: 'jine', label: 'Jiné' }
+          { value: 'hotove', label: 'Hotově' },
+          { value: 'jinak', label: 'Jinak' }
         ]},
         { key: 'status', label: 'Stav', type: 'select', required: true, options: [
-          { value: 'prijata', label: 'Přijatá' },
-          { value: 'ceka_na_zpracovani', label: 'Čeká na zpracování' },
-          { value: 'alokovana', label: 'Alokovaná' },
-          { value: 'vracena', label: 'Vrácená' },
-          { value: 'storno', label: 'Storno' }
+          { value: 'cekajici', label: 'Čekající' },
+          { value: 'potvrzeno', label: 'Potvrzeno' },
+          { value: 'uspesne_rekoncilovano', label: 'Úspěšně reconcilováno' },
+          { value: 'selhalo', label: 'Selhalo' },
+          { value: 'vraceno', label: 'Vráceno' }
         ]},
-        { key: 'contract_id', label: 'Smlouva', type: 'chooser', entity: 'contracts',
+        { key: 'contract_id', label: 'Smlouva', type: 'chooser', entity: 'contracts', required: true,
           helpText: 'Vyberte smlouvu, ke které se platba vztahuje' },
         { key: 'party_id', label: 'Plátce', type: 'chooser', entity: 'subjects', required: true,
           helpText: 'Vyberte plátce (nájemník nebo pronajímatel)' },
-        { key: 'variabilni_symbol', label: 'Variabilní symbol', type: 'text' },
-        { key: 'specificky_symbol', label: 'Specifický symbol', type: 'text' },
-        { key: 'konstantni_symbol', label: 'Konstantní symbol', type: 'text' },
+        { key: 'bank_transaction_id', label: 'ID bankovní transakce', type: 'text' },
         { key: 'poznamky', label: 'Poznámky', type: 'textarea', fullWidth: true }
       ]
     },

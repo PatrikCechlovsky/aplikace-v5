@@ -39,9 +39,16 @@ export const moduleMeta = {
           { value: 'jine', label: 'Jiné' }
         ]},
         { key: 'popis', label: 'Popis', type: 'textarea', fullWidth: true },
+        { key: 'typ_uctovani', label: 'Typ účtování', type: 'select', required: true, options: [
+          { value: 'pevna_sazba', label: 'Pevná sazba' },
+          { value: 'merena_spotreba', label: 'Měřená spotřeba' },
+          { value: 'na_pocet_osob', label: 'Dle počtu osob' },
+          { value: 'na_m2', label: 'Dle m²' },
+          { value: 'procento_z_najmu', label: 'Procento z nájmu' }
+        ]},
         { key: 'jednotka', label: 'Jednotka', type: 'text' },
-        { key: 'cena_za_jednotku', label: 'Cena za jednotku', type: 'number', step: '0.01' },
-        { key: 'dph_sazba', label: 'DPH sazba (%)', type: 'number', step: '0.01' },
+        { key: 'zakladni_cena', label: 'Základní cena', type: 'number', step: '0.01' },
+        { key: 'sazba_dph', label: 'DPH sazba (0.21 = 21%)', type: 'number', step: '0.01' },
         { key: 'aktivni', label: 'Aktivní', type: 'checkbox' },
         { key: 'poznamky', label: 'Poznámky', type: 'textarea', fullWidth: true },
         { key: 'created_at', label: 'Vytvořeno', type: 'text', readOnly: true },
@@ -73,10 +80,17 @@ export const moduleMeta = {
           { value: 'jine', label: 'Jiné' }
         ]},
         { key: 'popis', label: 'Popis', type: 'textarea', fullWidth: true },
+        { key: 'typ_uctovani', label: 'Typ účtování', type: 'select', required: true, options: [
+          { value: 'pevna_sazba', label: 'Pevná sazba' },
+          { value: 'merena_spotreba', label: 'Měřená spotřeba' },
+          { value: 'na_pocet_osob', label: 'Dle počtu osob' },
+          { value: 'na_m2', label: 'Dle m²' },
+          { value: 'procento_z_najmu', label: 'Procento z nájmu' }
+        ]},
         { key: 'jednotka', label: 'Jednotka', type: 'text', 
           helpText: 'Např. kWh, m³, paušál, měsíc' },
-        { key: 'cena_za_jednotku', label: 'Cena za jednotku (Kč)', type: 'number', step: '0.01' },
-        { key: 'dph_sazba', label: 'DPH sazba (%)', type: 'number', step: '0.01' },
+        { key: 'zakladni_cena', label: 'Základní cena (Kč)', type: 'number', step: '0.01' },
+        { key: 'sazba_dph', label: 'DPH sazba (0.21 = 21%)', type: 'number', step: '0.01' },
         { key: 'aktivni', label: 'Aktivní', type: 'checkbox' },
         { key: 'poznamky', label: 'Poznámky', type: 'textarea', fullWidth: true }
       ]

@@ -43,8 +43,14 @@ export const moduleMeta = {
           { value: 'ctvrtletni', label: 'Čtvrtletní' },
           { value: 'rocni', label: 'Roční' }
         ]},
-        { key: 'kauce_vyse', label: 'Výše kauce', type: 'number', step: '0.01' },
-        { key: 'kauce_splatnost', label: 'Splatnost kauce', type: 'date' },
+        { key: 'kauce_potreba', label: 'Kauce požadována', type: 'checkbox' },
+        { key: 'kauce_castka', label: 'Výše kauce', type: 'number', step: '0.01' },
+        { key: 'stav_kauce', label: 'Stav kauce', type: 'select', options: [
+          { value: 'nevyzadovana', label: 'Nevyžadována' },
+          { value: 'drzena', label: 'Držena' },
+          { value: 'vracena', label: 'Vrácena' },
+          { value: 'castecne_vracena', label: 'Částečně vrácena' }
+        ]},
         { key: 'poznamky', label: 'Poznámky', type: 'textarea', fullWidth: true },
         { key: 'archived', label: 'Archivováno', type: 'checkbox' },
         { key: 'created_at', label: 'Vytvořeno', type: 'text', readOnly: true },
@@ -80,8 +86,8 @@ export const moduleMeta = {
           { value: 'ctvrtletni', label: 'Čtvrtletní' },
           { value: 'rocni', label: 'Roční' }
         ]},
-        { key: 'kauce_vyse', label: 'Výše kauce (Kč)', type: 'number', step: '0.01' },
-        { key: 'kauce_splatnost', label: 'Splatnost kauce', type: 'date' },
+        { key: 'kauce_potreba', label: 'Kauce požadována', type: 'checkbox' },
+        { key: 'kauce_castka', label: 'Výše kauce (Kč)', type: 'number', step: '0.01' },
         { key: 'poznamky', label: 'Poznámky', type: 'textarea', fullWidth: true }
       ]
     },
