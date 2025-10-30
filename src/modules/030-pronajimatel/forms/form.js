@@ -5,7 +5,7 @@ import { navigateTo } from '/src/app.js';
 import { getSubject, upsertSubject } from '/src/modules/030-pronajimatel/db.js';
 import { showHistoryModal } from '/src/ui/history.js';
 import TYPE_SCHEMAS from '/src/modules/030-pronajimatel/type-schemas.js';
-import { lookupIco } from '/src/lib/ares.js';
+import { fetchFromARES } from '/src/services/ares.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { setUnsaved } from '/src/app.js';
 
@@ -106,24 +106,45 @@ export async function render(root) {
       const val = (icoInput.value || '').trim();
       if (!val) { alert('Zadejte IČO'); return; }
       try {
-        const res = await lookupIco(val);
-        if (!res) { alert('ARES: nic nenalezeno'); return; }
-        const mapped = {};
-        if (res.name) mapped.display_name = res.name;
-        if (res.ico) mapped.ico = res.ico;
-        if (res.dic) mapped.dic = res.dic;
-        if (res.street) mapped.street = res.street;
-        if (res.city) mapped.city = res.city;
-        if (res.zip) mapped.zip = res.zip;
-        // set values into inputs and dispatch input events
-        Object.entries(mapped).forEach(([k,v]) => {
-          const el = root.querySelector(`[name="${k}"]`);
-          if (el) {
-            el.value = v;
-            el.dispatchEvent(new Event('input', { bubbles: true }));
+        const aresData = await fetchFromARES(val);
+        if (!aresData) { alert('ARES: nic nenalezeno'); return; }
+        
+        // Map ARES data to form fields
+        const fieldMapping = {
+          'display_name': aresData.display_name,
+          'nazev': aresData.nazev,
+          'ico': aresData.ico,
+          'dic': aresData.dic,
+          'ulice': aresData.ulice,
+          'cislo_popisne': aresData.cislo_popisne,
+          'cislo_orientacni': aresData.cislo_orientacni,
+          'mesto': aresData.mesto || aresData.city,
+          'city': aresData.city || aresData.mesto,
+          'psc': aresData.psc,
+          'kraj': aresData.kraj,
+          'stat': aresData.stat,
+          'street': aresData.ulice,
+          'zip': aresData.psc,
+          'primary_email': aresData.primary_email,
+          'primary_phone': aresData.primary_phone,
+          'pravni_forma_kod': aresData.pravni_forma_kod,
+          'pravni_forma_nazev': aresData.pravni_forma_nazev,
+          'datum_vzniku': aresData.datum_vzniku,
+          'datum_zaniku': aresData.datum_zaniku
+        };
+        
+        // Set values into inputs and dispatch input events
+        Object.entries(fieldMapping).forEach(([fieldName, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            const el = root.querySelector(`[name="${fieldName}"]`);
+            if (el) {
+              el.value = value;
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+            }
           }
         });
-        alert('Načteno z ARES.');
+        
+        alert('Data byla úspěšně načtena z ARES.');
       } catch (e) {
         alert('Chyba ARES: ' + (e.message || e));
       }
