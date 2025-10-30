@@ -28,6 +28,79 @@ function extractManifest(moduleId) {
     forms: []
   };
 
+  // Try to extract from MANIFEST constant first (070, 080 pattern)
+  const manifestConstMatch = content.match(/const MANIFEST\s*=\s*\{([\s\S]*?)\n\};/);
+  if (manifestConstMatch) {
+    const manifestContent = manifestConstMatch[1];
+    
+    // Extract title
+    const titleMatch = manifestContent.match(/title:\s*['"]([^'"]+)['"]/);
+    if (titleMatch) manifest.title = titleMatch[1];
+
+    // Extract icon
+    const iconMatch = manifestContent.match(/icon:\s*['"]([^'"]+)['"]/);
+    if (iconMatch) manifest.icon = iconMatch[1];
+
+    // Extract tiles
+    const tilesMatch = manifestContent.match(/tiles:\s*\[([\s\S]*?)\]/);
+    if (tilesMatch) {
+      const tilesContent = tilesMatch[1];
+      const tileMatches = tilesContent.matchAll(/\{\s*id:\s*['"]([^'"]+)['"],\s*title:\s*['"]([^'"]+)['"],\s*icon:\s*['"]([^'"]+)['"]/g);
+      for (const match of tileMatches) {
+        manifest.tiles.push({ id: match[1], title: match[2], icon: match[3] });
+      }
+    }
+
+    // Extract forms
+    const formsMatch = manifestContent.match(/forms:\s*\[([\s\S]*?)\]/);
+    if (formsMatch) {
+      const formsContent = formsMatch[1];
+      const formMatches = formsContent.matchAll(/\{\s*id:\s*['"]([^'"]+)['"],\s*title:\s*['"]([^'"]+)['"],\s*icon:\s*['"]([^'"]+)['"]/g);
+      for (const match of formMatches) {
+        manifest.forms.push({ id: match[1], title: match[2], icon: match[3] });
+      }
+    }
+    
+    return manifest;
+  }
+
+  // Try to extract from getManifest() return statement (060 pattern)
+  const getManifestMatch = content.match(/async function getManifest\(\)\s*\{[\s\S]*?return\s*\{([\s\S]*?)\n\s*\};/);
+  if (getManifestMatch) {
+    const manifestContent = getManifestMatch[1];
+    
+    // Extract title
+    const titleMatch = manifestContent.match(/title:\s*['"]([^'"]+)['"]/);
+    if (titleMatch) manifest.title = titleMatch[1];
+
+    // Extract icon
+    const iconMatch = manifestContent.match(/icon:\s*['"]([^'"]+)['"]/);
+    if (iconMatch) manifest.icon = iconMatch[1];
+
+    // Extract tiles
+    const tilesMatch = manifestContent.match(/tiles:\s*\[([\s\S]*?)\]/);
+    if (tilesMatch) {
+      const tilesContent = tilesMatch[1];
+      const tileMatches = tilesContent.matchAll(/\{\s*id:\s*['"]([^'"]+)['"],\s*title:\s*['"]([^'"]+)['"],\s*icon:\s*['"]([^'"]+)['"]/g);
+      for (const match of tileMatches) {
+        manifest.tiles.push({ id: match[1], title: match[2], icon: match[3] });
+      }
+    }
+
+    // Extract forms
+    const formsMatch = manifestContent.match(/forms:\s*\[([\s\S]*?)\]/);
+    if (formsMatch) {
+      const formsContent = formsMatch[1];
+      const formMatches = formsContent.matchAll(/\{\s*id:\s*['"]([^'"]+)['"],\s*title:\s*['"]([^'"]+)['"],\s*icon:\s*['"]([^'"]+)['"]/g);
+      for (const match of formMatches) {
+        manifest.forms.push({ id: match[1], title: match[2], icon: match[3] });
+      }
+    }
+    
+    return manifest;
+  }
+
+  // Fallback: try inline object pattern (original pattern for other modules)
   // Extract title
   const titleMatch = content.match(/title:\s*['"]([^'"]+)['"]/);
   if (titleMatch) manifest.title = titleMatch[1];
@@ -93,9 +166,90 @@ function extractActions(filePath) {
   return Array.from(actions);
 }
 
-// Extract columns from tile file
-function extractColumns(filePath) {
-  const content = readJsModule(filePath);
+// Extract columns from tile file or meta.js
+function extractColumns(moduleId, tileId, tilePath) {
+  // First, try to extract from meta.js if it exists
+  const metaPath = path.join(__dirname, 'src', 'modules', moduleId, 'meta.js');
+  const metaContent = readJsModule(metaPath);
+  
+  if (metaContent) {
+    // Try to find moduleMeta constant
+    const moduleMetaMatch = metaContent.match(/export const moduleMeta\s*=\s*\{([\s\S]*?)\};/);
+    if (moduleMetaMatch) {
+      const metaContentBody = moduleMetaMatch[1];
+      
+      // Find tiles array using bracket counting
+      const tilesStart = metaContentBody.indexOf('tiles:');
+      if (tilesStart !== -1) {
+        const arrayStart = metaContentBody.indexOf('[', tilesStart);
+        if (arrayStart !== -1) {
+          // Count brackets to find the end of tiles array
+          let depth = 0;
+          let arrayEnd = arrayStart;
+          for (let i = arrayStart; i < metaContentBody.length; i++) {
+            const char = metaContentBody[i];
+            if (char === '[') depth++;
+            if (char === ']') depth--;
+            if (depth === 0) {
+              arrayEnd = i;
+              break;
+            }
+          }
+          
+          const tilesContent = metaContentBody.substring(arrayStart + 1, arrayEnd);
+          
+          // Split tiles by top-level curly braces
+          let depth2 = 0;
+          let currentTile = '';
+          const tileDefs = [];
+          
+          for (let i = 0; i < tilesContent.length; i++) {
+            const char = tilesContent[i];
+            if (char === '{') depth2++;
+            if (char === '}') depth2--;
+            
+            currentTile += char;
+            
+            if (depth2 === 0 && currentTile.trim()) {
+              tileDefs.push(currentTile.trim());
+              currentTile = '';
+            }
+          }
+          
+          // Find the tile that matches tileId
+          for (const tileDef of tileDefs) {
+            const tileIdMatch = tileDef.match(/id:\s*['"]([^'"]+)['"]/);
+            if (tileIdMatch && tileIdMatch[1] === tileId) {
+              // Extract columns from this tile using bracket counting
+              const columnsStart = tileDef.indexOf('columns:');
+              if (columnsStart !== -1) {
+                const columnsArrayStart = tileDef.indexOf('[', columnsStart);
+                if (columnsArrayStart !== -1) {
+                  let depth3 = 0;
+                  let columnsArrayEnd = columnsArrayStart;
+                  for (let i = columnsArrayStart; i < tileDef.length; i++) {
+                    const char = tileDef[i];
+                    if (char === '[') depth3++;
+                    if (char === ']') depth3--;
+                    if (depth3 === 0) {
+                      columnsArrayEnd = i;
+                      break;
+                    }
+                  }
+                  
+                  const columnsContent = tileDef.substring(columnsArrayStart + 1, columnsArrayEnd);
+                  return parseColumnDefinitions(columnsContent);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Fallback: try to extract from tile file
+  const content = readJsModule(tilePath);
   if (!content) return [];
 
   const columns = [];
@@ -104,52 +258,142 @@ function extractColumns(filePath) {
   const columnsMatch = content.match(/const columns\s*=\s*\[([\s\S]*?)\n\s*\];/);
   if (columnsMatch) {
     const columnsContent = columnsMatch[1];
-    
-    // Split by commas at the top level (handling nested objects)
-    let depth = 0;
-    let current = '';
-    const columnDefs = [];
-    
-    for (let i = 0; i < columnsContent.length; i++) {
-      const char = columnsContent[i];
-      if (char === '{') depth++;
-      if (char === '}') depth--;
-      
-      current += char;
-      
-      if (char === ',' && depth === 0) {
-        columnDefs.push(current.trim().slice(0, -1));
-        current = '';
-      }
-    }
-    if (current.trim()) {
-      columnDefs.push(current.trim());
-    }
-    
-    // Parse each column definition
-    for (const colDef of columnDefs) {
-      const keyMatch = colDef.match(/key:\s*['"]([^'"]+)['"]/);
-      const labelMatch = colDef.match(/label:\s*['"]([^'"]+)['"]/);
-      const widthMatch = colDef.match(/width:\s*['"]([^'"]+)['"]/);
-      const sortableMatch = colDef.match(/sortable:\s*(true|false)/);
-      
-      if (keyMatch && labelMatch) {
-        columns.push({ 
-          key: keyMatch[1], 
-          label: labelMatch[1],
-          width: widthMatch ? widthMatch[1] : '',
-          sortable: sortableMatch ? sortableMatch[1] === 'true' : false
-        });
-      }
-    }
+    return parseColumnDefinitions(columnsContent);
   }
 
+  return columns;
+}
+
+// Helper to parse column definitions
+function parseColumnDefinitions(columnsContent) {
+  const columns = [];
+  
+  // Split by commas at the top level (handling nested objects)
+  let depth = 0;
+  let current = '';
+  const columnDefs = [];
+  
+  for (let i = 0; i < columnsContent.length; i++) {
+    const char = columnsContent[i];
+    if (char === '{') depth++;
+    if (char === '}') depth--;
+    
+    current += char;
+    
+    if (char === ',' && depth === 0) {
+      columnDefs.push(current.trim().slice(0, -1));
+      current = '';
+    }
+  }
+  if (current.trim()) {
+    columnDefs.push(current.trim());
+  }
+  
+  // Parse each column definition
+  for (const colDef of columnDefs) {
+    const keyMatch = colDef.match(/key:\s*['"]([^'"]+)['"]/);
+    const labelMatch = colDef.match(/label:\s*['"]([^'"]+)['"]/);
+    const widthMatch = colDef.match(/width:\s*['"]([^'"]+)['"]/);
+    const sortableMatch = colDef.match(/sortable:\s*(true|false)/);
+    
+    if (keyMatch && labelMatch) {
+      columns.push({ 
+        key: keyMatch[1], 
+        label: labelMatch[1],
+        width: widthMatch ? widthMatch[1] : '',
+        sortable: sortableMatch ? sortableMatch[1] === 'true' : false
+      });
+    }
+  }
+  
   return columns;
 }
 
 // Extract fields from form file or schema
 function extractFields(moduleId, formId) {
   const fields = [];
+
+  // First, try to extract from meta.js (060, 070, 080 pattern)
+  const metaPath = path.join(__dirname, 'src', 'modules', moduleId, 'meta.js');
+  const metaContent = readJsModule(metaPath);
+  
+  if (metaContent) {
+    // Try to find moduleMeta constant
+    const moduleMetaMatch = metaContent.match(/export const moduleMeta\s*=\s*\{([\s\S]*?)\};/);
+    if (moduleMetaMatch) {
+      const metaContentBody = moduleMetaMatch[1];
+      
+      // Find forms array using bracket counting
+      const formsStart = metaContentBody.indexOf('forms:');
+      if (formsStart !== -1) {
+        const arrayStart = metaContentBody.indexOf('[', formsStart);
+        if (arrayStart !== -1) {
+          // Count brackets to find the end of forms array
+          let depth = 0;
+          let arrayEnd = arrayStart;
+          for (let i = arrayStart; i < metaContentBody.length; i++) {
+            const char = metaContentBody[i];
+            if (char === '[') depth++;
+            if (char === ']') depth--;
+            if (depth === 0) {
+              arrayEnd = i;
+              break;
+            }
+          }
+          
+          const formsContent = metaContentBody.substring(arrayStart + 1, arrayEnd);
+          
+          // Split forms by top-level curly braces
+          let depth2 = 0;
+          let currentForm = '';
+          const formDefs = [];
+          
+          for (let i = 0; i < formsContent.length; i++) {
+            const char = formsContent[i];
+            if (char === '{') depth2++;
+            if (char === '}') depth2--;
+            
+            currentForm += char;
+            
+            if (depth2 === 0 && currentForm.trim()) {
+              formDefs.push(currentForm.trim());
+              currentForm = '';
+            }
+          }
+          
+          // Find the form that matches formId
+          for (const formDef of formDefs) {
+            const formIdMatch = formDef.match(/id:\s*['"]([^'"]+)['"]/);
+            if (formIdMatch && formIdMatch[1] === formId) {
+              // Extract fields from this form using bracket counting
+              const fieldsStart = formDef.indexOf('fields:');
+              if (fieldsStart !== -1) {
+                const fieldsArrayStart = formDef.indexOf('[', fieldsStart);
+                if (fieldsArrayStart !== -1) {
+                  let depth3 = 0;
+                  let fieldsArrayEnd = fieldsArrayStart;
+                  for (let i = fieldsArrayStart; i < formDef.length; i++) {
+                    const char = formDef[i];
+                    if (char === '[') depth3++;
+                    if (char === ']') depth3--;
+                    if (depth3 === 0) {
+                      fieldsArrayEnd = i;
+                      break;
+                    }
+                  }
+                  
+                  const fieldsContent = formDef.substring(fieldsArrayStart + 1, fieldsArrayEnd);
+                  const fieldDefs = extractFieldDefinitions(fieldsContent);
+                  fields.push(...fieldDefs);
+                  return fields;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   // Try to find type-schemas.js or fields.js
   const schemasPath = path.join(__dirname, 'src', 'modules', moduleId, 'type-schemas.js');
@@ -239,7 +483,7 @@ function analyzeApplication() {
     for (const tile of manifest.tiles) {
       const tilePath = path.join(modulesDir, moduleId, 'tiles', `${tile.id}.js`);
       const actions = extractActions(tilePath);
-      const columns = extractColumns(tilePath);
+      const columns = extractColumns(moduleId, tile.id, tilePath);
       
       moduleData.tiles.push({
         id: tile.id,

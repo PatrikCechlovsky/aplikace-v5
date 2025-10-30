@@ -2,14 +2,14 @@
 
 > **Tento soubor je automaticky generován.** Spustit: `node analyze-structure.js`
 
-Poslední aktualizace: 30. 10. 2025 13:30:38
+Poslední aktualizace: 30. 10. 2025 13:40:52
 
 ## Obsah
 
 - [Uživatelé (010-sprava-uzivatelu)](#010spravauzivatelu)
 - [Můj účet (020-muj-ucet)](#020mujucet)
 - [Pronajímatel (030-pronajimatel)](#030pronajimatel)
-- [Přehled (040-nemovitost)](#040nemovitost)
+- [Nemovitosti (040-nemovitost)](#040nemovitost)
 - [Nájemník (050-najemnik)](#050najemnik)
 - [Smlouvy (060-smlouva)](#060smlouva)
 - [Služby (070-sluzby)](#070sluzby)
@@ -258,9 +258,9 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 ---
 
-## Přehled (040-nemovitost)
+## Nemovitosti (040-nemovitost)
 
-**Ikona modulu:** `list`
+**Ikona modulu:** `building`
 
 ### Formuláře (Forms)
 
@@ -669,23 +669,26 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `id` | ID | `text` |
+| `cislo_smlouvy` | Číslo smlouvy | `text` |
+| `stav` | Stav | `select` |
+| `landlord_id` | Pronajímatel | `chooser` |
+| `tenant_id` | Nájemník | `chooser` |
+| `property_id` | Nemovitost | `chooser` |
+| `unit_id` | Jednotka | `chooser` |
+| `datum_zacatek` | Datum začátku | `date` |
+| `datum_konec` | Datum konce | `date` |
+| `najem_vyse` | Výše nájmu | `number` |
+| `periodicita_najmu` | Periodicita | `select` |
+| `kauce_potreba` | Kauce požadována | `checkbox` |
+| `kauce_castka` | Výše kauce | `number` |
+| `stav_kauce` | Stav kauce | `select` |
+| `poznamky` | Poznámky | `textarea` |
+| `archived` | Archivováno | `checkbox` |
+| `created_at` | Vytvořeno | `text` |
+| `created_by` | Vytvořil | `text` |
+| `updated_at` | Upraveno | `text` |
+| `updated_by` | Upravil | `text` |
 
 #### Editace smlouvy (`edit`)
 - **Ikona:** `edit`
@@ -693,23 +696,19 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `cislo_smlouvy` | Číslo smlouvy | `text` |
+| `stav` | Stav | `select` |
+| `landlord_id` | Pronajímatel | `chooser` |
+| `tenant_id` | Nájemník | `chooser` |
+| `property_id` | Nemovitost | `chooser` |
+| `unit_id` | Jednotka | `chooser` |
+| `datum_zacatek` | Datum začátku | `date` |
+| `datum_konec` | Datum konce | `date` |
+| `najem_vyse` | Výše nájmu (Kč) | `number` |
+| `periodicita_najmu` | Periodicita | `select` |
+| `kauce_potreba` | Kauce požadována | `checkbox` |
+| `kauce_castka` | Výše kauce (Kč) | `number` |
+| `poznamky` | Poznámky | `textarea` |
 
 #### Předávací protokol (`predavaci-protokol`)
 - **Ikona:** `assignment`
@@ -717,23 +716,12 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `contract_id` | ID smlouvy | `text` |
+| `datum_predani` | Datum předání | `date` |
+| `typ_protokolu` | Typ protokolu | `select` |
+| `stav_jednotky` | Stav jednotky | `textarea` |
+| `meraky_stav` | Stavy měřáků | `textarea` |
+| `poznamky` | Poznámky | `textarea` |
 
 ---
 
@@ -769,23 +757,21 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `id` | ID | `text` |
+| `kod` | Kód služby | `text` |
+| `nazev` | Název služby | `text` |
+| `kategorie` | Kategorie | `select` |
+| `popis` | Popis | `textarea` |
+| `typ_uctovani` | Typ účtování | `select` |
+| `jednotka` | Jednotka | `text` |
+| `zakladni_cena` | Základní cena | `number` |
+| `sazba_dph` | DPH sazba (0.21 = 21%) | `number` |
+| `aktivni` | Aktivní | `checkbox` |
+| `poznamky` | Poznámky | `textarea` |
+| `created_at` | Vytvořeno | `text` |
+| `created_by` | Vytvořil | `text` |
+| `updated_at` | Upraveno | `text` |
+| `updated_by` | Upravil | `text` |
 
 #### Editace služby (`edit`)
 - **Ikona:** `edit`
@@ -793,23 +779,16 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `kod` | Kód služby | `text` |
+| `nazev` | Název služby | `text` |
+| `kategorie` | Kategorie | `select` |
+| `popis` | Popis | `textarea` |
+| `typ_uctovani` | Typ účtování | `select` |
+| `jednotka` | Jednotka | `text` |
+| `zakladni_cena` | Základní cena (Kč) | `number` |
+| `sazba_dph` | DPH sazba (0.21 = 21%) | `number` |
+| `aktivni` | Aktivní | `checkbox` |
+| `poznamky` | Poznámky | `textarea` |
 
 #### Přidat službu do smlouvy (`pridat-do-smlouvy`)
 - **Ikona:** `add_circle`
@@ -817,23 +796,12 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `contract_id` | ID smlouvy | `text` |
+| `service_definition_id` | Služba | `chooser` |
+| `mnozstvi` | Množství | `number` |
+| `cena_za_jednotku` | Cena za jednotku | `number` |
+| `pausal` | Paušál | `checkbox` |
+| `poznamky` | Poznámky | `textarea` |
 
 ---
 
@@ -866,23 +834,23 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `id` | ID | `text` |
+| `payment_reference` | Reference platby | `text` |
+| `amount` | Částka | `number` |
+| `currency` | Měna | `text` |
+| `payment_date` | Datum platby | `date` |
+| `value_date` | Valuta | `date` |
+| `payment_type` | Typ platby | `select` |
+| `payment_method` | Způsob platby | `select` |
+| `status` | Stav | `select` |
+| `contract_id` | Smlouva | `chooser` |
+| `party_id` | Strana | `chooser` |
+| `bank_transaction_id` | ID bankovní transakce | `text` |
+| `poznamky` | Poznámky | `textarea` |
+| `created_at` | Vytvořeno | `text` |
+| `created_by` | Vytvořil | `text` |
+| `updated_at` | Upraveno | `text` |
+| `updated_by` | Upravil | `text` |
 
 #### Vložit platbu (`edit`)
 - **Ikona:** `add`
@@ -890,23 +858,17 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `payment_reference` | Reference platby | `text` |
+| `amount` | Částka (Kč) | `number` |
+| `payment_date` | Datum platby | `date` |
+| `value_date` | Valuta | `date` |
+| `payment_type` | Typ platby | `select` |
+| `payment_method` | Způsob platby | `select` |
+| `status` | Stav | `select` |
+| `contract_id` | Smlouva | `chooser` |
+| `party_id` | Plátce | `chooser` |
+| `bank_transaction_id` | ID bankovní transakce | `text` |
+| `poznamky` | Poznámky | `textarea` |
 
 #### Alokace platby (`alokace`)
 - **Ikona:** `account_tree`
@@ -914,23 +876,12 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `payment_id` | ID platby | `text` |
+| `allocation_type` | Typ alokace | `select` |
+| `amount` | Částka | `number` |
+| `period_from` | Období od | `date` |
+| `period_to` | Období do | `date` |
+| `poznamky` | Poznámky | `textarea` |
 
 #### Import plateb (`import`)
 - **Ikona:** `upload_file`
@@ -938,23 +889,9 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 
 | Klíč | Název | Typ |
 |------|-------|-----|
-| `display_name` | Jméno a příjmení | `text` |
-| `titul_pred` | Titul před jménem | `text` |
-| `jmeno` | Křestní jméno | `text` |
-| `prijmeni` | Příjmení | `text` |
-| `titul_za` | Titul za jménem | `text` |
-| `typ_dokladu` | Typ dokladu | `select` |
-| `ico` | IČO | `text` |
-| `dic` | DIČ | `text` |
-| `primary_phone` | Telefon | `text` |
-| `primary_email` | E-mail | `email` |
-| `country` | Stát | `text` |
-| `street` | Ulice | `text` |
-| `cislo_popisne` | Číslo popisné | `text` |
-| `city` | Město | `text` |
-| `zip` | PSČ | `text` |
-| `bankovni_ucet` | Bankovní účet / číslo | `text` |
-| `zastupuje_id` | Zastupuje (ID subjektu) | `text` |
+| `soubor` | Soubor | `file` |
+| `format` | Formát | `select` |
+| `automaticke_parovani` | Automatické párování podle VS | `checkbox` |
 
 ---
 
@@ -963,7 +900,7 @@ Poslední aktualizace: 30. 10. 2025 13:30:38
 Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modulech.
 
 ### `display_name`
-**Počet použití:** 29
+**Počet použití:** 19
 
 **Umístění:**
 - Uživatelé - Přehled: Přehled
@@ -985,19 +922,9 @@ Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modu
 - Nájemník - Přehled: Spolek / Skupina
 - Nájemník - Přehled: Státní instituce
 - Nájemník - Přehled: Zástupci
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
 
 ### `primary_email`
-**Počet použití:** 28
+**Počet použití:** 18
 
 **Umístění:**
 - Uživatelé - Formulář: Formulář
@@ -1018,6 +945,19 @@ Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modu
 - Nájemník - Přehled: Spolek / Skupina
 - Nájemník - Přehled: Státní instituce
 - Nájemník - Přehled: Zástupci
+
+### `poznamky`
+**Počet použití:** 17
+
+**Umístění:**
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 - Smlouvy - Formulář: Detail smlouvy
 - Smlouvy - Formulář: Editace smlouvy
 - Smlouvy - Formulář: Předávací protokol
@@ -1027,118 +967,8 @@ Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modu
 - Platby - Formulář: Detail platby
 - Platby - Formulář: Vložit platbu
 - Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
 
 ### `primary_phone`
-**Počet použití:** 26
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Pronajímatel - Přehled: Přehled
-- Pronajímatel - Přehled: Osoba
-- Pronajímatel - Přehled: OSVČ
-- Pronajímatel - Přehled: Firma
-- Pronajímatel - Přehled: Spolek / Skupina
-- Pronajímatel - Přehled: Zástupci
-- Nájemník - Přehled: Přehled
-- Nájemník - Přehled: Osoba
-- Nájemník - Přehled: OSVČ
-- Nájemník - Přehled: Firma
-- Nájemník - Přehled: Spolek / Skupina
-- Nájemník - Přehled: Zástupci
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `cislo_popisne`
-**Počet použití:** 22
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `city`
-**Počet použití:** 21
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Pronajímatel - Přehled: Přehled
-- Pronajímatel - Přehled: Osoba
-- Pronajímatel - Přehled: Firma
-- Pronajímatel - Přehled: Státní instituce
-- Nájemník - Přehled: Přehled
-- Nájemník - Přehled: Firma
-- Nájemník - Přehled: Státní instituce
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `ico`
-**Počet použití:** 20
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Pronajímatel - Přehled: Přehled
-- Pronajímatel - Přehled: OSVČ
-- Pronajímatel - Přehled: Firma
-- Nájemník - Přehled: Přehled
-- Nájemník - Přehled: OSVČ
-- Nájemník - Přehled: Firma
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `zastupuje_id`
 **Počet použití:** 16
 
 **Umístění:**
@@ -1146,208 +976,35 @@ Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modu
 - Uživatelé - Formulář: Nový / Pozvat
 - Uživatelé - Formulář: Role & barvy
 - Můj účet - Formulář: Upravit profil
+- Pronajímatel - Přehled: Přehled
+- Pronajímatel - Přehled: Osoba
+- Pronajímatel - Přehled: OSVČ
+- Pronajímatel - Přehled: Firma
+- Pronajímatel - Přehled: Spolek / Skupina
 - Pronajímatel - Přehled: Zástupci
+- Nájemník - Přehled: Přehled
+- Nájemník - Přehled: Osoba
+- Nájemník - Přehled: OSVČ
+- Nájemník - Přehled: Firma
+- Nájemník - Přehled: Spolek / Skupina
 - Nájemník - Přehled: Zástupci
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
 
-### `titul_pred`
-**Počet použití:** 14
+### `cislo_popisne`
+**Počet použití:** 12
 
 **Umístění:**
 - Uživatelé - Formulář: Formulář
 - Uživatelé - Formulář: Nový / Pozvat
 - Uživatelé - Formulář: Role & barvy
 - Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `jmeno`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `prijmeni`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `titul_za`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `typ_dokladu`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `dic`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `country`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `street`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `zip`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
-
-### `bankovni_ucet`
-**Počet použití:** 14
-
-**Umístění:**
-- Uživatelé - Formulář: Formulář
-- Uživatelé - Formulář: Nový / Pozvat
-- Uživatelé - Formulář: Role & barvy
-- Můj účet - Formulář: Upravit profil
-- Smlouvy - Formulář: Detail smlouvy
-- Smlouvy - Formulář: Editace smlouvy
-- Smlouvy - Formulář: Předávací protokol
-- Služby - Formulář: Detail služby
-- Služby - Formulář: Editace služby
-- Služby - Formulář: Přidat službu do smlouvy
-- Platby - Formulář: Detail platby
-- Platby - Formulář: Vložit platbu
-- Platby - Formulář: Alokace platby
-- Platby - Formulář: Import plateb
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `archivedLabel`
 **Počet použití:** 11
@@ -1355,335 +1012,494 @@ Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modu
 **Umístění:**
 - Uživatelé - Přehled: Přehled
 - Pronajímatel - Přehled: Přehled
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 - Nájemník - Přehled: Přehled
 
-### `nazev`
-**Počet použití:** 8
+### `city`
+**Počet použití:** 11
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+- Pronajímatel - Přehled: Přehled
+- Pronajímatel - Přehled: Osoba
+- Pronajímatel - Přehled: Firma
+- Pronajímatel - Přehled: Státní instituce
+- Nájemník - Přehled: Přehled
+- Nájemník - Přehled: Firma
+- Nájemník - Přehled: Státní instituce
+
+### `updated_at`
+**Počet použití:** 11
+
+**Umístění:**
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
+- Smlouvy - Formulář: Detail smlouvy
+- Služby - Formulář: Detail služby
+- Platby - Formulář: Detail platby
+
+### `updated_by`
+**Počet použití:** 11
+
+**Umístění:**
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
+- Smlouvy - Formulář: Detail smlouvy
+- Služby - Formulář: Detail služby
+- Platby - Formulář: Detail platby
+
+### `created_at`
+**Počet použití:** 11
+
+**Umístění:**
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
+- Smlouvy - Formulář: Detail smlouvy
+- Služby - Formulář: Detail služby
+- Platby - Formulář: Detail platby
+
+### `ico`
+**Počet použití:** 10
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+- Pronajímatel - Přehled: Přehled
+- Pronajímatel - Přehled: OSVČ
+- Pronajímatel - Přehled: Firma
+- Nájemník - Přehled: Přehled
+- Nájemník - Přehled: OSVČ
+- Nájemník - Přehled: Firma
+
+### `nazev`
+**Počet použití:** 10
+
+**Umístění:**
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `archived`
+**Počet použití:** 9
+
+**Umístění:**
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
+- Smlouvy - Formulář: Detail smlouvy
 
 ### `typ_nemovitosti`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `ulice`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `cislo_orientacni`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `mesto`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `psc`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `kraj`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `stat`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `pocet_podlazi`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `pocet_podzemních_podlazi`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `rok_vystavby`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `rok_rekonstrukce`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `celkova_plocha`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `pocet_jednotek`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `spravce`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `pronajimatel_id`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
-
-### `poznamky`
-**Počet použití:** 8
-
-**Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `vybaveni`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `prilohy`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
 ### `pronajimatel`
 **Počet použití:** 8
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Nemovitosti - Formulář: Nová nemovitost
+- Nemovitosti - Formulář: Nová jednotka
+- Nemovitosti - Formulář: Správa typů nemovitostí
+- Nemovitosti - Formulář: Správa typů jednotek
+- Nemovitosti - Formulář: Editace nemovitosti
+- Nemovitosti - Formulář: Detail nemovitosti
+- Nemovitosti - Formulář: Editace jednotky
+- Nemovitosti - Formulář: Detail jednotky
 
-### `archived`
-**Počet použití:** 8
-
-**Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
-
-### `updated_at`
-**Počet použití:** 8
+### `zastupuje_id`
+**Počet použití:** 6
 
 **Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
-
-### `updated_by`
-**Počet použití:** 8
-
-**Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
-
-### `created_at`
-**Počet použití:** 8
-
-**Umístění:**
-- Přehled - Formulář: Nová nemovitost
-- Přehled - Formulář: Nová jednotka
-- Přehled - Formulář: Správa typů nemovitostí
-- Přehled - Formulář: Správa typů jednotek
-- Přehled - Formulář: Editace nemovitosti
-- Přehled - Formulář: Detail nemovitosti
-- Přehled - Formulář: Editace jednotky
-- Přehled - Formulář: Detail jednotky
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+- Pronajímatel - Přehled: Zástupci
+- Nájemník - Přehled: Zástupci
 
 ### `id`
-**Počet použití:** 3
+**Počet použití:** 6
 
 **Umístění:**
 - Pronajímatel - Přehled: Osoba
 - Pronajímatel - Přehled: Firma
 - Nájemník - Přehled: Firma
+- Smlouvy - Formulář: Detail smlouvy
+- Služby - Formulář: Detail služby
+- Platby - Formulář: Detail platby
+
+### `titul_pred`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `jmeno`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `prijmeni`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `titul_za`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `typ_dokladu`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `dic`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `country`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `street`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `zip`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `bankovni_ucet`
+**Počet použití:** 4
+
+**Umístění:**
+- Uživatelé - Formulář: Formulář
+- Uživatelé - Formulář: Nový / Pozvat
+- Uživatelé - Formulář: Role & barvy
+- Můj účet - Formulář: Upravit profil
+
+### `contract_id`
+**Počet použití:** 4
+
+**Umístění:**
+- Smlouvy - Formulář: Předávací protokol
+- Služby - Formulář: Přidat službu do smlouvy
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `created_by`
+**Počet použití:** 3
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Služby - Formulář: Detail služby
+- Platby - Formulář: Detail platby
+
+### `amount`
+**Počet použití:** 3
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+- Platby - Formulář: Alokace platby
 
 ### `typ_subjektu`
 **Počet použití:** 2
@@ -1691,6 +1507,202 @@ Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modu
 **Umístění:**
 - Pronajímatel - Přehled: Přehled
 - Nájemník - Přehled: Přehled
+
+### `cislo_smlouvy`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `stav`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `landlord_id`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `tenant_id`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `property_id`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `unit_id`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `datum_zacatek`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `datum_konec`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `najem_vyse`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `periodicita_najmu`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `kauce_potreba`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `kauce_castka`
+**Počet použití:** 2
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+- Smlouvy - Formulář: Editace smlouvy
+
+### `kod`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `kategorie`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `popis`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `typ_uctovani`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `jednotka`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `zakladni_cena`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `sazba_dph`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `aktivni`
+**Počet použití:** 2
+
+**Umístění:**
+- Služby - Formulář: Detail služby
+- Služby - Formulář: Editace služby
+
+### `payment_reference`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `payment_date`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `value_date`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `payment_type`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `payment_method`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `status`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `party_id`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
+
+### `bank_transaction_id`
+**Počet použití:** 2
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+- Platby - Formulář: Vložit platbu
 
 ### `role`
 **Počet použití:** 1
@@ -1703,4 +1715,106 @@ Seznam všech polí použitých v aplikaci a jejich výskyt v jednotlivých modu
 
 **Umístění:**
 - Uživatelé - Přehled: Přehled
+
+### `stav_kauce`
+**Počet použití:** 1
+
+**Umístění:**
+- Smlouvy - Formulář: Detail smlouvy
+
+### `datum_predani`
+**Počet použití:** 1
+
+**Umístění:**
+- Smlouvy - Formulář: Předávací protokol
+
+### `typ_protokolu`
+**Počet použití:** 1
+
+**Umístění:**
+- Smlouvy - Formulář: Předávací protokol
+
+### `stav_jednotky`
+**Počet použití:** 1
+
+**Umístění:**
+- Smlouvy - Formulář: Předávací protokol
+
+### `meraky_stav`
+**Počet použití:** 1
+
+**Umístění:**
+- Smlouvy - Formulář: Předávací protokol
+
+### `service_definition_id`
+**Počet použití:** 1
+
+**Umístění:**
+- Služby - Formulář: Přidat službu do smlouvy
+
+### `mnozstvi`
+**Počet použití:** 1
+
+**Umístění:**
+- Služby - Formulář: Přidat službu do smlouvy
+
+### `cena_za_jednotku`
+**Počet použití:** 1
+
+**Umístění:**
+- Služby - Formulář: Přidat službu do smlouvy
+
+### `pausal`
+**Počet použití:** 1
+
+**Umístění:**
+- Služby - Formulář: Přidat službu do smlouvy
+
+### `currency`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Detail platby
+
+### `payment_id`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Alokace platby
+
+### `allocation_type`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Alokace platby
+
+### `period_from`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Alokace platby
+
+### `period_to`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Alokace platby
+
+### `soubor`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Import plateb
+
+### `format`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Import plateb
+
+### `automaticke_parovani`
+**Počet použití:** 1
+
+**Umístění:**
+- Platby - Formulář: Import plateb
 

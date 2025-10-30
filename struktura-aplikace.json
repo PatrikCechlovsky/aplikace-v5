@@ -782,8 +782,8 @@
     },
     {
       "id": "040-nemovitost",
-      "title": "Přehled",
-      "icon": "list",
+      "title": "Nemovitosti",
+      "icon": "building",
       "tiles": [],
       "forms": [
         {
@@ -2278,88 +2278,103 @@
           ],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "id",
+              "label": "ID",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
+              "key": "cislo_smlouvy",
+              "label": "Číslo smlouvy",
               "type": "text"
             },
             {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
-            },
-            {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
-            },
-            {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "stav",
+              "label": "Stav",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
+              "key": "landlord_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
+            },
+            {
+              "key": "tenant_id",
+              "label": "Nájemník",
+              "type": "chooser"
+            },
+            {
+              "key": "property_id",
+              "label": "Nemovitost",
+              "type": "chooser"
+            },
+            {
+              "key": "unit_id",
+              "label": "Jednotka",
+              "type": "chooser"
+            },
+            {
+              "key": "datum_zacatek",
+              "label": "Datum začátku",
+              "type": "date"
+            },
+            {
+              "key": "datum_konec",
+              "label": "Datum konce",
+              "type": "date"
+            },
+            {
+              "key": "najem_vyse",
+              "label": "Výše nájmu",
+              "type": "number"
+            },
+            {
+              "key": "periodicita_najmu",
+              "label": "Periodicita",
+              "type": "select"
+            },
+            {
+              "key": "kauce_potreba",
+              "label": "Kauce požadována",
+              "type": "checkbox"
+            },
+            {
+              "key": "kauce_castka",
+              "label": "Výše kauce",
+              "type": "number"
+            },
+            {
+              "key": "stav_kauce",
+              "label": "Stav kauce",
+              "type": "select"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
+            },
+            {
+              "key": "archived",
+              "label": "Archivováno",
+              "type": "checkbox"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořeno",
               "type": "text"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
+              "key": "created_by",
+              "label": "Vytvořil",
               "type": "text"
             },
             {
-              "key": "primary_phone",
-              "label": "Telefon",
+              "key": "updated_at",
+              "label": "Upraveno",
               "type": "text"
             },
             {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
-            },
-            {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
+              "key": "updated_by",
+              "label": "Upravil",
               "type": "text"
             }
           ]
@@ -2371,89 +2386,69 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "cislo_smlouvy",
+              "label": "Číslo smlouvy",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
-              "type": "text"
-            },
-            {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
-            },
-            {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
-            },
-            {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "stav",
+              "label": "Stav",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
-              "type": "text"
+              "key": "landlord_id",
+              "label": "Pronajímatel",
+              "type": "chooser"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
-              "type": "text"
+              "key": "tenant_id",
+              "label": "Nájemník",
+              "type": "chooser"
             },
             {
-              "key": "primary_phone",
-              "label": "Telefon",
-              "type": "text"
+              "key": "property_id",
+              "label": "Nemovitost",
+              "type": "chooser"
             },
             {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
+              "key": "unit_id",
+              "label": "Jednotka",
+              "type": "chooser"
             },
             {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
+              "key": "datum_zacatek",
+              "label": "Datum začátku",
+              "type": "date"
             },
             {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
+              "key": "datum_konec",
+              "label": "Datum konce",
+              "type": "date"
             },
             {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
+              "key": "najem_vyse",
+              "label": "Výše nájmu (Kč)",
+              "type": "number"
             },
             {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
+              "key": "periodicita_najmu",
+              "label": "Periodicita",
+              "type": "select"
             },
             {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
+              "key": "kauce_potreba",
+              "label": "Kauce požadována",
+              "type": "checkbox"
             },
             {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
+              "key": "kauce_castka",
+              "label": "Výše kauce (Kč)",
+              "type": "number"
             },
             {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
-              "type": "text"
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
             }
           ]
         },
@@ -2464,89 +2459,34 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "contract_id",
+              "label": "ID smlouvy",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
-              "type": "text"
+              "key": "datum_predani",
+              "label": "Datum předání",
+              "type": "date"
             },
             {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
-            },
-            {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
-            },
-            {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "typ_protokolu",
+              "label": "Typ protokolu",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
-              "type": "text"
+              "key": "stav_jednotky",
+              "label": "Stav jednotky",
+              "type": "textarea"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
-              "type": "text"
+              "key": "meraky_stav",
+              "label": "Stavy měřáků",
+              "type": "textarea"
             },
             {
-              "key": "primary_phone",
-              "label": "Telefon",
-              "type": "text"
-            },
-            {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
-            },
-            {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
-              "type": "text"
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
             }
           ]
         }
@@ -2608,88 +2548,78 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "id",
+              "label": "ID",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
+              "key": "kod",
+              "label": "Kód služby",
               "type": "text"
             },
             {
-              "key": "jmeno",
-              "label": "Křestní jméno",
+              "key": "nazev",
+              "label": "Název služby",
               "type": "text"
             },
             {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
-            },
-            {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "kategorie",
+              "label": "Kategorie",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
+              "key": "popis",
+              "label": "Popis",
+              "type": "textarea"
+            },
+            {
+              "key": "typ_uctovani",
+              "label": "Typ účtování",
+              "type": "select"
+            },
+            {
+              "key": "jednotka",
+              "label": "Jednotka",
               "type": "text"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
+              "key": "zakladni_cena",
+              "label": "Základní cena",
+              "type": "number"
+            },
+            {
+              "key": "sazba_dph",
+              "label": "DPH sazba (0.21 = 21%)",
+              "type": "number"
+            },
+            {
+              "key": "aktivni",
+              "label": "Aktivní",
+              "type": "checkbox"
+            },
+            {
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořeno",
               "type": "text"
             },
             {
-              "key": "primary_phone",
-              "label": "Telefon",
+              "key": "created_by",
+              "label": "Vytvořil",
               "type": "text"
             },
             {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
+              "key": "updated_at",
+              "label": "Upraveno",
               "type": "text"
             },
             {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
+              "key": "updated_by",
+              "label": "Upravil",
               "type": "text"
             }
           ]
@@ -2701,89 +2631,54 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "kod",
+              "label": "Kód služby",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
+              "key": "nazev",
+              "label": "Název služby",
               "type": "text"
             },
             {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
-            },
-            {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
-            },
-            {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "kategorie",
+              "label": "Kategorie",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
+              "key": "popis",
+              "label": "Popis",
+              "type": "textarea"
+            },
+            {
+              "key": "typ_uctovani",
+              "label": "Typ účtování",
+              "type": "select"
+            },
+            {
+              "key": "jednotka",
+              "label": "Jednotka",
               "type": "text"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
-              "type": "text"
+              "key": "zakladni_cena",
+              "label": "Základní cena (Kč)",
+              "type": "number"
             },
             {
-              "key": "primary_phone",
-              "label": "Telefon",
-              "type": "text"
+              "key": "sazba_dph",
+              "label": "DPH sazba (0.21 = 21%)",
+              "type": "number"
             },
             {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
+              "key": "aktivni",
+              "label": "Aktivní",
+              "type": "checkbox"
             },
             {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
-            },
-            {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
-              "type": "text"
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
             }
           ]
         },
@@ -2794,89 +2689,34 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "contract_id",
+              "label": "ID smlouvy",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
-              "type": "text"
+              "key": "service_definition_id",
+              "label": "Služba",
+              "type": "chooser"
             },
             {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
+              "key": "mnozstvi",
+              "label": "Množství",
+              "type": "number"
             },
             {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
+              "key": "cena_za_jednotku",
+              "label": "Cena za jednotku",
+              "type": "number"
             },
             {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
+              "key": "pausal",
+              "label": "Paušál",
+              "type": "checkbox"
             },
             {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
-              "type": "select"
-            },
-            {
-              "key": "ico",
-              "label": "IČO",
-              "type": "text"
-            },
-            {
-              "key": "dic",
-              "label": "DIČ",
-              "type": "text"
-            },
-            {
-              "key": "primary_phone",
-              "label": "Telefon",
-              "type": "text"
-            },
-            {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
-            },
-            {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
-              "type": "text"
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
             }
           ]
         }
@@ -2931,88 +2771,88 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "id",
+              "label": "ID",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
+              "key": "payment_reference",
+              "label": "Reference platby",
               "type": "text"
             },
             {
-              "key": "jmeno",
-              "label": "Křestní jméno",
+              "key": "amount",
+              "label": "Částka",
+              "type": "number"
+            },
+            {
+              "key": "currency",
+              "label": "Měna",
               "type": "text"
             },
             {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
+              "key": "payment_date",
+              "label": "Datum platby",
+              "type": "date"
             },
             {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
+              "key": "value_date",
+              "label": "Valuta",
+              "type": "date"
             },
             {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "payment_type",
+              "label": "Typ platby",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
+              "key": "payment_method",
+              "label": "Způsob platby",
+              "type": "select"
+            },
+            {
+              "key": "status",
+              "label": "Stav",
+              "type": "select"
+            },
+            {
+              "key": "contract_id",
+              "label": "Smlouva",
+              "type": "chooser"
+            },
+            {
+              "key": "party_id",
+              "label": "Strana",
+              "type": "chooser"
+            },
+            {
+              "key": "bank_transaction_id",
+              "label": "ID bankovní transakce",
               "type": "text"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
+            },
+            {
+              "key": "created_at",
+              "label": "Vytvořeno",
               "type": "text"
             },
             {
-              "key": "primary_phone",
-              "label": "Telefon",
+              "key": "created_by",
+              "label": "Vytvořil",
               "type": "text"
             },
             {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
+              "key": "updated_at",
+              "label": "Upraveno",
               "type": "text"
             },
             {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
+              "key": "updated_by",
+              "label": "Upravil",
               "type": "text"
             }
           ]
@@ -3024,89 +2864,59 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "payment_reference",
+              "label": "Reference platby",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
-              "type": "text"
+              "key": "amount",
+              "label": "Částka (Kč)",
+              "type": "number"
             },
             {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
+              "key": "payment_date",
+              "label": "Datum platby",
+              "type": "date"
             },
             {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
+              "key": "value_date",
+              "label": "Valuta",
+              "type": "date"
             },
             {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "payment_type",
+              "label": "Typ platby",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
+              "key": "payment_method",
+              "label": "Způsob platby",
+              "type": "select"
+            },
+            {
+              "key": "status",
+              "label": "Stav",
+              "type": "select"
+            },
+            {
+              "key": "contract_id",
+              "label": "Smlouva",
+              "type": "chooser"
+            },
+            {
+              "key": "party_id",
+              "label": "Plátce",
+              "type": "chooser"
+            },
+            {
+              "key": "bank_transaction_id",
+              "label": "ID bankovní transakce",
               "type": "text"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
-              "type": "text"
-            },
-            {
-              "key": "primary_phone",
-              "label": "Telefon",
-              "type": "text"
-            },
-            {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
-            },
-            {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
-              "type": "text"
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
             }
           ]
         },
@@ -3117,89 +2927,34 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
+              "key": "payment_id",
+              "label": "ID platby",
               "type": "text"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
-              "type": "text"
-            },
-            {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
-            },
-            {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
-            },
-            {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "allocation_type",
+              "label": "Typ alokace",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
-              "type": "text"
+              "key": "amount",
+              "label": "Částka",
+              "type": "number"
             },
             {
-              "key": "dic",
-              "label": "DIČ",
-              "type": "text"
+              "key": "period_from",
+              "label": "Období od",
+              "type": "date"
             },
             {
-              "key": "primary_phone",
-              "label": "Telefon",
-              "type": "text"
+              "key": "period_to",
+              "label": "Období do",
+              "type": "date"
             },
             {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
-            },
-            {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
-              "type": "text"
+              "key": "poznamky",
+              "label": "Poznámky",
+              "type": "textarea"
             }
           ]
         },
@@ -3210,89 +2965,19 @@
           "actions": [],
           "fields": [
             {
-              "key": "display_name",
-              "label": "Jméno a příjmení",
-              "type": "text"
+              "key": "soubor",
+              "label": "Soubor",
+              "type": "file"
             },
             {
-              "key": "titul_pred",
-              "label": "Titul před jménem",
-              "type": "text"
-            },
-            {
-              "key": "jmeno",
-              "label": "Křestní jméno",
-              "type": "text"
-            },
-            {
-              "key": "prijmeni",
-              "label": "Příjmení",
-              "type": "text"
-            },
-            {
-              "key": "titul_za",
-              "label": "Titul za jménem",
-              "type": "text"
-            },
-            {
-              "key": "typ_dokladu",
-              "label": "Typ dokladu",
+              "key": "format",
+              "label": "Formát",
               "type": "select"
             },
             {
-              "key": "ico",
-              "label": "IČO",
-              "type": "text"
-            },
-            {
-              "key": "dic",
-              "label": "DIČ",
-              "type": "text"
-            },
-            {
-              "key": "primary_phone",
-              "label": "Telefon",
-              "type": "text"
-            },
-            {
-              "key": "primary_email",
-              "label": "E-mail",
-              "type": "email"
-            },
-            {
-              "key": "country",
-              "label": "Stát",
-              "type": "text"
-            },
-            {
-              "key": "street",
-              "label": "Ulice",
-              "type": "text"
-            },
-            {
-              "key": "cislo_popisne",
-              "label": "Číslo popisné",
-              "type": "text"
-            },
-            {
-              "key": "city",
-              "label": "Město",
-              "type": "text"
-            },
-            {
-              "key": "zip",
-              "label": "PSČ",
-              "type": "text"
-            },
-            {
-              "key": "bankovni_ucet",
-              "label": "Bankovní účet / číslo",
-              "type": "text"
-            },
-            {
-              "key": "zastupuje_id",
-              "label": "Zastupuje (ID subjektu)",
-              "type": "text"
+              "key": "automaticke_parovani",
+              "label": "Automatické párování podle VS",
+              "type": "checkbox"
             }
           ]
         }
