@@ -1,8 +1,9 @@
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
+import { renderTabs } from '/src/ui/tabs.js';
 import { navigateTo } from '/src/app.js';
-import { getUnit, archiveUnit, getProperty } from '/src/modules/040-nemovitost/db.js';
+import { getUnit, getUnitWithDetails, archiveUnit, getProperty } from '/src/modules/040-nemovitost/db.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
 
 // Pomocná funkce pro získání parametrů z hash části URL
@@ -62,8 +63,8 @@ export async function render(root, params) {
     return;
   }
 
-  // Načtení dat jednotky z DB
-  const { data, error } = await getUnit(id);
+  // Načtení dat jednotky z DB s detaily
+  const { data, error } = await getUnitWithDetails(id);
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání jednotky: ${error.message}</div>`;
     return;
@@ -73,14 +74,8 @@ export async function render(root, params) {
     return;
   }
   
-  // Load property data for breadcrumb
-  let propertyData = null;
-  if (data.nemovitost_id) {
-    const result = await getProperty(data.nemovitost_id);
-    if (result.data) {
-      propertyData = result.data;
-    }
-  }
+  // Property data is now included in data.property
+  const propertyData = data.property;
 
   // Formátování datumů pro readonly pole a nahrazení null za '--'
   for (const f of FIELDS) {
@@ -112,7 +107,11 @@ export async function render(root, params) {
     ]);
   } catch (e) {}
 
-  root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="unit-detail"></div>`;
+  root.innerHTML = `
+    <div id="commonactions" class="mb-4"></div>
+    <div id="unit-detail"></div>
+    <div id="unit-tabs" class="mt-6"></div>
+  `;
 
   const myRole = window.currentUserRole || 'admin';
 
@@ -163,6 +162,113 @@ export async function render(root, params) {
       ] },
     ]
   });
+
+  // Render tabs with related information
+  const tabs = [
+    {
+      label: 'Nemovitost',
+      icon: '🏢',
+      content: (() => {
+        if (!data.property) {
+          return '<div class="p-4 text-gray-500">Nemovitost není přiřazena</div>';
+        }
+        const prop = data.property;
+        return `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-4">Informace o nemovitosti</h3>
+            <div class="bg-white shadow rounded-lg p-4 space-y-2">
+              <div class="grid grid-cols-2 gap-4">
+                <div><strong>Název:</strong> ${prop.nazev || '-'}</div>
+                <div><strong>Adresa:</strong> ${prop.ulice || ''} ${prop.mesto || ''}</div>
+                <div><strong>PSČ:</strong> ${prop.psc || '-'}</div>
+                ${prop.owner ? `
+                  <div><strong>Vlastník:</strong> ${prop.owner.display_name || '-'}</div>
+                ` : ''}
+              </div>
+              <div class="mt-4">
+                <button 
+                  onclick="location.hash='#/m/040-nemovitost/f/detail?id=${prop.id}'"
+                  class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  Zobrazit detail nemovitosti
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      })()
+    },
+    {
+      label: 'Nájemce',
+      icon: '👤',
+      content: (() => {
+        if (!data.active_contract || !data.active_contract.tenant) {
+          return '<div class="p-4 text-gray-500">Jednotka není obsazená</div>';
+        }
+        const contract = data.active_contract;
+        const tenant = contract.tenant;
+        return `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-4">Informace o nájemci</h3>
+            <div class="bg-white shadow rounded-lg p-4 space-y-2">
+              <div class="grid grid-cols-2 gap-4">
+                <div><strong>Jméno:</strong> ${tenant.display_name || '-'}</div>
+                <div><strong>Email:</strong> ${tenant.primary_email || '-'}</div>
+                <div><strong>Telefon:</strong> ${tenant.primary_phone || '-'}</div>
+                <div><strong>Smlouva:</strong> ${contract.cislo_smlouvy || '-'}</div>
+                <div><strong>Začátek:</strong> ${contract.datum_zacatek ? new Date(contract.datum_zacatek).toLocaleDateString('cs-CZ') : '-'}</div>
+                <div><strong>Konec:</strong> ${contract.datum_konec ? new Date(contract.datum_konec).toLocaleDateString('cs-CZ') : 'Neurčeno'}</div>
+                <div><strong>Nájem:</strong> ${contract.najem_vyse ? contract.najem_vyse + ' Kč' : '-'}</div>
+                <div><strong>Stav smlouvy:</strong> ${contract.stav || '-'}</div>
+              </div>
+              <div class="mt-4 space-x-2">
+                <button 
+                  onclick="location.hash='#/m/050-najemnik/f/detail?id=${tenant.id}'"
+                  class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  Zobrazit detail nájemce
+                </button>
+                <button 
+                  onclick="location.hash='#/m/060-smlouva/f/detail?id=${contract.id}'"
+                  class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                  Zobrazit smlouvu
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      })()
+    },
+    {
+      label: 'Vlastník',
+      icon: '🏦',
+      content: (() => {
+        if (!data.property || !data.property.owner) {
+          return '<div class="p-4 text-gray-500">Vlastník není přiřazen</div>';
+        }
+        const owner = data.property.owner;
+        return `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-4">Informace o vlastníkovi</h3>
+            <div class="bg-white shadow rounded-lg p-4 space-y-2">
+              <div class="grid grid-cols-2 gap-4">
+                <div><strong>Název:</strong> ${owner.display_name || '-'}</div>
+                <div><strong>Email:</strong> ${owner.primary_email || '-'}</div>
+                <div><strong>Telefon:</strong> ${owner.primary_phone || '-'}</div>
+              </div>
+              <div class="mt-4">
+                <button 
+                  onclick="location.hash='#/m/030-pronajimatel/f/detail?id=${owner.id}'"
+                  class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  Zobrazit detail vlastníka
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      })()
+    }
+  ];
+
+  renderTabs(root.querySelector('#unit-tabs'), tabs, { defaultTab: 0 });
 }
 
 export default { render };
