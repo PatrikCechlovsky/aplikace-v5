@@ -13,6 +13,7 @@ import { navigateTo } from '/src/app.js';
 import { getContractWithDetails } from '/src/modules/060-smlouva/db.js';
 import { listContractServices } from '/src/modules/070-sluzby/db.js';
 import { getPaymentSchedule, listPayments } from '/src/modules/080-platby/db.js';
+import { showPaymentConfirmationDialog } from '/src/services/paymentActions.js';
 
 // Helper to parse hash params
 function getHashParams() {
@@ -315,7 +316,7 @@ export default async function render(root) {
           return;
         }
 
-        // Create payments table
+        // Create payments table with action column
         const table = createRelatedEntitiesTable(
           payments,
           [
@@ -356,14 +357,53 @@ export default async function render(root) {
                 };
                 return statuses[val] || val || '-';
               }
+            },
+            { 
+              label: 'Potvrzení', 
+              field: 'auto_odeslano_potvrzeni',
+              render: (val, row) => {
+                const confirmationStatuses = {
+                  'neodeslano': '📧 Neodeslán',
+                  'fronta': '⏳ Ve frontě',
+                  'odeslano': '✅ Odesláno',
+                  'selhalo': '❌ Selhalo'
+                };
+                const status = confirmationStatuses[val] || '📧 Neodeslán';
+                
+                // Add button to send confirmation
+                const buttonId = `confirm-btn-${row.id}`;
+                setTimeout(() => {
+                  const btn = document.getElementById(buttonId);
+                  if (btn) {
+                    btn.addEventListener('click', (e) => {
+                      e.stopPropagation();
+                      showPaymentConfirmationDialog(row.id, {
+                        onSuccess: () => {
+                          // Refresh the tab
+                          alert('Potvrzení bylo odesláno');
+                        }
+                      });
+                    });
+                  }
+                }, 100);
+                
+                return `
+                  <div>
+                    <div class="mb-1">${status}</div>
+                    ${val !== 'odeslano' ? `
+                      <button 
+                        id="${buttonId}"
+                        class="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Odeslat
+                      </button>
+                    ` : ''}
+                  </div>
+                `;
+              }
             }
           ],
           {
-            emptyMessage: 'Žádné platby',
-            onRowClick: (row) => {
-              // Could navigate to payment detail if implemented
-              console.log('Payment clicked:', row);
-            }
+            emptyMessage: 'Žádné platby'
           }
         );
 
