@@ -181,63 +181,21 @@ function extractColumns(moduleId, tileId, tilePath) {
       // Find tiles array using bracket counting
       const tilesStart = metaContentBody.indexOf('tiles:');
       if (tilesStart !== -1) {
-        const arrayStart = metaContentBody.indexOf('[', tilesStart);
-        if (arrayStart !== -1) {
-          // Count brackets to find the end of tiles array
-          let depth = 0;
-          let arrayEnd = arrayStart;
-          for (let i = arrayStart; i < metaContentBody.length; i++) {
-            const char = metaContentBody[i];
-            if (char === '[') depth++;
-            if (char === ']') depth--;
-            if (depth === 0) {
-              arrayEnd = i;
-              break;
-            }
-          }
-          
-          const tilesContent = metaContentBody.substring(arrayStart + 1, arrayEnd);
-          
-          // Split tiles by top-level curly braces
-          let depth2 = 0;
-          let currentTile = '';
-          const tileDefs = [];
-          
-          for (let i = 0; i < tilesContent.length; i++) {
-            const char = tilesContent[i];
-            if (char === '{') depth2++;
-            if (char === '}') depth2--;
-            
-            currentTile += char;
-            
-            if (depth2 === 0 && currentTile.trim()) {
-              tileDefs.push(currentTile.trim());
-              currentTile = '';
-            }
-          }
+        const tilesArrayBounds = findArrayBounds(metaContentBody, tilesStart);
+        if (tilesArrayBounds) {
+          const tilesContent = metaContentBody.substring(tilesArrayBounds.start + 1, tilesArrayBounds.end);
+          const tileDefs = splitByTopLevelBraces(tilesContent);
           
           // Find the tile that matches tileId
           for (const tileDef of tileDefs) {
             const tileIdMatch = tileDef.match(/id:\s*['"]([^'"]+)['"]/);
             if (tileIdMatch && tileIdMatch[1] === tileId) {
-              // Extract columns from this tile using bracket counting
+              // Extract columns from this tile
               const columnsStart = tileDef.indexOf('columns:');
               if (columnsStart !== -1) {
-                const columnsArrayStart = tileDef.indexOf('[', columnsStart);
-                if (columnsArrayStart !== -1) {
-                  let depth3 = 0;
-                  let columnsArrayEnd = columnsArrayStart;
-                  for (let i = columnsArrayStart; i < tileDef.length; i++) {
-                    const char = tileDef[i];
-                    if (char === '[') depth3++;
-                    if (char === ']') depth3--;
-                    if (depth3 === 0) {
-                      columnsArrayEnd = i;
-                      break;
-                    }
-                  }
-                  
-                  const columnsContent = tileDef.substring(columnsArrayStart + 1, columnsArrayEnd);
+                const columnsArrayBounds = findArrayBounds(tileDef, columnsStart);
+                if (columnsArrayBounds) {
+                  const columnsContent = tileDef.substring(columnsArrayBounds.start + 1, columnsArrayBounds.end);
                   return parseColumnDefinitions(columnsContent);
                 }
               }
@@ -326,63 +284,21 @@ function extractFields(moduleId, formId) {
       // Find forms array using bracket counting
       const formsStart = metaContentBody.indexOf('forms:');
       if (formsStart !== -1) {
-        const arrayStart = metaContentBody.indexOf('[', formsStart);
-        if (arrayStart !== -1) {
-          // Count brackets to find the end of forms array
-          let depth = 0;
-          let arrayEnd = arrayStart;
-          for (let i = arrayStart; i < metaContentBody.length; i++) {
-            const char = metaContentBody[i];
-            if (char === '[') depth++;
-            if (char === ']') depth--;
-            if (depth === 0) {
-              arrayEnd = i;
-              break;
-            }
-          }
-          
-          const formsContent = metaContentBody.substring(arrayStart + 1, arrayEnd);
-          
-          // Split forms by top-level curly braces
-          let depth2 = 0;
-          let currentForm = '';
-          const formDefs = [];
-          
-          for (let i = 0; i < formsContent.length; i++) {
-            const char = formsContent[i];
-            if (char === '{') depth2++;
-            if (char === '}') depth2--;
-            
-            currentForm += char;
-            
-            if (depth2 === 0 && currentForm.trim()) {
-              formDefs.push(currentForm.trim());
-              currentForm = '';
-            }
-          }
+        const formsArrayBounds = findArrayBounds(metaContentBody, formsStart);
+        if (formsArrayBounds) {
+          const formsContent = metaContentBody.substring(formsArrayBounds.start + 1, formsArrayBounds.end);
+          const formDefs = splitByTopLevelBraces(formsContent);
           
           // Find the form that matches formId
           for (const formDef of formDefs) {
             const formIdMatch = formDef.match(/id:\s*['"]([^'"]+)['"]/);
             if (formIdMatch && formIdMatch[1] === formId) {
-              // Extract fields from this form using bracket counting
+              // Extract fields from this form
               const fieldsStart = formDef.indexOf('fields:');
               if (fieldsStart !== -1) {
-                const fieldsArrayStart = formDef.indexOf('[', fieldsStart);
-                if (fieldsArrayStart !== -1) {
-                  let depth3 = 0;
-                  let fieldsArrayEnd = fieldsArrayStart;
-                  for (let i = fieldsArrayStart; i < formDef.length; i++) {
-                    const char = formDef[i];
-                    if (char === '[') depth3++;
-                    if (char === ']') depth3--;
-                    if (depth3 === 0) {
-                      fieldsArrayEnd = i;
-                      break;
-                    }
-                  }
-                  
-                  const fieldsContent = formDef.substring(fieldsArrayStart + 1, fieldsArrayEnd);
+                const fieldsArrayBounds = findArrayBounds(formDef, fieldsStart);
+                if (fieldsArrayBounds) {
+                  const fieldsContent = formDef.substring(fieldsArrayBounds.start + 1, fieldsArrayBounds.end);
                   const fieldDefs = extractFieldDefinitions(fieldsContent);
                   fields.push(...fieldDefs);
                   return fields;
@@ -439,6 +355,48 @@ function extractFields(moduleId, formId) {
   }
 
   return fields;
+}
+
+// Helper to find array bounds using bracket counting
+function findArrayBounds(content, startPos) {
+  const arrayStart = content.indexOf('[', startPos);
+  if (arrayStart === -1) return null;
+  
+  let depth = 0;
+  let arrayEnd = arrayStart;
+  for (let i = arrayStart; i < content.length; i++) {
+    const char = content[i];
+    if (char === '[') depth++;
+    if (char === ']') depth--;
+    if (depth === 0) {
+      arrayEnd = i;
+      break;
+    }
+  }
+  
+  return { start: arrayStart, end: arrayEnd };
+}
+
+// Helper to split content by top-level curly braces
+function splitByTopLevelBraces(content) {
+  const items = [];
+  let depth = 0;
+  let currentItem = '';
+  
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    if (char === '{') depth++;
+    if (char === '}') depth--;
+    
+    currentItem += char;
+    
+    if (depth === 0 && currentItem.trim()) {
+      items.push(currentItem.trim());
+      currentItem = '';
+    }
+  }
+  
+  return items;
 }
 
 // Helper to extract field definitions from content

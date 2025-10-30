@@ -2,7 +2,7 @@
 
 > **Tento soubor je automaticky generován.** Spustit: `node analyze-structure.js`
 
-Poslední aktualizace: 30. 10. 2025 13:40:52
+Poslední aktualizace: 30. 10. 2025 13:47:34
 
 ## Obsah
 
