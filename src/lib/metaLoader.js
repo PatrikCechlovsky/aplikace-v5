@@ -58,43 +58,27 @@ export function mapPgTypeToFieldType(pgType) {
  */
 export async function getTableSchema(tableName, supabaseClient = supabase) {
   try {
-    // Query information_schema using Supabase RPC or direct query
+    // Try to query using RPC function if it exists
+    // This requires a database function to be created first:
+    // CREATE OR REPLACE FUNCTION get_table_columns(p_table_name text, p_schema_name text DEFAULT 'public')
+    // RETURNS TABLE (column_name text, data_type text, is_nullable text, column_default text, ordinal_position integer)
+    // AS $$ BEGIN RETURN QUERY SELECT ... FROM information_schema.columns ... END; $$ LANGUAGE plpgsql;
+    
     const { data, error } = await supabaseClient.rpc('get_table_columns', {
       p_table_name: tableName,
       p_schema_name: 'public'
-    }).catch(async () => {
-      // Fallback: try direct query if RPC doesn't exist
-      // Note: This requires proper permissions on information_schema
-      const query = `
-        SELECT 
-          column_name, 
-          data_type, 
-          is_nullable, 
-          column_default,
-          ordinal_position
-        FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-          AND table_name = '${tableName}'
-        ORDER BY ordinal_position
-      `;
-      
-      // Using postgres meta endpoint if available
-      return await supabaseClient
-        .from('information_schema.columns')
-        .select('column_name, data_type, is_nullable, column_default')
-        .eq('table_schema', 'public')
-        .eq('table_name', tableName)
-        .order('ordinal_position');
     });
 
     if (error) {
-      console.warn(`[metaLoader] Could not fetch schema for table '${tableName}':`, error);
+      // RPC function doesn't exist or failed - this is expected in many cases
+      console.info(`[metaLoader] RPC get_table_columns not available for '${tableName}', using static metadata only`);
       return [];
     }
 
     return data || [];
   } catch (err) {
-    console.error(`[metaLoader] Exception fetching schema for table '${tableName}':`, err);
+    // Expected error when RPC doesn't exist - gracefully fallback to static metadata
+    console.info(`[metaLoader] Could not fetch dynamic schema for table '${tableName}', using static metadata only`);
     return [];
   }
 }
