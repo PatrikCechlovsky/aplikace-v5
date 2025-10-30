@@ -99,12 +99,13 @@ export async function upsertUnitType({ slug, label, color, icon }) {
  * List properties with optional filters
  * @param {Object} options - Filter options
  * @param {string} options.type - Filter by property type (bytovy_dum, rodinny_dum, etc.)
+ * @param {string} options.landlordId - Filter by landlord (owner) ID
  * @param {boolean} options.showArchived - Include archived properties
  * @param {number} options.limit - Maximum number of results
  * @returns {Promise<{data: Array, error: Object}>}
  */
 export async function listProperties(options = {}) {
-  const { type, showArchived = false, limit = 500 } = options;
+  const { type, landlordId, showArchived = false, limit = 500 } = options;
   
   try {
     let query = supabase
@@ -116,6 +117,11 @@ export async function listProperties(options = {}) {
     // Filter by type if specified
     if (type) {
       query = query.eq('typ_nemovitosti', type);
+    }
+    
+    // Filter by landlord if specified
+    if (landlordId) {
+      query = query.eq('vlastnik_id', landlordId);
     }
     
     // Filter archived
@@ -158,6 +164,34 @@ export async function getProperty(id) {
     return { data, error: null };
   } catch (err) {
     console.error('Exception in getProperty:', err);
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Get property with owner (landlord) details
+ * @param {string} id - Property ID
+ * @returns {Promise<{data: Object, error: Object}>}
+ */
+export async function getPropertyWithOwner(id) {
+  try {
+    const { data, error } = await supabase
+      .from('properties')
+      .select(`
+        *,
+        owner:subjects!vlastnik_id(id, display_name, primary_email, primary_phone, role)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error getting property with owner:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in getPropertyWithOwner:', err);
     return { data: null, error: err };
   }
 }
@@ -330,6 +364,63 @@ export async function getUnit(id) {
 }
 
 /**
+ * Get unit with property and active contract details
+ * @param {string} id - Unit ID
+ * @returns {Promise<{data: Object, error: Object}>}
+ */
+export async function getUnitWithDetails(id) {
+  try {
+    // Get unit with property
+    const { data: unit, error: unitError } = await supabase
+      .from('units')
+      .select(`
+        *,
+        property:properties!nemovitost_id(
+          id, 
+          nazev, 
+          ulice, 
+          mesto, 
+          psc,
+          owner:subjects!vlastnik_id(id, display_name, primary_email, primary_phone)
+        )
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (unitError) {
+      console.error('Error getting unit with details:', unitError);
+      return { data: null, error: unitError };
+    }
+    
+    // Get active contracts for this unit
+    const { data: contracts, error: contractsError } = await supabase
+      .from('contracts')
+      .select(`
+        id,
+        cislo_smlouvy,
+        stav,
+        datum_zacatek,
+        datum_konec,
+        najem_vyse,
+        tenant:subjects!tenant_id(id, display_name, primary_email, primary_phone)
+      `)
+      .eq('unit_id', id)
+      .eq('stav', 'aktivni')
+      .order('datum_zacatek', { ascending: false });
+    
+    if (!contractsError && contracts && contracts.length > 0) {
+      unit.active_contract = contracts[0];
+      unit.all_contracts = contracts;
+    }
+    
+    return { data: unit, error: null };
+  } catch (err) {
+    console.error('Exception in getUnitWithDetails:', err);
+    return { data: null, error: err };
+  }
+}
+
+/**
  * Create or update unit
  * @param {Object} unit - Unit data
  * @returns {Promise<{data: Object, error: Object}>}
@@ -403,11 +494,13 @@ export async function archiveUnit(id) {
 export default {
   listProperties,
   getProperty,
+  getPropertyWithOwner,
   upsertProperty,
   archiveProperty,
   restoreProperty,
   listUnits,
   getUnit,
+  getUnitWithDetails,
   upsertUnit,
   archiveUnit
 };

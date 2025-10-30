@@ -1,8 +1,9 @@
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
+import { renderTabs, createRelatedEntitiesTable } from '/src/ui/tabs.js';
 import { navigateTo } from '/src/app.js';
-import { getProperty, archiveProperty } from '/src/modules/040-nemovitost/db.js';
+import { getProperty, getPropertyWithOwner, listUnits, archiveProperty } from '/src/modules/040-nemovitost/db.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
 import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js'; // <- sdílená definice polí
 
@@ -28,8 +29,8 @@ export async function render(root, params) {
     return;
   }
 
-  // Načtení dat nemovitosti z DB
-  const { data, error } = await getProperty(id);
+  // Načtení dat nemovitosti z DB s vlastníkem
+  const { data, error } = await getPropertyWithOwner(id);
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání nemovitosti: ${error.message}</div>`;
     return;
@@ -74,7 +75,11 @@ export async function render(root, params) {
     ]);
   } catch (e) {}
 
-  root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-detail"></div>`;
+  root.innerHTML = `
+    <div id="commonactions" class="mb-4"></div>
+    <div id="property-detail"></div>
+    <div id="property-tabs" class="mt-6"></div>
+  `;
 
   const myRole = window.currentUserRole || 'admin';
 
@@ -127,6 +132,137 @@ export async function render(root, params) {
       ] },
     ]
   });
+
+  // Render tabs with related information
+  const tabs = [
+    {
+      label: 'Vlastník',
+      icon: '👤',
+      content: (() => {
+        if (!data.owner) {
+          return '<div class="p-4 text-gray-500">Vlastník není přiřazen</div>';
+        }
+        return `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-4">Informace o vlastníkovi</h3>
+            <div class="bg-white shadow rounded-lg p-4 space-y-2">
+              <div class="grid grid-cols-2 gap-4">
+                <div><strong>Název:</strong> ${data.owner.display_name || '-'}</div>
+                <div><strong>Role:</strong> ${data.owner.role || '-'}</div>
+                <div><strong>Email:</strong> ${data.owner.primary_email || '-'}</div>
+                <div><strong>Telefon:</strong> ${data.owner.primary_phone || '-'}</div>
+              </div>
+              <div class="mt-4">
+                <button 
+                  onclick="location.hash='#/m/030-pronajimatel/f/detail?id=${data.owner.id}'"
+                  class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  Zobrazit detail vlastníka
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      })()
+    },
+    {
+      label: 'Jednotky',
+      icon: '🏠',
+      badge: null,
+      content: async (container) => {
+        container.innerHTML = '<div class="text-center py-4">Načítání jednotek...</div>';
+        
+        // Load units for this property
+        const { data: units, error: unitsError } = await listUnits(id);
+        
+        if (unitsError) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání jednotek: ${unitsError.message}</div>`;
+          return;
+        }
+
+        container.innerHTML = '';
+        
+        if (!units || units.length === 0) {
+          container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+          return;
+        }
+
+        // Create table with units
+        const table = createRelatedEntitiesTable(
+          units,
+          [
+            { 
+              label: 'Označení', 
+              field: 'oznaceni',
+              render: (val) => `<strong>${val || 'Bez označení'}</strong>`
+            },
+            { 
+              label: 'Typ', 
+              field: 'typ_jednotky',
+              render: (val) => {
+                const typeLabels = {
+                  'byt': 'Byt',
+                  'kancelar': 'Kancelář',
+                  'obchod': 'Obchod',
+                  'sklad': 'Sklad',
+                  'garaz': 'Garáž',
+                  'jina_jednotka': 'Jiná'
+                };
+                return typeLabels[val] || val || '-';
+              }
+            },
+            { 
+              label: 'Stav', 
+              field: 'stav',
+              render: (val) => {
+                const statusLabels = {
+                  'volna': '🟢 Volná',
+                  'obsazena': '🔴 Obsazená',
+                  'rezervovana': '🟡 Rezervovaná',
+                  'rekonstrukce': '🔧 Rekonstrukce'
+                };
+                return statusLabels[val] || val || '-';
+              }
+            },
+            { 
+              label: 'Plocha', 
+              field: 'plocha',
+              render: (val) => val ? `${val} m²` : '-'
+            },
+            { 
+              label: 'Nájem', 
+              field: 'mesicni_najem',
+              render: (val) => val ? `${val} Kč` : '-'
+            }
+          ],
+          {
+            emptyMessage: 'Žádné jednotky',
+            onRowClick: (row) => {
+              navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`);
+            },
+            className: 'cursor-pointer'
+          }
+        );
+
+        container.appendChild(table);
+      }
+    },
+    {
+      label: 'Dokumenty',
+      icon: '📄',
+      content: `
+        <div class="p-4">
+          <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
+          <button 
+            onclick="window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'properties', entityId: '${id}' })"
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Spravovat přílohy
+          </button>
+        </div>
+      `
+    }
+  ];
+
+  renderTabs(root.querySelector('#property-tabs'), tabs, { defaultTab: 0 });
 }
 
 export default { render };
