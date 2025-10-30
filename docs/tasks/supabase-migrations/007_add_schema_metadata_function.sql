@@ -50,6 +50,6 @@ COMMENT ON FUNCTION get_table_columns IS 'Returns column metadata for a table - 
 -- SELECT * FROM get_table_columns('payments', 'public');
 
 -- ============================================================================
--- KONEC MIGRACE
+-- END OF MIGRATION
 -- ============================================================================
 SELECT 'Migration 007 completed: schema metadata function created' as status;

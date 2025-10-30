@@ -70,8 +70,8 @@ export async function getTableSchema(tableName, supabaseClient = supabase) {
     });
 
     if (error) {
-      // RPC function doesn't exist or failed - this is expected in many cases
-      console.info(`[metaLoader] RPC get_table_columns not available for '${tableName}', using static metadata only`);
+      // RPC function doesn't exist or failed - expected when migration 007 hasn't been run
+      console.info(`[metaLoader] RPC get_table_columns not available for '${tableName}', using static metadata only (migration 007 optional)`);
       return [];
     }
 
