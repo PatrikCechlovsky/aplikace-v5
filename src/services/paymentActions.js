@@ -71,6 +71,7 @@ export async function showPaymentConfirmationDialog(paymentId, options = {}) {
   sendBtn.addEventListener('click', async () => {
     try {
       sendBtn.disabled = true;
+      sendBtn.setAttribute('aria-busy', 'true');
       sendBtn.textContent = 'Odesílání...';
 
       const requireSignature = requireSignatureCheck.checked;
@@ -84,6 +85,7 @@ export async function showPaymentConfirmationDialog(paymentId, options = {}) {
         statusMessage.querySelector('div').className = 'p-3 rounded bg-red-50 text-red-800';
         statusMessage.querySelector('div').textContent = `Chyba: ${error.message || 'Nepodařilo se odeslat email'}`;
         sendBtn.disabled = false;
+        sendBtn.removeAttribute('aria-busy');
         sendBtn.textContent = 'Odeslat';
         if (onError) onError(error);
         return;
@@ -114,6 +116,7 @@ export async function showPaymentConfirmationDialog(paymentId, options = {}) {
       statusMessage.querySelector('div').className = 'p-3 rounded bg-red-50 text-red-800';
       statusMessage.querySelector('div').textContent = `Neočekávaná chyba: ${err.message}`;
       sendBtn.disabled = false;
+      sendBtn.removeAttribute('aria-busy');
       sendBtn.textContent = 'Odeslat';
       if (onError) onError(err);
     }

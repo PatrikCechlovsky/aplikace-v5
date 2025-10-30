@@ -98,7 +98,7 @@ export function generatePaymentConfirmationDocument(payment, contract) {
   return {
     html,
     subject: `Potvrzení o přijetí platby - ${amount}`,
-    filename: `potvrzeni_platby_${payment.id.substring(0, 8)}_${paymentDate.replace(/\./g, '-')}.pdf`
+    filename: `potvrzeni_platby_${payment.id ? payment.id.substring(0, Math.min(8, payment.id.length)) : 'unknown'}_${paymentDate.replace(/\./g, '-')}.pdf`
   };
 }
 
