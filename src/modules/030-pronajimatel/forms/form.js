@@ -223,7 +223,11 @@ export async function render(root) {
                 { 
                   label: 'Adresa', 
                   field: 'ulice',
-                  render: (val, row) => `${val || ''} ${row.cislo_popisne || ''}, ${row.mesto || ''}`
+                  render: (val, row) => {
+                    const parts = [val, row.cislo_popisne].filter(Boolean).join(' ');
+                    const mesto = row.mesto || '';
+                    return [parts, mesto].filter(Boolean).join(', ');
+                  }
                 },
                 { 
                   label: 'Typ', 
