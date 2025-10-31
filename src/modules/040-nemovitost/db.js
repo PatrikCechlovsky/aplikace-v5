@@ -120,8 +120,9 @@ export async function listProperties(options = {}) {
     }
     
     // Filter by landlord if specified
+    // Note: Using pronajimatel_id (not vlastnik_id) as per DB schema
     if (landlordId) {
-      query = query.eq('vlastnik_id', landlordId);
+      query = query.eq('pronajimatel_id', landlordId);
     }
     
     // Filter archived
@@ -175,11 +176,12 @@ export async function getProperty(id) {
  */
 export async function getPropertyWithOwner(id) {
   try {
+    // Note: Using pronajimatel_id (not vlastnik_id) as per DB schema
     const { data, error } = await supabase
       .from('properties')
       .select(`
         *,
-        owner:subjects!vlastnik_id(id, display_name, primary_email, primary_phone, role)
+        owner:subjects!pronajimatel_id(id, display_name, primary_email, primary_phone, role)
       `)
       .eq('id', id)
       .single();
@@ -371,6 +373,7 @@ export async function getUnit(id) {
 export async function getUnitWithDetails(id) {
   try {
     // Get unit with property
+    // Note: Using pronajimatel_id (not vlastnik_id) as per DB schema
     const { data: unit, error: unitError } = await supabase
       .from('units')
       .select(`
@@ -381,7 +384,7 @@ export async function getUnitWithDetails(id) {
           ulice, 
           mesto, 
           psc,
-          owner:subjects!vlastnik_id(id, display_name, primary_email, primary_phone)
+          owner:subjects!pronajimatel_id(id, display_name, primary_email, primary_phone)
         )
       `)
       .eq('id', id)
