@@ -18,8 +18,8 @@ export async function getManifest() {
     // sem patří formy (nezobrazují se jako běžné menu-tile)
     forms: [
       { id: 'chooser', title: 'Nový subjekt', icon: 'add' },
-      { id: 'detail', title: 'Detail pronajímatele', icon: 'view' }
-      // { id: 'form', title: 'Formulář', icon: 'form' }
+      { id: 'detail', title: 'Detail pronajímatele', icon: 'view' },
+      { id: 'form', title: 'Formulář', icon: 'form' } 
     ]
   };
 }
