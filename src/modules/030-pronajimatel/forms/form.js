@@ -11,10 +11,6 @@ import { fetchFromARES } from '/src/services/ares.js';
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { setUnsaved } from '/src/app.js';
 
-// Přidané importy (non-destructive doplnění)
-import { renderTabs, createRelatedEntitiesTable } from '/src/ui/tabs.js';
-import { listProperties } from '/src/modules/040-nemovitost/db.js';
-
 // Helper to parse hash params
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
@@ -158,101 +154,6 @@ export async function render(root) {
     // place button after the input
     wrapper.appendChild(btn);
   }
-
-  // ------- START: Přidané vykreslení záložky Nemovitosti (non-destructive) -------
-  try {
-    // vytvoříme kontejner pro tabs pod formulářem (neodstraníme nic)
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'mt-6';
-    // přidáme tabs container pod root (form je vykreslen v root)
-    root.appendChild(tabsContainer);
-
-    const tabs = [
-      {
-        label: 'Nemovitosti',
-        icon: '🏢',
-        badge: null,
-        content: async (container) => {
-          container.innerHTML = '<div class="text-center py-4">Načítání nemovitostí...</div>';
-
-          // defend: pokud chybí id, nepokoušet se načítat
-          if (!id) {
-            container.innerHTML = '<div class="p-4 text-gray-500">Nemovitosti jsou dostupné po uložení záznamu.</div>';
-            return;
-          }
-
-          try {
-            const { data: properties, error: propError } = await listProperties({ landlordId: id, showArchived: false, limit: 1000 });
-
-            if (propError) {
-              container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání nemovitostí: ${propError.message || JSON.stringify(propError)}</div>`;
-              return;
-            }
-
-            if (!properties || properties.length === 0) {
-              container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
-              return;
-            }
-
-            const table = createRelatedEntitiesTable(
-              properties,
-              [
-                { 
-                  label: 'Název', 
-                  field: 'nazev',
-                  render: (val, row) => `<strong>${val || 'Bez názvu'}</strong>`
-                },
-                { 
-                  label: 'Adresa', 
-                  field: 'ulice',
-                  render: (val, row) => `${val || ''} ${row.cislo_popisne || ''}, ${row.mesto || ''}`
-                },
-                { 
-                  label: 'Typ', 
-                  field: 'typ_nemovitosti',
-                  render: (val) => {
-                    const typeLabels = {
-                      'bytovy_dum': 'Bytový dům',
-                      'rodinny_dum': 'Rodinný dům',
-                      'kancelar': 'Kancelář',
-                      'obchod': 'Obchod',
-                      'sklad': 'Sklad',
-                      'jina_nemovitost': 'Jiná nemovitost'
-                    };
-                    return typeLabels[val] || val || '-';
-                  }
-                },
-                { 
-                  label: 'Vytvořeno', 
-                  field: 'created_at',
-                  render: (val) => val ? new Date(val).toLocaleDateString('cs-CZ') : '-'
-                }
-              ],
-              {
-                emptyMessage: 'Žádné nemovitosti',
-                onRowClick: (row) => {
-                  navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`);
-                },
-                className: 'cursor-pointer'
-              }
-            );
-
-            container.innerHTML = '';
-            container.appendChild(table);
-          } catch (e) {
-            container.innerHTML = `<div class="text-red-600 p-4">Výjimka při načítání: ${e.message || e}</div>`;
-          }
-        }
-      }
-    ];
-
-    // vykreslíme tabs (ponecháme ostatní chování bez změn)
-    renderTabs(tabsContainer, tabs, { defaultTab: 0 });
-  } catch (e) {
-    // ticho v případě chyb vykreslení tabů (nepřepisujeme UI)
-    console.error('Chyba při přidávání Nemovitosti záložky:', e);
-  }
-  // ------- END: Přidané vykreslení záložky Nemovitosti -------
 
   // common actions (save, archive, history etc.)
   const myRole = window.currentUserRole || 'admin';
