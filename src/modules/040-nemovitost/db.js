@@ -290,7 +290,7 @@ export async function restoreProperty(id) {
       return { data: null, error };
     }
     
-    return { data: null, error: null };
+    return { data, error: null };
   } catch (err) {
     console.error('Exception in restoreProperty:', err);
     return { data: null, error: err };
@@ -360,7 +360,7 @@ export async function getUnit(id) {
     return { data, error: null };
   } catch (err) {
     console.error('Exception in getUnit:', err);
-    return { data; null, error: err };
+    return { data: null, error: err };
   }
 }
 
