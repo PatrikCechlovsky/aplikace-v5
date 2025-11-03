@@ -120,7 +120,7 @@ export async function listProperties(options = {}) {
     }
     
     // Filter by landlord if specified
-    // Note: Using pronajimatel_id (not vlastnik_id) as per DB schema
+    // NOTE: DB column is named pronajimatel_id (not vlastnik_id) — use correct column name.
     if (landlordId) {
       query = query.eq('pronajimatel_id', landlordId);
     }
@@ -176,7 +176,6 @@ export async function getProperty(id) {
  */
 export async function getPropertyWithOwner(id) {
   try {
-    // Note: Using pronajimatel_id (not vlastnik_id) as per DB schema
     const { data, error } = await supabase
       .from('properties')
       .select(`
@@ -291,7 +290,7 @@ export async function restoreProperty(id) {
       return { data: null, error };
     }
     
-    return { data, error: null };
+    return { data: null, error: null };
   } catch (err) {
     console.error('Exception in restoreProperty:', err);
     return { data: null, error: err };
@@ -361,7 +360,7 @@ export async function getUnit(id) {
     return { data, error: null };
   } catch (err) {
     console.error('Exception in getUnit:', err);
-    return { data: null, error: err };
+    return { data; null, error: err };
   }
 }
 
@@ -373,7 +372,6 @@ export async function getUnit(id) {
 export async function getUnitWithDetails(id) {
   try {
     // Get unit with property
-    // Note: Using pronajimatel_id (not vlastnik_id) as per DB schema
     const { data: unit, error: unitError } = await supabase
       .from('units')
       .select(`
