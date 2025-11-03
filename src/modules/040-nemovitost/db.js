@@ -376,7 +376,7 @@ export async function getUnitWithDetails(id) {
       .from('units')
       .select(`
         *,
-        property:properties!nemovitost_id(
+        property:properties!fk_units_nemovitost(
           id, 
           nazev, 
           ulice, 
