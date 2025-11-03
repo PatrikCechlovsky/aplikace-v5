@@ -180,7 +180,7 @@ export async function getPropertyWithOwner(id) {
       .from('properties')
       .select(`
         *,
-        owner:subjects!pronajimatel_id(id, display_name, primary_email, primary_phone, role)
+        owner:subjects!fk_properties_pronajimatel(id, display_name, primary_email, primary_phone, role)
       `)
       .eq('id', id)
       .single();
@@ -382,7 +382,7 @@ export async function getUnitWithDetails(id) {
           ulice, 
           mesto, 
           psc,
-          owner:subjects!pronajimatel_id(id, display_name, primary_email, primary_phone)
+          owner:subjects!fk_properties_pronajimatel(id, display_name, primary_email, primary_phone)
         )
       `)
       .eq('id', id)
