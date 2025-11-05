@@ -5,6 +5,8 @@ import { renderCommonActions } from '/src/ui/commonActions.js';
 import { navigateTo } from '/src/app.js';
 import { listUnitTypes } from '/src/modules/040-nemovitost/db.js';
 import { supabase } from '/src/supabase.js';
+import { showAttachmentsModal } from '/src/ui/attachments.js';
+import { getUserPermissions } from '/src/security/permissions.js';
 
 function _escapeHtml(s = '') {
   return ('' + s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -17,6 +19,8 @@ export async function render(root, params = {}) {
   const { type, showArchived } = qs;
   const filterType = type || null;
   const includeArchived = (showArchived === 'true' || showArchived === true) ? true : false;
+  
+  let selectedRow = null;
 
   try {
     setBreadcrumb(document.getElementById('crumb'), [
@@ -155,19 +159,31 @@ export async function render(root, params = {}) {
           </label>
         </div>
       `,
+      onRowSelect: row => {
+        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
+        drawActions();
+      },
       onRowDblClick: row => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`)
     }
   });
+    const ca = document.getElementById('commonactions');
+    if (!ca) return;
+    const hasSel = !!selectedRow;
+    const userRole = window.currentUserRole || 'admin';
+    renderCommonActions(ca, {
+      moduleActions: ['add', 'edit', 'attach', 'refresh', 'history'],
+      userRole,
+      handlers: {
+        onAdd: () => navigateTo('#/m/040-nemovitost/f/unit-chooser'),
+        onEdit: hasSel ? () => navigateTo(`#/m/040-nemovitost/f/unit-edit?id=${selectedRow.id}`) : undefined,
+        onAttach: hasSel ? () => showAttachmentsModal({ entity: 'units', entityId: selectedRow.id }) : undefined,
+        onRefresh: () => render(root, params),
+        onHistory: hasSel ? () => alert('Historie jednotky - implementovat') : undefined
+      }
+    });
+  }
 
-  // Common actions
-  renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['add', 'refresh'],
-    userRole: window.currentUserRole || 'admin',
-    handlers: {
-      onAdd: () => navigateTo('#/m/040-nemovitost/f/unit-chooser'),
-      onRefresh: () => render(root, params)
-    }
-  });
+  drawActions();
 
   // Handle archived checkbox toggle
   const tableRoot = root.querySelector('#units-table');
