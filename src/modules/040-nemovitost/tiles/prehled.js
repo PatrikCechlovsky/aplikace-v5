@@ -3,6 +3,8 @@ import { renderTable } from '/src/ui/table.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
 import { navigateTo } from '/src/app.js';
 import { listProperties, listPropertyTypes } from '/src/modules/040-nemovitost/db.js';
+import { showAttachmentsModal } from '/src/ui/attachments.js';
+import { getUserPermissions } from '/src/security/permissions.js';
 
 // jednoduchá escape utilka
 function _escapeHtml(s = '') {
@@ -16,6 +18,8 @@ export async function render(root, params = {}) {
   const { type, showArchived } = qs;
   const filterType = type || null;
   const includeArchived = (showArchived === 'true' || showArchived === true) ? true : false;
+  
+  let selectedRow = null;
 
   try {
     setBreadcrumb(document.getElementById('crumb'), [
@@ -105,19 +109,33 @@ export async function render(root, params = {}) {
           <button id="btn-new-unit" title="Nová jednotka" class="px-3 py-1 bg-green-600 text-white rounded">Nová jednotka</button>
         </div>
       `,
+      onRowSelect: row => {
+        selectedRow = (selectedRow && selectedRow.id === row.id) ? null : row;
+        drawActions();
+      },
       onRowDblClick: row => navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`)
     }
   });
 
-  // Common actions (Add / Refresh)
-  renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['add', 'refresh'],
-    userRole: window.currentUserRole || 'admin',
-    handlers: {
-      onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser'),
-      onRefresh: () => render(root, params)
-    }
-  });
+  function drawActions() {
+    const ca = document.getElementById('commonactions');
+    if (!ca) return;
+    const hasSel = !!selectedRow;
+    const userRole = window.currentUserRole || 'admin';
+    renderCommonActions(ca, {
+      moduleActions: ['add', 'edit', 'attach', 'refresh', 'history'],
+      userRole,
+      handlers: {
+        onAdd: () => navigateTo('#/m/040-nemovitost/f/chooser'),
+        onEdit: hasSel ? () => navigateTo(`#/m/040-nemovitost/f/edit?id=${selectedRow.id}`) : undefined,
+        onAttach: hasSel ? () => showAttachmentsModal({ entity: 'properties', entityId: selectedRow.id }) : undefined,
+        onRefresh: () => render(root, params),
+        onHistory: hasSel ? () => alert('Historie nemovitosti - implementovat') : undefined
+      }
+    });
+  }
+
+  drawActions();
 
   // Delegace kliků z custom header / table area
   const tableRoot = root.querySelector('#properties-table');

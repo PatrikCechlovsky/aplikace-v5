@@ -313,6 +313,53 @@ export async function unassignSubjectFromProfile(subjectId, profileId = null) {
   }
 }
 
+/**
+ * List subject types with their colors and icons
+ * @returns {Promise<{data: Array, error: Object}>}
+ */
+export async function listSubjectTypes() {
+  try {
+    const { data, error } = await supabase
+      .from('subject_types')
+      .select('slug,label,color,icon,sort_order')
+      .order('sort_order', { ascending: true });
+    
+    if (error) {
+      console.error('Error listing subject types:', error);
+      return { data: null, error };
+    }
+    
+    return { data: data || [], error: null };
+  } catch (err) {
+    console.error('Exception in listSubjectTypes:', err);
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Create or update subject type
+ * @param {Object} typeData - Type data (slug, label, color, icon, sort_order)
+ * @returns {Promise<{data: Object, error: Object}>}
+ */
+export async function upsertSubjectType({ slug, label, color, icon, sort_order }) {
+  try {
+    const { data, error } = await supabase
+      .from('subject_types')
+      .upsert({ slug, label, color, icon, sort_order: sort_order || 0 }, { onConflict: 'slug' })
+      .select();
+    
+    if (error) {
+      console.error('Error upserting subject type:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in upsertSubjectType:', err);
+    return { data: null, error: err };
+  }
+}
+
 export default {
   listSubjects,
   getSubject,
@@ -322,5 +369,7 @@ export default {
   archiveSubject,
   unarchiveSubject,
   assignSubjectToProfile,
-  unassignSubjectFromProfile
+  unassignSubjectFromProfile,
+  listSubjectTypes,
+  upsertSubjectType
 };
