@@ -360,6 +360,82 @@ export async function upsertSubjectType({ slug, label, color, icon, sort_order }
   }
 }
 
+/**
+ * Get counts of subjects by type and role
+ * @param {Object} options - Options for filtering
+ * @param {string} options.role - Filter by role (pronajimatel, najemnik, etc.)
+ * @param {boolean} options.showArchived - Include archived subjects
+ * @returns {Promise<{data: Array, error: Object}>} Array of {type, count}
+ */
+export async function getSubjectsCountsByType(options = {}) {
+  const { role, showArchived = false } = options;
+  
+  try {
+    let query = supabase
+      .from('subjects')
+      .select('typ_subjektu');
+    
+    // Filter by role if specified
+    if (role) {
+      query = query.eq('role', role);
+    }
+    
+    // Filter archived
+    if (!showArchived) {
+      query = query.or('archived.is.null,archived.eq.false');
+    }
+    
+    const { data: subjects, error } = await query;
+    
+    if (error) {
+      console.error('Error getting subjects counts:', error);
+      return { data: null, error };
+    }
+    
+    // Count by type
+    const counts = {};
+    (subjects || []).forEach(subject => {
+      const type = subject.typ_subjektu || 'unknown';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    
+    // Convert to array
+    const result = Object.entries(counts).map(([type, count]) => ({
+      type,
+      count
+    }));
+    
+    return { data: result, error: null };
+  } catch (err) {
+    console.error('Exception in getSubjectsCountsByType:', err);
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Delete a subject type
+ * @param {string} slug - Type slug to delete
+ * @returns {Promise<{data: Object, error: Object}>}
+ */
+export async function deleteSubjectType(slug) {
+  try {
+    const { error } = await supabase
+      .from('subject_types')
+      .delete()
+      .eq('slug', slug);
+    
+    if (error) {
+      console.error('Error deleting subject type:', error);
+      return { data: null, error };
+    }
+    
+    return { data: { slug }, error: null };
+  } catch (err) {
+    console.error('Exception in deleteSubjectType:', err);
+    return { data: null, error: err };
+  }
+}
+
 export default {
   listSubjects,
   getSubject,
@@ -371,5 +447,7 @@ export default {
   assignSubjectToProfile,
   unassignSubjectFromProfile,
   listSubjectTypes,
-  upsertSubjectType
+  upsertSubjectType,
+  deleteSubjectType,
+  getSubjectsCountsByType
 };
