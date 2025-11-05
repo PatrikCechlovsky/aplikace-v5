@@ -1,7 +1,8 @@
 // Manifest modulu 040 - Nemovitosti
-// Dynamicky generuje tiles pro každý typ nemovitosti pouze pokud existuje alespoň 1 záznam.
+// Dynamicky generuje hierarchické tiles pro nemovitosti a jednotky podle typů
 
-import { listPropertyTypes, listProperties } from './db.js';
+import { listPropertyTypes, listProperties, listUnitTypes } from './db.js';
+import { supabase } from '/src/supabase.js';
 
 // Normalize slug to match filenames in tiles/ (lowercase, underscores -> dashes)
 function normalizeSlug(slug) {
@@ -10,36 +11,89 @@ function normalizeSlug(slug) {
 }
 
 export async function getManifest() {
-  const tiles = [
-    { id: 'prehled', title: 'Přehled', icon: 'list' } // stále vždy dostupné
-  ];
+  // Přehled nemovitostí - collapsible with property type children
+  const prehledNemovitosti = {
+    id: 'prehled',
+    title: 'Přehled nemovitostí',
+    icon: 'list',
+    collapsible: true,
+    children: []
+  };
+
+  // Přehled jednotek - collapsible with unit type children
+  const prehledJednotek = {
+    id: 'jednotky',
+    title: 'Přehled jednotek',
+    icon: 'grid',
+    collapsible: true,
+    children: []
+  };
 
   try {
-    // Načti definované typy z DB (pokud modul podporuje)
-    const { data: types = [] } = await listPropertyTypes();
+    // Načti definované typy nemovitostí z DB
+    const { data: propertyTypes = [] } = await listPropertyTypes();
     // Pro každý typ zkontroluj, jestli existuje alespoň jeden záznam a spočti počet
-    for (const t of types) {
+    for (const t of propertyTypes) {
       try {
-        const { data: items = [] } = await listProperties({ type: t.slug, limit: 500 });
-        const count = Array.isArray(items) ? items.length : 0;
+        const { data: items = [] } = await listProperties({ type: t.slug, showArchived: false, limit: 500 });
+        const count = Array.isArray(items) ? items.filter(item => !item.archived).length : 0;
         if (count > 0) {
           // Normalize slug => match filename convention (e.g. admin-budova.js)
           const id = normalizeSlug(t.slug || t.id || t.name);
 
-          tiles.push({
+          prehledNemovitosti.children.push({
             id: id,
             title: `${t.label || t.slug} (${count})`,
             icon: t.icon || 'building',
-            count: count
+            count: count,
+            type: t.slug
           });
         }
       } catch (e) {
-        // Pokud dotaz na properties pro tento typ selže, ignoruj a pokračuj
+        console.error(`Error counting property type ${t.slug}:`, e);
       }
     }
   } catch (e) {
-    // pokud načtení typů selže, vynecháme dynamické položky (fallback je jen 'prehled')
+    console.error('Error loading property types:', e);
   }
+
+  try {
+    // Načti definované typy jednotek z DB
+    const { data: unitTypes = [] } = await listUnitTypes();
+    // Pro každý typ zkontroluj počet jednotek
+    for (const t of unitTypes) {
+      try {
+        let query = supabase
+          .from('units')
+          .select('id, typ_jednotky, archived')
+          .eq('typ_jednotky', t.slug)
+          .limit(500);
+        
+        // Filter out archived
+        query = query.or('archived.is.null,archived.eq.false');
+        
+        const { data: items = [] } = await query;
+        const count = Array.isArray(items) ? items.length : 0;
+        
+        if (count > 0) {
+          const id = normalizeSlug(t.slug || t.id || t.name);
+          prehledJednotek.children.push({
+            id: `unit-${id}`,
+            title: `${t.label || t.slug} (${count})`,
+            icon: t.icon || 'box',
+            count: count,
+            type: t.slug
+          });
+        }
+      } catch (e) {
+        console.error(`Error counting unit type ${t.slug}:`, e);
+      }
+    }
+  } catch (e) {
+    console.error('Error loading unit types:', e);
+  }
+
+  const tiles = [prehledNemovitosti, prehledJednotek];
 
   return {
     id: '040-nemovitost',
@@ -48,8 +102,8 @@ export async function getManifest() {
     defaultTile: 'prehled',
     tiles,
     forms: [
-      { id: 'chooser', title: 'Nová nemovitost', icon: 'add', showInSidebar: true },
-      { id: 'unit-chooser', title: 'Nová jednotka', icon: 'add', showInSidebar: true },
+      { id: 'chooser', title: 'Nová nemovitost', icon: 'add', showInSidebar: false },
+      { id: 'unit-chooser', title: 'Nová jednotka', icon: 'add', showInSidebar: false },
       { id: 'property-type', title: 'Správa typů nemovitostí', icon: 'settings', showInSidebar: true },
       { id: 'unit-type', title: 'Správa typů jednotek', icon: 'settings', showInSidebar: true },
       { id: 'edit', title: 'Editace nemovitosti', icon: 'edit', showInSidebar: false },
