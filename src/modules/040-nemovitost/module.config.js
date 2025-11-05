@@ -39,8 +39,14 @@ export async function getManifest() {
     // Načti definované typy nemovitostí z DB
     const { data: propertyTypes = [] } = await listPropertyTypes();
     // Get counts efficiently using the new API
-    const { data: countData = [] } = await getPropertiesCountsByType({ showArchived: false });
-    const countsMap = Object.fromEntries(countData.map(c => [c.type, c.count]));
+    const { data: countData, error: countError } = await getPropertiesCountsByType({ showArchived: false });
+    
+    if (countError) {
+      console.error('Error loading property counts:', countError);
+      // Continue with empty counts on error
+    }
+    
+    const countsMap = Object.fromEntries((countData || []).map(c => [c.type, c.count]));
     
     // Pro každý typ zkontroluj, jestli existuje alespoň jeden záznam a spočti počet
     for (const t of propertyTypes) {
@@ -66,8 +72,14 @@ export async function getManifest() {
     // Načti definované typy jednotek z DB
     const { data: unitTypes = [] } = await listUnitTypes();
     // Get counts efficiently using the new API
-    const { data: countData = [] } = await getUnitsCountsByType({ showArchived: false });
-    const countsMap = Object.fromEntries(countData.map(c => [c.type, c.count]));
+    const { data: countData, error: countError } = await getUnitsCountsByType({ showArchived: false });
+    
+    if (countError) {
+      console.error('Error loading unit counts:', countError);
+      // Continue with empty counts on error
+    }
+    
+    const countsMap = Object.fromEntries((countData || []).map(c => [c.type, c.count]));
     
     // Pro každý typ zkontroluj počet jednotek
     for (const t of unitTypes) {

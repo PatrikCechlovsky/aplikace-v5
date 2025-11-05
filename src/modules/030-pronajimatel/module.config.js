@@ -15,11 +15,17 @@ export async function getManifest() {
   // Fetch subject types from database and counts efficiently
   try {
     const { data: subjectTypes = [] } = await listSubjectTypes();
-    const { data: countData = [] } = await getSubjectsCountsByType({ 
+    const { data: countData, error: countError } = await getSubjectsCountsByType({ 
       role: 'pronajimatel', 
       showArchived: false 
     });
-    const countsMap = Object.fromEntries(countData.map(c => [c.type, c.count]));
+    
+    if (countError) {
+      console.error('Error loading subject counts:', countError);
+      // Continue with empty counts on error
+    }
+    
+    const countsMap = Object.fromEntries((countData || []).map(c => [c.type, c.count]));
     
     // Add types with counts to sidebar
     for (const typeConfig of subjectTypes) {

@@ -521,7 +521,7 @@ export async function getUnitsCountsByType(options = {}) {
     // Count by type
     const counts = {};
     (units || []).forEach(unit => {
-      const type = unit.typ_jednotky || 'unknown';
+      const type = unit.typ_jednotky || '_unclassified';
       counts[type] = (counts[type] || 0) + 1;
     });
     
@@ -567,7 +567,7 @@ export async function getPropertiesCountsByType(options = {}) {
     // Count by type
     const counts = {};
     (properties || []).forEach(prop => {
-      const type = prop.typ_nemovitosti || 'unknown';
+      const type = prop.typ_nemovitosti || '_unclassified';
       counts[type] = (counts[type] || 0) + 1;
     });
     

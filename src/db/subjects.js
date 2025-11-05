@@ -395,7 +395,7 @@ export async function getSubjectsCountsByType(options = {}) {
     // Count by type
     const counts = {};
     (subjects || []).forEach(subject => {
-      const type = subject.typ_subjektu || 'unknown';
+      const type = subject.typ_subjektu || '_unclassified';
       counts[type] = (counts[type] || 0) + 1;
     });
     
