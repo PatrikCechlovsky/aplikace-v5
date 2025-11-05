@@ -166,6 +166,8 @@ export async function render(root, params = {}) {
       onRowDblClick: row => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`)
     }
   });
+
+  function drawActions() {
     const ca = document.getElementById('commonactions');
     if (!ca) return;
     const hasSel = !!selectedRow;

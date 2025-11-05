@@ -32,7 +32,7 @@ export async function getManifest() {
           showArchived: false,
           limit: 500
         });
-        const count = Array.isArray(items) ? items.filter(item => !item.archived).length : 0;
+        const count = Array.isArray(items) ? items.length : 0;
         
         if (count > 0) {
           tiles[0].children.push({

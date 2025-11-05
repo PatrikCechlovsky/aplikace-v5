@@ -117,8 +117,6 @@ export async function render(root, params = {}) {
     }
   });
 
-  let selectedRow = null;
-
   function drawActions() {
     const ca = document.getElementById('commonactions');
     if (!ca) return;

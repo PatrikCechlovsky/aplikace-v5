@@ -36,7 +36,7 @@ export async function getManifest() {
     for (const t of propertyTypes) {
       try {
         const { data: items = [] } = await listProperties({ type: t.slug, showArchived: false, limit: 500 });
-        const count = Array.isArray(items) ? items.filter(item => !item.archived).length : 0;
+        const count = Array.isArray(items) ? items.length : 0;
         if (count > 0) {
           // Normalize slug => match filename convention (e.g. admin-budova.js)
           const id = normalizeSlug(t.slug || t.id || t.name);
