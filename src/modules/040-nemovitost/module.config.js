@@ -22,7 +22,7 @@ export async function getManifest() {
 
   // Přehled jednotek - collapsible with unit type children
   const prehledJednotek = {
-    id: 'jednotky',
+    id: 'unit-prehled',
     title: 'Přehled jednotek',
     icon: 'grid',
     collapsible: true,
