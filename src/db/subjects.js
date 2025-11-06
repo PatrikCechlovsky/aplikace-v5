@@ -326,13 +326,14 @@ export async function listSubjectTypes() {
     
     if (error) {
       console.error('Error listing subject types:', error);
-      return { data: null, error };
+      // Return empty array for data to avoid callers crashing on null
+      return { data: [], error };
     }
     
     return { data: data || [], error: null };
   } catch (err) {
     console.error('Exception in listSubjectTypes:', err);
-    return { data: null, error: err };
+    return { data: [], error: err };
   }
 }
 
@@ -389,7 +390,8 @@ export async function getSubjectsCountsByType(options = {}) {
     
     if (error) {
       console.error('Error getting subjects counts:', error);
-      return { data: null, error };
+      // return empty array for data to avoid callers crashing
+      return { data: [], error };
     }
     
     // Count by type
@@ -408,7 +410,7 @@ export async function getSubjectsCountsByType(options = {}) {
     return { data: result, error: null };
   } catch (err) {
     console.error('Exception in getSubjectsCountsByType:', err);
-    return { data: null, error: err };
+    return { data: [], error: err };
   }
 }
 
