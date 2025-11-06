@@ -1,3 +1,4 @@
+// 040-nemovitost/forms/edit.js = nejspíš form.js
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
