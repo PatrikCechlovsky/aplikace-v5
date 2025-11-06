@@ -304,11 +304,14 @@ export async function render(root) {
   // Render tabs
   renderTabs(tabsContainer, tabs, { defaultTab: 0 });
 
-  // common actions
+  // common actions - per requirements: remove 'refresh', add 'wizard'
   const myRole = window.currentUserRole || 'admin';
   const handlers = {
     onEdit: () => navigateTo(`#/m/050-najemnik/f/form?id=${id}&type=${type}`),
     onAttach: () => id && window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: id }),
+    onWizard: () => {
+      alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
+    },
     onHistory: () => {
       if (!id) { alert('Historie dostupná po uložení'); return; }
       showHistoryModal(async (subjectId) => {
@@ -324,7 +327,7 @@ export async function render(root) {
 
   // render common actions in header area
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['edit','attach','archive','history'],
+    moduleActions: ['edit','attach','wizard','archive','history'],
     userRole: myRole,
     handlers
   });

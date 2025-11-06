@@ -114,8 +114,8 @@ export async function render(root, params) {
 
   const myRole = window.currentUserRole || 'admin';
 
-  // --- Akce v liště --- (Remove 'refresh', add 'history' according to requirements)
-  const moduleActions = ['add', 'edit', 'attach', 'archive', 'history'];
+  // --- Akce v liště --- (Per requirements: remove 'refresh', add 'wizard')
+  const moduleActions = ['add', 'edit', 'attach', 'wizard', 'archive', 'history'];
   const handlers = {};
 
   handlers.onAdd = () => navigateTo(`#/m/040-nemovitost/f/unit-chooser`);
@@ -132,6 +132,11 @@ export async function render(root, params) {
 
   // Přílohy
   handlers.onAttach = () => showAttachmentsModal({ entity: 'units', entityId: id });
+
+  // Průvodce
+  handlers.onWizard = () => {
+    alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
+  };
 
   // Historie změn
   handlers.onHistory = () => alert('Historie - implementovat');
