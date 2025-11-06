@@ -128,11 +128,12 @@ export async function render(root) {
           }
           
           const allContracts = contracts || [];
-          let filteredContracts = allContracts.filter(c => !c.archived);
           
-          const tableDetail = createTableWithDetail({
-            data: filteredContracts,
-            columns: [
+          // Function to render the table with current filter
+          const renderContractsTable = (showArchived) => {
+            const filteredContracts = showArchived ? allContracts : allContracts.filter(c => !c.archived);
+            
+            const columns = [
               { 
                 label: 'Číslo smlouvy', 
                 field: 'cislo_smlouvy',
@@ -160,41 +161,36 @@ export async function render(root) {
                 field: 'property',
                 render: (v) => v ? escapeHtml(`${v.nazev || '-'}`) : '-'
               }
-            ],
-            emptyMessage: 'Není přiřazeno',
-            showArchivedCheckbox: true,
-            onArchivedFilterChange: async (showArchived) => {
-              filteredContracts = showArchived ? allContracts : allContracts.filter(c => !c.archived);
-              // Re-render
-              container.innerHTML = '';
-              const newTable = createTableWithDetail({
-                data: filteredContracts,
-                columns: tableDetail._columns,
-                emptyMessage: 'Není přiřazeno',
-                showArchivedCheckbox: true,
-                onArchivedFilterChange: tableDetail._onArchivedFilterChange,
-                detailFields: tableDetail._detailFields,
-                moduleLink: '#/m/060-smlouva/f/detail?id=:id'
-              });
-              container.appendChild(newTable);
-            },
-            detailFields: [
+            ];
+            
+            const detailFields = [
               { key: 'cislo_smlouvy', label: 'Číslo smlouvy', type: 'text' },
               { key: 'nazev', label: 'Název', type: 'text' },
               { key: 'stav', label: 'Stav', type: 'text' },
               { key: 'datum_zacatek', label: 'Datum začátku', type: 'date' },
               { key: 'datum_konec', label: 'Datum konce', type: 'date' }
-            ],
-            moduleLink: '#/m/060-smlouva/f/detail?id=:id'
-          });
+            ];
+            
+            const tableDetail = createTableWithDetail({
+              data: filteredContracts,
+              columns,
+              emptyMessage: 'Není přiřazeno',
+              showArchivedCheckbox: true,
+              onArchivedFilterChange: (checked) => {
+                // Re-render with new filter state
+                container.innerHTML = '';
+                renderContractsTable(checked);
+              },
+              detailFields,
+              moduleLink: '#/m/060-smlouva/f/detail?id=:id'
+            });
+            
+            container.appendChild(tableDetail);
+          };
           
-          // Store config for re-render
-          tableDetail._columns = tableDetail.columns;
-          tableDetail._onArchivedFilterChange = tableDetail.onArchivedFilterChange;
-          tableDetail._detailFields = tableDetail.detailFields;
-          
+          // Initial render with archived hidden
           container.innerHTML = '';
-          container.appendChild(tableDetail);
+          renderContractsTable(false);
         } catch (e) {
           container.innerHTML = `<div class="text-red-600 p-4">${escapeHtml(e.message)}</div>`;
         }

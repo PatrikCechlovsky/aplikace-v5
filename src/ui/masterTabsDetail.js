@@ -59,13 +59,20 @@ export function createTableWithDetail(config) {
     const filterDiv = document.createElement('div');
     filterDiv.className = 'mb-3 flex items-center gap-2';
     
+    // Use crypto.randomUUID if available, fallback to timestamp-based ID
+    const checkboxId = 'show-archived-' + (
+      typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Date.now().toString(36) + Math.random().toString(36).substr(2)
+    );
+    
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = 'show-archived-' + Math.random().toString(36).substr(2, 9);
+    checkbox.id = checkboxId;
     checkbox.className = 'rounded border-gray-300';
     
     const label = document.createElement('label');
-    label.htmlFor = checkbox.id;
+    label.htmlFor = checkboxId;
     label.className = 'text-sm text-gray-700 cursor-pointer';
     label.textContent = 'Zobrazit archivované';
     
@@ -186,7 +193,8 @@ export function createTableWithDetail(config) {
       
       // Select first row by default
       if (index === 0) {
-        setTimeout(() => handleRowClick(), 0);
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => handleRowClick());
       }
     });
   }
