@@ -82,6 +82,29 @@ export async function render(root) {
   // Define tabs according to requirements from Modul 030.docx
   const tabs = [
     {
+      label: 'Detail nájemníka',
+      icon: '👤',
+      content: (container) => {
+        // Render the form in this tab
+        const sections = [
+          { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
+          { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
+        ];
+
+        renderForm(container, fields, data, null, {
+          readOnly: true,
+          showSubmit: false,
+          layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
+          sections
+        });
+      }
+    },
+    {
+      label: 'Účty',
+      icon: '💳',
+      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty nájemníka</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
+    },
+    {
       label: 'Pronajímatel',
       icon: '🏠',
       content: async (container) => {
@@ -129,11 +152,6 @@ export async function render(root) {
       }
     },
     {
-      label: '—',
-      icon: '📌',
-      content: '<div class="p-4 text-gray-500">Rezervováno pro budoucí použití</div>'
-    },
-    {
       label: 'Jednotky',
       icon: '📦',
       content: async (container) => {
@@ -172,29 +190,6 @@ export async function render(root) {
         container.innerHTML = '';
         container.appendChild(table);
       }
-    },
-    {
-      label: 'Detail nájemníka',
-      icon: '👤',
-      content: (container) => {
-        // Render the form in this tab
-        const sections = [
-          { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
-          { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
-        ];
-
-        renderForm(container, fields, data, null, {
-          readOnly: true,
-          showSubmit: false,
-          layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
-          sections
-        });
-      }
-    },
-    {
-      label: 'Účty nájemníka',
-      icon: '💳',
-      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty nájemníka</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
     },
     {
       label: 'Smlouvy',
