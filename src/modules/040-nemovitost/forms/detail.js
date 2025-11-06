@@ -8,13 +8,11 @@ import { getPropertyWithOwner, listUnits, archiveProperty } from '/src/modules/0
 import { showAttachmentsModal } from '/src/ui/attachments.js';
 import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js';
 
-// Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
 }
 
-// Pomocná funkce pro formátování českého data+času
 function formatCzechDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -30,7 +28,6 @@ export async function render(root, params) {
     return;
   }
 
-  // Načtení dat nemovitosti z DB s vlastníkem
   const { data, error } = await getPropertyWithOwner(id);
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání nemovitosti: ${error.message}</div>`;
@@ -41,7 +38,6 @@ export async function render(root, params) {
     return;
   }
   
-  // Upravy dat: pronajimatel, prilohy/vybaveni atd.
   data.pronajimatel = data.pronajimatel_nazev || data.pronajimatel_name || data.pronajimatel_id || null;
   if (data.prilohy && typeof data.prilohy !== 'string') {
     try { data.prilohy = JSON.stringify(data.prilohy); } catch(e){ }
@@ -50,7 +46,6 @@ export async function render(root, params) {
     try { data.vybaveni = Array.isArray(data.vybaveni) ? data.vybaveni.join(', ') : JSON.stringify(data.vybaveni); } catch(e){ }
   }
 
-  // Formátování datumů pro readonly pole a nahrazení null za '--'
   for (const f of FIELDS) {
     if (f.readOnly || f.format) {
       if (f.format && data[f.key]) {
@@ -64,7 +59,6 @@ export async function render(root, params) {
     }
   }
   
-  // Convert archived boolean to label
   data.archivedLabel = data.archived ? 'Ano' : 'Ne';
   
   try {
@@ -76,10 +70,7 @@ export async function render(root, params) {
     ]);
   } catch (e) {}
 
-  // Create main container
   root.innerHTML = '';
-  
-  // Create commonactions container at the top
   const commonActionsDiv = document.createElement('div');
   commonActionsDiv.id = 'commonactions';
   commonActionsDiv.className = 'mb-4';
@@ -87,21 +78,16 @@ export async function render(root, params) {
   
   const mainContainer = document.createElement('div');
   mainContainer.className = 'p-4';
-
-  // Create tabs container
   const tabsContainer = document.createElement('div');
   tabsContainer.className = 'mt-6';
   mainContainer.appendChild(tabsContainer);
-
   root.appendChild(mainContainer);
 
-  // Define tabs with main form in first tab
   const tabs = [
     {
       label: 'Základní údaje',
       icon: '🏢',
       content: (container) => {
-        // Render the form in this tab
         const sections = [
           { id: 'zakladni', label: 'Základní údaje', fields: [
             'nazev', 'typ_nemovitosti', 'ulice', 'cislo_popisne', 'cislo_orientacni', 'mesto', 'psc',
@@ -111,13 +97,7 @@ export async function render(root, params) {
             'archivedLabel', 'poznamky', 'vybaveni', 'prilohy', 'pronajimatel', 'updated_at', 'updated_by', 'created_at'
           ] },
         ];
-
-        renderForm(container, FIELDS, data, async () => true, {
-          readOnly: true,
-          showSubmit: false,
-          layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
-          sections
-        });
+        renderForm(container, FIELDS, data, async () => true, { readOnly: true, showSubmit: false, layout: { columns: { base:1, md:2, xl:3 }, density: 'compact' }, sections });
       }
     },
     {
@@ -155,80 +135,24 @@ export async function render(root, params) {
       badge: null,
       content: async (container) => {
         container.innerHTML = '<div class="text-center py-4">Načítání jednotek...</div>';
-        
         try {
-          // Load units for this property
           const { data: units, error: unitsError } = await listUnits(id);
-          
           if (unitsError) {
             container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání jednotek: ${unitsError.message}</div>`;
             return;
           }
-
           container.innerHTML = '';
-          
           if (!units || units.length === 0) {
             container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
             return;
           }
-
-          // Create table with units
-          const table = createRelatedEntitiesTable(
-            units,
-            [
-              { 
-                label: 'Označení', 
-                field: 'oznaceni',
-                render: (val) => `<strong>${val || 'Bez označení'}</strong>`
-              },
-              { 
-                label: 'Typ', 
-                field: 'typ_jednotky',
-                render: (val) => {
-                  const typeLabels = {
-                    'byt': 'Byt',
-                    'kancelar': 'Kancelář',
-                    'obchod': 'Obchod',
-                    'sklad': 'Sklad',
-                    'garaz': 'Garáž',
-                    'jina_jednotka': 'Jiná'
-                  };
-                  return typeLabels[val] || val || '-';
-                }
-              },
-              { 
-                label: 'Stav', 
-                field: 'stav',
-                render: (val) => {
-                  const statusLabels = {
-                    'volna': '🟢 Volná',
-                    'obsazena': '🔴 Obsazená',
-                    'rezervovana': '🟡 Rezervovaná',
-                    'rekonstrukce': '🔧 Rekonstrukce'
-                  };
-                  return statusLabels[val] || val || '-';
-                }
-              },
-              { 
-                label: 'Plocha', 
-                field: 'plocha',
-                render: (val) => val ? `${val} m²` : '-'
-              },
-              { 
-                label: 'Nájem', 
-                field: 'mesicni_najem',
-                render: (val) => val ? `${val} Kč` : '-'
-              }
-            ],
-            {
-              emptyMessage: 'Žádné jednotky',
-              onRowClick: (row) => {
-                navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`);
-              },
-              className: 'cursor-pointer'
-            }
-          );
-
+          const table = createRelatedEntitiesTable(units, [
+            { label: 'Označení', field: 'oznaceni', render: (val) => `<strong>${val || 'Bez označení'}</strong>` },
+            { label: 'Typ', field: 'typ_jednotky', render: (val) => ({ 'byt':'Byt','kancelar':'Kancelář' }[val] || val || '-') },
+            { label: 'Stav', field: 'stav', render: (val) => ({ 'volna':'🟢 Volná','obsazena':'🔴 Obsazená' }[val] || val || '-') },
+            { label: 'Plocha', field: 'plocha', render: (val) => val ? `${val} m²` : '-' },
+            { label: 'Nájem', field: 'mesicni_najem', render: (val) => val ? `${val} Kč` : '-' }
+          ], { emptyMessage: 'Žádné jednotky', onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`), className: 'cursor-pointer' });
           container.appendChild(table);
         } catch (error) {
           container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání jednotek: ${error.message}</div>`;
@@ -242,14 +166,9 @@ export async function render(root, params) {
         container.innerHTML = `
           <div class="p-4">
             <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
-            <button 
-              id="property-attachments-btn"
-              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-              Spravovat přílohy
-            </button>
+            <button id="property-attachments-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Spravovat přílohy</button>
           </div>
         `;
-        // Add event listener safely
         const btn = container.querySelector('#property-attachments-btn');
         if (btn) {
           btn.addEventListener('click', () => {
@@ -277,24 +196,17 @@ export async function render(root, params) {
     }
   ];
 
-  // Render tabs
   renderTabs(tabsContainer, tabs, { defaultTab: 0 });
 
-  // Common actions - per requirements: remove 'refresh', add 'wizard'
   const myRole = window.currentUserRole || 'admin';
   const handlers = {
     onEdit: () => navigateTo(`#/m/040-nemovitost/f/edit?id=${id}`),
     onAttach: () => showAttachmentsModal({ entity: 'properties', entityId: id }),
-    onWizard: () => {
-      toast('Průvodce zatím není k dispozici. Tato funkce bude doplněna.', 'info');
-    },
-    onUnits: () => {
-      navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`);
-    },
+    onWizard: () => { toast('Průvodce zatím není k dispozici. Tato funkce bude doplněna.', 'info'); },
+    onUnits: () => navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`),
     onHistory: () => toast('Historie - implementovat', 'info')
   };
 
-  // Only add archive if not already archived
   if (!data.archived) {
     handlers.onArchive = async () => {
       await archiveProperty(id);
@@ -303,7 +215,6 @@ export async function render(root, params) {
     };
   }
 
-  // Render common actions
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions: ['edit', 'units', 'attach', 'wizard', 'archive', 'history'],
     userRole: myRole,
