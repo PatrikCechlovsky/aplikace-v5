@@ -131,12 +131,18 @@ export async function render(root) {
   const paymentsHelpers = await initPaymentsHelpers();
   const { listPaymentAccounts, upsertPaymentAccount, deletePaymentAccount, loadBankCodes } = paymentsHelpers;
 
+  const subjectId = id; // lock the current subject id to avoid closure leaks
   let bankCodes = [];
   let accounts = [];
   let selectedAccount = null;
 
   async function loadAccounts() {
-    const { data: accData, error } = await listPaymentAccounts({ profileId: id });
+    if (!subjectId) {
+      accounts = [];
+      renderAccounts();
+      return;
+    }
+    const { data: accData, error } = await listPaymentAccounts({ profileId: subjectId });
     accounts = (accData && Array.isArray(accData)) ? accData : [];
     renderAccounts();
   }
@@ -146,13 +152,22 @@ export async function render(root) {
   }
 
   async function renderAccounts() {
+    // Only render into the dedicated accountsHost; do not clear parent containers
     accountsHost.innerHTML = '';
+    await ensureBankCodes();
+
     const wrap = document.createElement('div');
     wrap.className = 'bg-white border rounded p-4 grid md:grid-cols-2 gap-4';
     accountsHost.appendChild(wrap);
 
     const left = document.createElement('div');
     left.className = 'min-h-[220px]';
+    wrap.appendChild(left);
+
+    const right = document.createElement('div');
+    right.className = 'bg-white border rounded p-3';
+    wrap.appendChild(right);
+
     if (!accounts.length) {
       left.innerHTML = '<div class="text-slate-500 p-3">Žádné účty.</div>';
     } else {
@@ -171,17 +186,15 @@ export async function render(root) {
           editBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             selectedAccount = a;
-            renderAccountForm(a);
+            renderAccountForm(a, right); // render into the right panel only
           });
         }
       });
       left.appendChild(listEl);
     }
-    wrap.appendChild(left);
 
-    const right = document.createElement('div'); right.className='bg-white border rounded p-3';
-    wrap.appendChild(right);
-    renderAccountForm(selectedAccount, right);
+    // initial right form (empty)
+    renderAccountForm(null, right);
   }
 
   function renderAccountForm(account = null, host = null) {
@@ -261,7 +274,7 @@ export async function render(root) {
           iban: container.querySelector('[name="acc_iban"]').value.trim() || null,
           currency: container.querySelector('[name="acc_currency"]').value,
           is_primary: !!container.querySelector('[name="acc_primary"]').checked,
-          profile_id: id
+          profile_id: subjectId
         };
         if (!payload.label || !payload.account_number || !payload.bank_code || !payload.currency) {
           return alert('Vyplňte prosím povinná pole: Popisek, Banka, Číslo účtu a Měna.');
@@ -270,6 +283,7 @@ export async function render(root) {
 
         const { data: d, error: err } = await upsertPaymentAccount(payload, window.currentUser);
         if (err) return alert('Chyba při ukládání účtu: ' + (err.message || JSON.stringify(err)));
+        // Refresh accounts safely (do not re-render parent tabs)
         await loadAccounts();
         alert('Účet uložen.');
       });
