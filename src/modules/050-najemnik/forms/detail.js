@@ -1,11 +1,4 @@
-/**
- * ============================================================================
- * Nájemník Detail View with Tabs
- * ============================================================================
- * Shows tenant details with active contracts, units, and landlords
- * ============================================================================
- */
-
+// Upravený detail.js - 050 Nájemník (přidána záložka Účty, kompatibilní s Můj účet)
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
@@ -17,7 +10,6 @@ import { listUnits } from '/src/modules/040-nemovitost/db.js';
 import { showHistoryModal } from '/src/ui/history.js';
 import TYPE_SCHEMAS from '/src/modules/050-najemnik/type-schemas.js';
 
-// Helper to parse hash params
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
@@ -30,9 +22,47 @@ function formatCzechDate(dateStr) {
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
 
+/**
+ * Accounts helpers (compatible with Můj účet)
+ * - dynamically import payments service if available
+ * - fallback to Supabase table bank_codes for list of banks
+ */
+async function initPaymentsHelpers() {
+  let payments = null;
+  let supabase = null;
+  try { payments = await import('/src/services/payments.js'); payments = payments.default || payments; } catch (e) { payments = null; }
+  try { supabase = (await import('/src/supabase.js')).supabase; } catch (e) { supabase = null; }
+
+  const listPaymentAccounts = payments && payments.listPaymentAccounts ? payments.listPaymentAccounts : (async () => ({ data: [], error: null }));
+  const upsertPaymentAccount = payments && payments.upsertPaymentAccount ? payments.upsertPaymentAccount : (async () => ({ data: null, error: new Error('upsertPaymentAccount not implemented') }));
+  const deletePaymentAccount = payments && payments.deletePaymentAccount ? payments.deletePaymentAccount : (async () => ({ data: null, error: new Error('deletePaymentAccount not implemented') }));
+
+  async function loadBankCodes() {
+    let bankCodes = [];
+    if (payments && typeof payments.listBankCodes === 'function') {
+      try {
+        const res = await payments.listBankCodes();
+        bankCodes = (res && res.data) ? res.data : [];
+        return bankCodes;
+      } catch (e) { /* ignore */ }
+    }
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('bank_codes').select('code,name').order('name', { ascending: true });
+        if (!error && Array.isArray(data)) bankCodes = data;
+      } catch (e) { /* ignore */ }
+    }
+    return bankCodes;
+  }
+
+  return { listPaymentAccounts, upsertPaymentAccount, deletePaymentAccount, loadBankCodes };
+}
+
 export async function render(root) {
-  const { id, type: qtype } = getHashParams();
-  const type = qtype || 'osoba';
+  const q = (location.hash.split('?')[1] || '');
+  const params = Object.fromEntries(new URLSearchParams(q));
+  const id = params.id;
+  const type = params.type || 'osoba';
 
   if (!id) {
     root.innerHTML = `<div class="p-4 text-red-600">Chybí ID nájemníka.</div>`;
@@ -79,13 +109,45 @@ export async function render(root) {
 
   root.appendChild(mainContainer);
 
-  // Define tabs according to requirements - "Profil" first, then other tabs
+  // prepare payments helpers for Accounts tab
+  const paymentsHelpers = await initPaymentsHelpers();
+  const { listPaymentAccounts, upsertPaymentAccount, deletePaymentAccount, loadBankCodes } = paymentsHelpers;
+
+  // Accounts view renderer for detail (read-only)
+  const accountsTabContent = async (container) => {
+    container.innerHTML = '<div class="text-center py-4">Načítání účtů...</div>';
+    try {
+      const { data: accounts, error: accErr } = await listPaymentAccounts({ profileId: id });
+      if (accErr) {
+        container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání účtů: ${accErr.message || JSON.stringify(accErr)}</div>`;
+        return;
+      }
+      const list = Array.isArray(accounts) ? accounts : [];
+      container.innerHTML = '<div class="space-y-2">';
+      if (list.length === 0) {
+        container.innerHTML = '<div class="text-gray-500 p-2">Žádné účty.</div>';
+      } else {
+        list.forEach(a => {
+          const el = document.createElement('div');
+          el.className = 'p-3 border rounded bg-white';
+          el.innerHTML = `<div class="font-medium">${a.label || a.name || 'Bankovní účet'} ${a.is_primary ? '<span class="text-xs text-slate-500">• primární</span>' : ''}</div>
+                          <div class="text-sm text-gray-600">${a.account_number || a.iban || ''}${a.bank_code ? ' / ' + a.bank_code : ''}</div>`;
+          container.appendChild(el);
+        });
+      }
+      container.innerHTML += '</div>';
+    } catch (e) {
+      container.innerHTML = `<div class="text-red-600 p-4">Chyba: ${e.message || e}</div>`;
+    }
+  };
+
+  // Define tabs - include Accounts before Systém
   const tabs = [
     {
       label: 'Profil nájemníka',
       icon: '👤',
       content: (container) => {
-        // Render the form in this tab
+        // Render the form in this tab (readonly)
         const sections = [
           { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
           { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
@@ -105,76 +167,32 @@ export async function render(root) {
       badge: null,
       content: async (container) => {
         container.innerHTML = '<div class="text-center py-4">Načítání smluv...</div>';
-        
         try {
-          // Load contracts for this tenant
           const { data: contracts, error: contractsError } = await listContracts({ tenantId: id });
-          
           if (contractsError) {
             container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání smluv: ${contractsError.message}</div>`;
             return;
           }
-
           container.innerHTML = '';
-          
           if (!contracts || contracts.length === 0) {
             container.innerHTML = '<div class="text-gray-500 p-4">Žádné smlouvy</div>';
             return;
           }
-
-          // Create table with contracts
           const table = createRelatedEntitiesTable(
             contracts,
             [
-              { 
-                label: 'Číslo smlouvy', 
-                field: 'cislo_smlouvy',
-                render: (val) => `<strong>${val || 'Bez čísla'}</strong>`
-              },
-              { 
-                label: 'Jednotka', 
-                field: 'unit',
-                render: (val) => val ? `${val.oznaceni || '-'} (${val.typ_jednotky || '-'})` : '-'
-              },
-              { 
-                label: 'Nemovitost', 
-                field: 'property',
-                render: (val) => val ? `${val.nazev || '-'}, ${val.mesto || '-'}` : '-'
-              },
-              { 
-                label: 'Stav', 
-                field: 'stav',
-                render: (val) => {
-                  const statusLabels = {
-                    'koncept': '📝 Koncept',
-                    'cekajici_podepsani': '⏳ Čeká na podpis',
-                    'aktivni': '✅ Aktivní',
-                    'ukoncena': '❌ Ukončená',
-                    'zrusena': '🚫 Zrušená'
-                  };
-                  return statusLabels[val] || val || '-';
-                }
-              },
-              { 
-                label: 'Nájem', 
-                field: 'najem_vyse',
-                render: (val) => val ? `${val} Kč/měsíc` : '-'
-              },
-              { 
-                label: 'Začátek', 
-                field: 'datum_zacatek',
-                render: (val) => val ? new Date(val).toLocaleDateString('cs-CZ') : '-'
-              }
+              { label: 'Číslo smlouvy', field: 'cislo_smlouvy', render: (v) => `<strong>${v || 'Bez čísla'}</strong>` },
+              { label: 'Jednotka', field: 'unit', render: (v) => v ? `${v.oznaceni || '-'} (${v.typ_jednotky || '-'})` : '-' },
+              { label: 'Nemovitost', field: 'property', render: (v) => v ? `${v.nazev || '-'}, ${v.mesto || '-'}` : '-' },
+              { label: 'Stav', field: 'stav', render: (v) => {
+                const statusLabels = { 'koncept':'📝 Koncept','cekajici_podepsani':'⏳ Čeká na podpis','aktivni':'✅ Aktivní','ukoncena':'❌ Ukončená','zrusena':'🚫 Zrušená' };
+                return statusLabels[v] || v || '-';
+              }},
+              { label: 'Nájem', field: 'najem_vyse', render: (v) => v ? `${v} Kč/měsíc` : '-' },
+              { label: 'Začátek', field: 'datum_zacatek', render: (v) => v ? new Date(v).toLocaleDateString('cs-CZ') : '-' }
             ],
-            {
-              emptyMessage: 'Žádné smlouvy',
-              onRowClick: (row) => {
-                navigateTo(`#/m/060-smlouva/f/detail?id=${row.id}`);
-              },
-              className: 'cursor-pointer'
-            }
+            { emptyMessage: 'Žádné smlouvy', onRowClick: (row) => navigateTo(`#/m/060-smlouva/f/detail?id=${row.id}`), className: 'cursor-pointer' }
           );
-
           container.appendChild(table);
         } catch (error) {
           container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání smluv: ${error.message}</div>`;
@@ -186,38 +204,21 @@ export async function render(root) {
       icon: '📦',
       content: async (container) => {
         container.innerHTML = '<div class="text-center py-4">Načítání jednotek...</div>';
-        
         try {
-          // Load active contracts to get units
           const { data: contracts } = await listContracts({ tenantId: id, status: 'aktivni' });
-          
-          if (!contracts || contracts.length === 0) {
-            container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
-            return;
-          }
-
-          const units = contracts.map(c => c.unit).filter(u => u);
-          
-          if (units.length === 0) {
-            container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
-            return;
-          }
-
+          if (!contracts || contracts.length === 0) { container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>'; return; }
+          const units = contracts.map(c => c.unit).filter(Boolean);
+          if (units.length === 0) { container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>'; return; }
           const table = createRelatedEntitiesTable(
             units,
             [
-              { label: 'Označení', field: 'oznaceni', render: (val) => `<strong>${val || '-'}</strong>` },
+              { label: 'Označení', field: 'oznaceni', render: (v) => `<strong>${v || '-'}</strong>` },
               { label: 'Typ', field: 'typ_jednotky' },
               { label: 'Stav', field: 'stav' },
-              { label: 'Plocha', field: 'plocha', render: (val) => val ? `${val} m²` : '-' }
+              { label: 'Plocha', field: 'plocha', render: (v) => v ? `${v} m²` : '-' }
             ],
-            {
-              emptyMessage: 'Žádné jednotky',
-              onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`),
-              className: 'cursor-pointer'
-            }
+            { emptyMessage: 'Žádné jednotky', onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`), className: 'cursor-pointer' }
           );
-
           container.innerHTML = '';
           container.appendChild(table);
         } catch (error) {
@@ -230,43 +231,31 @@ export async function render(root) {
       icon: '🏢',
       content: async (container) => {
         container.innerHTML = '<div class="text-center py-4">Načítání nemovitostí...</div>';
-        
         try {
-          // Load active contracts to get properties
           const { data: contracts } = await listContracts({ tenantId: id, status: 'aktivni' });
-          
-          if (!contracts || contracts.length === 0) {
-            container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
-            return;
-          }
-
-          const properties = contracts.map(c => c.property).filter(p => p);
-          
-          if (properties.length === 0) {
-            container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
-            return;
-          }
-
+          if (!contracts || contracts.length === 0) { container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>'; return; }
+          const properties = contracts.map(c => c.property).filter(Boolean);
+          if (properties.length === 0) { container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>'; return; }
           const table = createRelatedEntitiesTable(
             properties,
             [
-              { label: 'Název', field: 'nazev', render: (val) => `<strong>${val || '-'}</strong>` },
-              { label: 'Adresa', field: 'ulice', render: (val, row) => `${val || ''} ${row.cislo_popisne || ''}, ${row.mesto || ''}` },
+              { label: 'Název', field: 'nazev', render: (v) => `<strong>${v || '-'}</strong>` },
+              { label: 'Adresa', field: 'ulice', render: (v,row) => `${v || ''} ${row.cislo_popisne || ''}, ${row.mesto || ''}` },
               { label: 'Typ', field: 'typ_nemovitosti' }
             ],
-            {
-              emptyMessage: 'Žádné nemovitosti',
-              onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`),
-              className: 'cursor-pointer'
-            }
+            { emptyMessage: 'Žádné nemovitosti', onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`), className: 'cursor-pointer' }
           );
-
           container.innerHTML = '';
           container.appendChild(table);
         } catch (error) {
           container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání nemovitostí: ${error.message}</div>`;
         }
       }
+    },
+    {
+      label: 'Účty',
+      icon: '💳',
+      content: accountsTabContent
     },
     {
       label: 'Dokumenty',
@@ -282,7 +271,6 @@ export async function render(root) {
             </button>
           </div>
         `;
-        // Add event listener safely
         const btn = container.querySelector('#tenant-attachments-btn');
         if (btn) {
           btn.addEventListener('click', () => {
@@ -313,14 +301,11 @@ export async function render(root) {
   // Render tabs
   renderTabs(tabsContainer, tabs, { defaultTab: 0 });
 
-  // common actions - per requirements: remove 'refresh', add 'wizard'
-  const myRole = window.currentUserRole || 'admin';
+  // common actions
   const handlers = {
     onEdit: () => navigateTo(`#/m/050-najemnik/f/form?id=${id}&type=${type}`),
     onAttach: () => id && window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: id }),
-    onWizard: () => {
-      alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
-    },
+    onWizard: () => { alert('Průvodce zatím není k dispozici.'); },
     onHistory: () => {
       if (!id) { alert('Historie dostupná po uložení'); return; }
       showHistoryModal(async (subjectId) => {
@@ -329,15 +314,15 @@ export async function render(root) {
     },
     onArchive: async () => {
       if (!id) { alert('Uložte nejprve záznam.'); return; }
-      const { data, error } = await (await import('/src/modules/050-najemnik/db.js')).archiveSubject(id, window.currentUser);
-      if (error) alert('Chyba: ' + (error.message || JSON.stringify(error))); else { alert('Archivováno'); navigateTo('#/m/050-najemnik/t/prehled'); }
+      const { data: d, error: err } = await (await import('/src/modules/050-najemnik/db.js')).archiveSubject(id, window.currentUser);
+      if (err) alert('Chyba: ' + (err.message || JSON.stringify(err))); else { alert('Archivováno'); navigateTo('#/m/050-najemnik/t/prehled'); }
     }
   };
 
   // render common actions in header area
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions: ['edit','attach','wizard','archive','history'],
-    userRole: myRole,
+    userRole: window.currentUserRole || 'admin',
     handlers
   });
 }
