@@ -109,18 +109,17 @@ export async function render(root, params) {
 
   root.innerHTML = `
     <div id="commonactions" class="mb-4"></div>
-    <div id="unit-detail"></div>
     <div id="unit-tabs" class="mt-6"></div>
   `;
 
   const myRole = window.currentUserRole || 'admin';
 
-  // --- Akce v liště ---
-  const moduleActions = ['edit', 'attach', 'archive', 'refresh', 'history'];
+  // --- Akce v liště --- (Remove 'refresh', add 'history' according to requirements)
+  const moduleActions = ['add', 'edit', 'attach', 'archive', 'history'];
   const handlers = {};
 
+  handlers.onAdd = () => navigateTo(`#/m/040-nemovitost/f/unit-chooser`);
   handlers.onEdit = () => navigateTo(`#/m/040-nemovitost/f/unit-edit?id=${id}`);
-  handlers.onRefresh = () => render(root, params);
   
   // Archivace (jen pokud není již archivovaný)
   if (!data.archived) {
@@ -144,27 +143,37 @@ export async function render(root, params) {
     handlers
   });
 
-  // Vykreslení formuláře v readonly režimu
-  renderForm(root.querySelector('#unit-detail'), FIELDS, data, async () => true, {
-    readOnly: true,
-    showSubmit: false,
-    layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
-    sections: [
-      { id: 'zakladni', label: 'Základní údaje', fields: [
-        'oznaceni', 'typ_jednotky', 'podlazi', 'plocha', 'pocet_mistnosti', 'dispozice',
-        'stav', 'mesicni_najem', 'kauce'
-      ] },
-      { id: 'najem', label: 'Nájem', fields: [
-        'najemce', 'datum_zahajeni_najmu', 'datum_ukonceni_najmu'
-      ] },
-      { id: 'system', label: 'Systém', fields: [
-        'archivedLabel', 'poznamka', 'updated_at', 'updated_by', 'created_at'
-      ] },
-    ]
-  });
-
-  // Render tabs with related information
+  // Render tabs with unit detail according to Modul 030.docx requirements
   const tabs = [
+    {
+      label: 'Pronajímatel',
+      icon: '🏦',
+      content: (() => {
+        if (!data.property || !data.property.owner) {
+          return '<div class="p-4 text-gray-500">Pronajímatel není přiřazen</div>';
+        }
+        const owner = data.property.owner;
+        return `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-4">Informace o pronajímateli</h3>
+            <div class="bg-white shadow rounded-lg p-4 space-y-2">
+              <div class="grid grid-cols-2 gap-4">
+                <div><strong>Název:</strong> ${owner.display_name || '-'}</div>
+                <div><strong>Email:</strong> ${owner.primary_email || '-'}</div>
+                <div><strong>Telefon:</strong> ${owner.primary_phone || '-'}</div>
+              </div>
+              <div class="mt-4">
+                <button 
+                  onclick="location.hash='#/m/030-pronajimatel/f/detail?id=${owner.id}'"
+                  class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  Zobrazit detail pronajímatele
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      })()
+    },
     {
       label: 'Nemovitost',
       icon: '🏢',
@@ -198,7 +207,37 @@ export async function render(root, params) {
       })()
     },
     {
-      label: 'Nájemce',
+      label: '—',
+      icon: '📌',
+      content: '<div class="p-4 text-gray-500">Rezervováno pro budoucí použití</div>'
+    },
+    {
+      label: 'Detail jednotky',
+      icon: '📋',
+      content: (() => {
+        const container = document.createElement('div');
+        renderForm(container, FIELDS, data, async () => true, {
+          readOnly: true,
+          showSubmit: false,
+          layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
+          sections: [
+            { id: 'zakladni', label: 'Základní údaje', fields: [
+              'oznaceni', 'typ_jednotky', 'podlazi', 'plocha', 'pocet_mistnosti', 'dispozice',
+              'stav', 'mesicni_najem', 'kauce'
+            ] },
+            { id: 'najem', label: 'Nájem', fields: [
+              'najemce', 'datum_zahajeni_najmu', 'datum_ukonceni_najmu'
+            ] },
+            { id: 'system', label: 'Systém', fields: [
+              'archivedLabel', 'poznamka', 'updated_at', 'updated_by', 'created_at'
+            ] },
+          ]
+        });
+        return container;
+      })()
+    },
+    {
+      label: 'Nájemníci',
       icon: '👤',
       content: (() => {
         if (!data.active_contract || !data.active_contract.tenant) {
@@ -238,33 +277,34 @@ export async function render(root, params) {
       })()
     },
     {
-      label: 'Vlastník',
-      icon: '🏦',
-      content: (() => {
-        if (!data.property || !data.property.owner) {
-          return '<div class="p-4 text-gray-500">Vlastník není přiřazen</div>';
-        }
-        const owner = data.property.owner;
-        return `
-          <div class="p-4">
-            <h3 class="text-lg font-semibold mb-4">Informace o vlastníkovi</h3>
-            <div class="bg-white shadow rounded-lg p-4 space-y-2">
-              <div class="grid grid-cols-2 gap-4">
-                <div><strong>Název:</strong> ${owner.display_name || '-'}</div>
-                <div><strong>Email:</strong> ${owner.primary_email || '-'}</div>
-                <div><strong>Telefon:</strong> ${owner.primary_phone || '-'}</div>
-              </div>
-              <div class="mt-4">
-                <button 
-                  onclick="location.hash='#/m/030-pronajimatel/f/detail?id=${owner.id}'"
-                  class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                  Zobrazit detail vlastníka
-                </button>
-              </div>
-            </div>
+      label: 'Smlouva',
+      icon: '📄',
+      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Data aktivní smlouvy</h3><p class="text-gray-500">Funkce pro zobrazení dat smlouvy bude doplněna.</p></div>'
+    },
+    {
+      label: 'Služby',
+      icon: '🔧',
+      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Položky služeb</h3><p class="text-gray-500">Funkce pro zobrazení služeb bude doplněna.</p></div>'
+    },
+    {
+      label: 'Platby',
+      icon: '💰',
+      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Rozpis plateb</h3><p class="text-gray-500">Funkce pro zobrazení plateb bude doplněna.</p></div>'
+    },
+    {
+      label: 'Systém',
+      icon: '⚙️',
+      content: `
+        <div class="p-4">
+          <h3 class="text-lg font-semibold mb-2">Systémové informace</h3>
+          <div class="space-y-2">
+            <div><strong>Vytvořeno:</strong> ${data.created_at || '-'}</div>
+            <div><strong>Poslední úprava:</strong> ${data.updated_at || '-'}</div>
+            <div><strong>Upravil:</strong> ${data.updated_by || '-'}</div>
+            <div><strong>Archivní:</strong> ${data.archivedLabel || 'Ne'}</div>
           </div>
-        `;
-      })()
+        </div>
+      `
     }
   ];
 
