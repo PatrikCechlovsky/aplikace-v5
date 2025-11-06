@@ -14,30 +14,38 @@ export async function getManifest() {
 
   // Fetch subject types from database and counts efficiently
   try {
-    const { data: subjectTypes = [] } = await listSubjectTypes();
-    const { data: countData, error: countError } = await getSubjectsCountsByType({ 
-      role: 'pronajimatel', 
-      showArchived: false 
+    // call helper and ensure we always have an array
+    const resTypes = await listSubjectTypes();
+    const subjectTypes = Array.isArray(resTypes?.data) ? resTypes.data : [];
+
+    // get counts (with safe fallback)
+    const { data: countData, error: countError } = await getSubjectsCountsByType({
+      role: 'pronajimatel',
+      showArchived: false
     });
-    
+
     if (countError) {
       console.error('Error loading subject counts:', countError);
       // Continue with empty counts on error
     }
-    
+
     const countsMap = Object.fromEntries((countData || []).map(c => [c.type, c.count]));
-    
+
     // Add types with counts to sidebar
     for (const typeConfig of subjectTypes) {
-      const count = countsMap[typeConfig.slug] || 0;
-      
+      // guard: skip invalid entries
+      if (!typeConfig || typeof typeConfig !== 'object') continue;
+      const slug = typeConfig.slug;
+      const label = typeConfig.label || slug || 'Typ';
+      const count = countsMap[slug] || 0;
+
       if (count > 0) {
         tiles[0].children.push({
-          id: typeConfig.slug,
-          title: `${typeConfig.label} (${count})`,
+          id: slug,
+          title: `${label} (${count})`,
           icon: typeConfig.icon || 'person',
           count: count,
-          type: typeConfig.slug
+          type: slug
         });
       }
     }
