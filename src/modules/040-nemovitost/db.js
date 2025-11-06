@@ -492,6 +492,98 @@ export async function archiveUnit(id) {
   }
 }
 
+/**
+ * Get counts of units by type
+ * @param {Object} options - Options for filtering
+ * @param {boolean} options.showArchived - Include archived units
+ * @returns {Promise<{data: Array, error: Object}>} Array of {type, count}
+ */
+export async function getUnitsCountsByType(options = {}) {
+  const { showArchived = false } = options;
+  
+  try {
+    let query = supabase
+      .from('units')
+      .select('typ_jednotky');
+    
+    // Filter archived
+    if (!showArchived) {
+      query = query.or('archived.is.null,archived.eq.false');
+    }
+    
+    const { data: units, error } = await query;
+    
+    if (error) {
+      console.error('Error getting units counts:', error);
+      return { data: null, error };
+    }
+    
+    // Count by type
+    const counts = {};
+    (units || []).forEach(unit => {
+      const type = unit.typ_jednotky || '_unclassified';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    
+    // Convert to array
+    const result = Object.entries(counts).map(([type, count]) => ({
+      type,
+      count
+    }));
+    
+    return { data: result, error: null };
+  } catch (err) {
+    console.error('Exception in getUnitsCountsByType:', err);
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Get counts of properties by type
+ * @param {Object} options - Options for filtering
+ * @param {boolean} options.showArchived - Include archived properties
+ * @returns {Promise<{data: Array, error: Object}>} Array of {type, count}
+ */
+export async function getPropertiesCountsByType(options = {}) {
+  const { showArchived = false } = options;
+  
+  try {
+    let query = supabase
+      .from('properties')
+      .select('typ_nemovitosti');
+    
+    // Filter archived
+    if (!showArchived) {
+      query = query.or('archived.is.null,archived.eq.false');
+    }
+    
+    const { data: properties, error } = await query;
+    
+    if (error) {
+      console.error('Error getting properties counts:', error);
+      return { data: null, error };
+    }
+    
+    // Count by type
+    const counts = {};
+    (properties || []).forEach(prop => {
+      const type = prop.typ_nemovitosti || '_unclassified';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    
+    // Convert to array
+    const result = Object.entries(counts).map(([type, count]) => ({
+      type,
+      count
+    }));
+    
+    return { data: result, error: null };
+  } catch (err) {
+    console.error('Exception in getPropertiesCountsByType:', err);
+    return { data: null, error: err };
+  }
+}
+
 export default {
   listProperties,
   getProperty,
@@ -503,5 +595,11 @@ export default {
   getUnit,
   getUnitWithDetails,
   upsertUnit,
-  archiveUnit
+  archiveUnit,
+  listPropertyTypes,
+  listUnitTypes,
+  upsertPropertyType,
+  upsertUnitType,
+  getUnitsCountsByType,
+  getPropertiesCountsByType
 };

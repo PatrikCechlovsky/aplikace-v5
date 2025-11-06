@@ -1,7 +1,13 @@
 // Manifest modulu 040 - Nemovitosti
 // Dynamicky generuje hierarchické tiles pro nemovitosti a jednotky podle typů
 
-import { listPropertyTypes, listProperties, listUnitTypes } from './db.js';
+import { 
+  listPropertyTypes, 
+  listProperties, 
+  listUnitTypes, 
+  getUnitsCountsByType, 
+  getPropertiesCountsByType 
+} from './db.js';
 import { supabase } from '/src/supabase.js';
 
 // Normalize slug to match filenames in tiles/ (lowercase, underscores -> dashes)
@@ -32,25 +38,30 @@ export async function getManifest() {
   try {
     // Načti definované typy nemovitostí z DB
     const { data: propertyTypes = [] } = await listPropertyTypes();
+    // Get counts efficiently using the new API
+    const { data: countData, error: countError } = await getPropertiesCountsByType({ showArchived: false });
+    
+    if (countError) {
+      console.error('Error loading property counts:', countError);
+      // Continue with empty counts on error
+    }
+    
+    const countsMap = Object.fromEntries((countData || []).map(c => [c.type, c.count]));
+    
     // Pro každý typ zkontroluj, jestli existuje alespoň jeden záznam a spočti počet
     for (const t of propertyTypes) {
-      try {
-        const { data: items = [] } = await listProperties({ type: t.slug, showArchived: false, limit: 500 });
-        const count = Array.isArray(items) ? items.length : 0;
-        if (count > 0) {
-          // Normalize slug => match filename convention (e.g. admin-budova.js)
-          const id = normalizeSlug(t.slug || t.id || t.name);
+      const count = countsMap[t.slug] || 0;
+      if (count > 0) {
+        // Normalize slug => match filename convention (e.g. admin-budova.js)
+        const id = normalizeSlug(t.slug || t.id || t.name);
 
-          prehledNemovitosti.children.push({
-            id: id,
-            title: `${t.label || t.slug} (${count})`,
-            icon: t.icon || 'building',
-            count: count,
-            type: t.slug
-          });
-        }
-      } catch (e) {
-        console.error(`Error counting property type ${t.slug}:`, e);
+        prehledNemovitosti.children.push({
+          id: id,
+          title: `${t.label || t.slug} (${count})`,
+          icon: t.icon || 'building',
+          count: count,
+          type: t.slug
+        });
       }
     }
   } catch (e) {
@@ -60,33 +71,29 @@ export async function getManifest() {
   try {
     // Načti definované typy jednotek z DB
     const { data: unitTypes = [] } = await listUnitTypes();
+    // Get counts efficiently using the new API
+    const { data: countData, error: countError } = await getUnitsCountsByType({ showArchived: false });
+    
+    if (countError) {
+      console.error('Error loading unit counts:', countError);
+      // Continue with empty counts on error
+    }
+    
+    const countsMap = Object.fromEntries((countData || []).map(c => [c.type, c.count]));
+    
     // Pro každý typ zkontroluj počet jednotek
     for (const t of unitTypes) {
-      try {
-        let query = supabase
-          .from('units')
-          .select('id, typ_jednotky, archived')
-          .eq('typ_jednotky', t.slug)
-          .limit(500);
-        
-        // Filter out archived
-        query = query.or('archived.is.null,archived.eq.false');
-        
-        const { data: items = [] } = await query;
-        const count = Array.isArray(items) ? items.length : 0;
-        
-        if (count > 0) {
-          const id = normalizeSlug(t.slug || t.id || t.name);
-          prehledJednotek.children.push({
-            id: `unit-${id}`,
-            title: `${t.label || t.slug} (${count})`,
-            icon: t.icon || 'box',
-            count: count,
-            type: t.slug
-          });
-        }
-      } catch (e) {
-        console.error(`Error counting unit type ${t.slug}:`, e);
+      const count = countsMap[t.slug] || 0;
+      
+      if (count > 0) {
+        const id = normalizeSlug(t.slug || t.id || t.name);
+        prehledJednotek.children.push({
+          id: `unit-${id}`,
+          title: `${t.label || t.slug} (${count})`,
+          icon: t.icon || 'box',
+          count: count,
+          type: t.slug
+        });
       }
     }
   } catch (e) {
