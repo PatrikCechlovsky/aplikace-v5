@@ -9,7 +9,7 @@ export async function listPropertyTypes() {
   try {
     const { data, error } = await supabase
       .from('property_types')
-      .select('slug,label,color,icon')
+      .select('slug,label,color,icon,sort_order')
       .order('label', { ascending: true });
     
     if (error) {
@@ -56,7 +56,7 @@ export async function listUnitTypes() {
   try {
     const { data, error } = await supabase
       .from('unit_types')
-      .select('slug,label,color,icon')
+      .select('slug,label,color,icon,sort_order')
       .order('label', { ascending: true });
     
     if (error) {
@@ -96,6 +96,44 @@ export async function upsertUnitType({ slug, label, color, icon }) {
 }
 
 /**
+ * Helpers: load type ordering maps
+ */
+async function loadPropertyTypesMap() {
+  try {
+    const { data: types, error } = await supabase
+      .from('property_types')
+      .select('slug,sort_order');
+    if (error) {
+      // don't fail hard — return empty map and propagate error if needed
+      return { map: {}, error };
+    }
+    const map = {};
+    (types || []).forEach(t => {
+      map[t.slug] = Number.isFinite(t.sort_order) ? t.sort_order : 0;
+    });
+    return { map, error: null };
+  } catch (e) {
+    return { map: {}, error: e };
+  }
+}
+
+async function loadUnitTypesMap() {
+  try {
+    const { data: types, error } = await supabase
+      .from('unit_types')
+      .select('slug,sort_order');
+    if (error) return { map: {}, error };
+    const map = {};
+    (types || []).forEach(t => {
+      map[t.slug] = Number.isFinite(t.sort_order) ? t.sort_order : 0;
+    });
+    return { map, error: null };
+  } catch (e) {
+    return { map: {}, error: e };
+  }
+}
+
+/**
  * List properties with optional filters
  * @param {Object} options - Filter options
  * @param {string} options.type - Filter by property type (bytovy_dum, rodinny_dum, etc.)
@@ -108,6 +146,9 @@ export async function listProperties(options = {}) {
   const { type, landlordId, showArchived = false, limit = 500 } = options;
   
   try {
+    // load property types ordering
+    const { map: typeMap } = await loadPropertyTypesMap();
+
     let query = supabase
       .from('properties')
       .select('*')
@@ -136,8 +177,20 @@ export async function listProperties(options = {}) {
       console.error('Error listing properties:', error);
       return { data: null, error };
     }
+
+    const arr = (data || []).map(p => ({ ...p }));
+
+    // sort by property type's sort_order then by name
+    arr.sort((a, b) => {
+      const ta = (a.typ_nemovitosti && typeMap[a.typ_nemovitosti] !== undefined) ? typeMap[a.typ_nemovitosti] : Number.MAX_SAFE_INTEGER;
+      const tb = (b.typ_nemovitosti && typeMap[b.typ_nemovitosti] !== undefined) ? typeMap[b.typ_nemovitosti] : Number.MAX_SAFE_INTEGER;
+      if (ta !== tb) return ta - tb;
+      const na = (a.nazev || '').toString().localeCompare(b.nazev || '');
+      if (na !== 0) return na;
+      return (a.id || '').toString().localeCompare(b.id || '');
+    });
     
-    return { data: data || [], error: null };
+    return { data: arr, error: null };
   } catch (err) {
     console.error('Exception in listProperties:', err);
     return { data: null, error: err };
@@ -290,7 +343,7 @@ export async function restoreProperty(id) {
       return { data: null, error };
     }
     
-    return { data, error: null };
+    return { data: null, error: null };
   } catch (err) {
     console.error('Exception in restoreProperty:', err);
     return { data: null, error: err };
@@ -309,6 +362,9 @@ export async function listUnits(propertyId, options = {}) {
   const { showArchived = false, onlyUnoccupied = false } = options;
   
   try {
+    // load unit types ordering
+    const { map: unitTypeMap } = await loadUnitTypesMap();
+
     let query = supabase
       .from('units')
       .select('*')
@@ -331,8 +387,20 @@ export async function listUnits(propertyId, options = {}) {
       console.error('Error listing units:', error);
       return { data: null, error };
     }
+
+    const arr = (data || []).map(u => ({ ...u }));
+
+    // Sort by unit type sort_order, then by oznaceni
+    arr.sort((a, b) => {
+      const ta = (a.typ && unitTypeMap[a.typ] !== undefined) ? unitTypeMap[a.typ] : Number.MAX_SAFE_INTEGER;
+      const tb = (b.typ && unitTypeMap[b.typ] !== undefined) ? unitTypeMap[b.typ] : Number.MAX_SAFE_INTEGER;
+      if (ta !== tb) return ta - tb;
+      const ca = (a.oznaceni || '').toString().localeCompare(b.oznaceni || '');
+      if (ca !== 0) return ca;
+      return (a.id || '').toString().localeCompare(b.id || '');
+    });
     
-    return { data: data || [], error: null };
+    return { data: arr, error: null };
   } catch (err) {
     console.error('Exception in listUnits:', err);
     return { data: null, error: err };
