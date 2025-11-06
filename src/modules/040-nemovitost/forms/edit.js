@@ -1,4 +1,4 @@
-// 040-nemovitost/forms/edit.js = nejspíš form.js
+// 040-nemovitost/forms/edit.js
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
@@ -7,15 +7,13 @@ import { getProperty, upsertProperty, archiveProperty } from '/src/modules/040-n
 import { useUnsavedHelper } from '/src/ui/unsaved-helper.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
 import { setUnsaved } from '/src/app.js';
-import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js'; // <- sdílená definice polí
+import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js';
 
-// Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
   const q = (location.hash.split('?')[1] || '');
   return Object.fromEntries(new URLSearchParams(q));
 }
 
-// Pomocná funkce pro formátování českého data+času
 function formatCzechDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -26,7 +24,6 @@ function formatCzechDate(dateStr) {
 export async function render(root, params) {
   const { id, type } = params || getHashParams();
   
-  // Načtení dat nemovitosti z DB, pokud máme id
   let data = {};
   if (id) {
     const { data: propertyData, error } = await getProperty(id);
@@ -39,7 +36,6 @@ export async function render(root, params) {
       return;
     }
     data = { ...propertyData };
-    // Formátování datumů pro readonly pole a nahrazení null za '--'
     for (const f of FIELDS) {
       if (f.readOnly) {
         if (f.format && data[f.key]) {
@@ -50,15 +46,12 @@ export async function render(root, params) {
         }
       }
     }
-    // Zajistit, že archived má boolean (ne null/undefined)
     if (typeof data.archived === 'undefined') data.archived = false;
   } else if (type) {
-    // Pre-fill type if creating new
     data.typ_nemovitosti = type;
   }
 
   const nazev = data.nazev || id || 'Nová nemovitost';
-  
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home', label: 'Domů', href: '#/' },
@@ -71,13 +64,11 @@ export async function render(root, params) {
   root.innerHTML = `<div id="commonactions" class="mb-4"></div><div id="property-form"></div>`;
 
   const myRole = window.currentUserRole || 'admin';
-  // přidáno 'units' do moduleActions
   const moduleActions = ['save', 'units', 'attach', 'archive', 'reject', 'history'];
   const handlers = {};
 
   handlers.onSave = async () => {
     const values = grabValues(root);
-    // Nastav pole "updated_by" podle požadavku
     if (window.currentUser) {
       values.updated_by =
         window.currentUser.display_name ||
@@ -85,7 +76,6 @@ export async function render(root, params) {
         window.currentUser.email;
     }
     
-    // If creating new, ensure we have an ID
     if (!id) {
       values.id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
     } else {
@@ -100,14 +90,11 @@ export async function render(root, params) {
     alert('Uloženo.');
     setUnsaved(false);
     
-    // After saving, navigate to detail or refresh
     if (!id) {
       navigateTo(`#/m/040-nemovitost/f/detail?id=${updated.id}`);
     } else {
-      // Po uložení znovu načti data a aktualizuj formulář
       const { data: refreshed } = await getProperty(id);
       if (refreshed) {
-        // Formátuj readonly pole (včetně "--" pro null)
         for (const f of FIELDS) {
           if (f.readOnly) {
             if (f.format && refreshed[f.key]) {
@@ -138,7 +125,6 @@ export async function render(root, params) {
   
   handlers.onReject = () => navigateTo('#/m/040-nemovitost/t/prehled');
   
-  // Archivace (jen pokud není již archivovaný)
   if (id && !data.archived) {
     handlers.onArchive = async () => {
       await archiveProperty(id);
@@ -147,31 +133,24 @@ export async function render(root, params) {
     };
   }
 
-  // Přílohy
   handlers.onAttach = () => id && showAttachmentsModal({ entity: 'properties', entityId: id });
-
-  // Historie změn
   handlers.onHistory = () => id && alert('Historie - implementovat');
 
-  // NOVÉ: handler pro Jednotky (pracuje i pokud id undefined, můžete nasměrovat na chooser)
   handlers.onUnits = () => {
     const propertyId = id || (document.querySelector('[name="id"]') && document.querySelector('[name="id"]').value) || '';
     if (propertyId) {
       navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${propertyId}`);
     } else {
-      // pokud nemáme id (je to nové), uživatel musí nejdřív uložit; můžeme otevřít chooser
       navigateTo(`#/m/040-nemovitost/f/unit-chooser`);
     }
   };
 
-  // Tlačítka a akce
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions,
     userRole: myRole,
     handlers
   });
 
-  // Vykreslení formuláře
   renderForm(root.querySelector('#property-form'), FIELDS, data, async () => true, {
     readOnly: false,
     showSubmit: false,
@@ -191,11 +170,10 @@ export async function render(root, params) {
   if (formEl) useUnsavedHelper(formEl);
 }
 
-// Pomocná funkce pro získání hodnot z formuláře
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
-    if (f.readOnly) continue; // readonly pole nikdy neukládat!
+    if (f.readOnly) continue;
     const el = scopeEl.querySelector(`[name="${f.key}"]`);
     if (!el) continue;
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
