@@ -102,7 +102,7 @@ export async function render(root) {
     {
       label: 'Účty',
       icon: '💳',
-      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty nájemníka</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
+      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
     },
     {
       label: 'Pronajímatel',
