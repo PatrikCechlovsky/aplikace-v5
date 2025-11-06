@@ -1,5 +1,4 @@
-// Upravený detail.js - 030 Pronajímatel (stejná logika jako form.js, ale read-only top tab
-// 030-pronajimatel/forms/detail.js
+// Upravený detail.js - 030 Pronajímatel (read-only top tabs + readonly bottom related lists)
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
@@ -28,7 +27,6 @@ export async function render(root) {
     return;
   }
 
-  // set breadcrumb
   try {
     setBreadcrumb(document.getElementById('crumb'), [
       { icon: 'home',  label: 'Domů', href: '#/' },
@@ -37,7 +35,6 @@ export async function render(root) {
     ]);
   } catch (e) {}
 
-  // Load landlord data
   const { data, error } = await getSubject(id);
   if (error) {
     root.innerHTML = `<div class="p-4 text-red-600">Chyba při načítání: ${error.message || JSON.stringify(error)}</div>`;
@@ -54,17 +51,15 @@ export async function render(root) {
   const schema = TYPE_SCHEMAS[type] || [];
   const fields = schema.map(f => ({ ...f, readOnly: true }));
 
-  // layout: green top (read-only form + accounts + system), yellow bottom (related)
   root.innerHTML = `
     <div id="commonactions" class="mb-4"></div>
     <div id="green-section" class="p-4 rounded bg-green-50"></div>
     <div id="yellow-section" class="mt-6 p-4 rounded bg-yellow-50"></div>
   `;
-
   const greenRoot = root.querySelector('#green-section');
   const yellowRoot = root.querySelector('#yellow-section');
 
-  // top tabs: Detail (readonly), Účty (readonly), Systém
+  // Top tabs
   const topTabs = [
     {
       label: 'Detail pronajímatele',
@@ -74,12 +69,7 @@ export async function render(root) {
           { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
           { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
         ];
-        renderForm(container, fields, data, null, {
-          readOnly: true,
-          showSubmit: false,
-          layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
-          sections
-        });
+        renderForm(container, fields, data, null, { readOnly: true, showSubmit: false, layout: { columns: { base:1, md:2 }, density: 'compact' }, sections});
       }
     },
     {
@@ -119,7 +109,7 @@ export async function render(root) {
 
   renderTabs(greenRoot, topTabs, { defaultTab: 0 });
 
-  // bottom tabs (readonly related tables)
+  // bottom tabs
   const bottomTabs = [
     {
       label: 'Nemovitosti',
@@ -135,16 +125,12 @@ export async function render(root) {
           container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
           return;
         }
-        const table = createRelatedEntitiesTable(
-          properties,
-          [
-            { label: 'Název', field: 'nazev', render: v=> `<strong>${v || 'Bez názvu'}</strong>` },
-            { label: 'Adresa', field: 'ulice', render: (val,row) => `${[val, row.cislo_popisne].filter(Boolean).join(' ')}${row.mesto ? ', ' + row.mesto : ''}` },
-            { label: 'Typ', field: 'typ_nemovitosti' },
-            { label: 'Vytvořeno', field: 'created_at', render: v => v ? new Date(v).toLocaleDateString('cs-CZ') : '-' }
-          ],
-          { emptyMessage: 'Žádné nemovitosti', onRowClick: row => navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`), className: 'cursor-pointer' }
-        );
+        const table = createRelatedEntitiesTable(properties, [
+          { label: 'Název', field: 'nazev', render: v=> `<strong>${v || 'Bez názvu'}</strong>` },
+          { label: 'Adresa', field: 'ulice', render: (val,row) => `${[val, row.cislo_popisne].filter(Boolean).join(' ')}${row.mesto ? ', ' + row.mesto : ''}` },
+          { label: 'Typ', field: 'typ_nemovitosti' },
+          { label: 'Vytvořeno', field: 'created_at', render: v => v ? new Date(v).toLocaleDateString('cs-CZ') : '-' }
+        ], { emptyMessage: 'Žádné nemovitosti', onRowClick: row => navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`), className: 'cursor-pointer' });
         container.innerHTML = '';
         container.appendChild(table);
       }
@@ -168,16 +154,12 @@ export async function render(root) {
           container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
           return;
         }
-        const table = createRelatedEntitiesTable(
-          allUnits,
-          [
-            { label: 'Označení', field: 'oznaceni', render: v=> `<strong>${v || '-'}</strong>` },
-            { label: 'Nemovitost', field: 'property_name' },
-            { label: 'Typ', field: 'typ_jednotky' },
-            { label: 'Stav', field: 'stav' }
-          ],
-          { emptyMessage: 'Žádné jednotky', onRowClick: row => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`), className: 'cursor-pointer' }
-        );
+        const table = createRelatedEntitiesTable(allUnits, [
+          { label: 'Označení', field: 'oznaceni', render: v=> `<strong>${v || '-'}</strong>` },
+          { label: 'Nemovitost', field: 'property_name' },
+          { label: 'Typ', field: 'typ_jednotky' },
+          { label: 'Stav', field: 'stav' }
+        ], { emptyMessage: 'Žádné jednotky', onRowClick: row => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`), className: 'cursor-pointer' });
         container.innerHTML = '';
         container.appendChild(table);
       }
@@ -185,15 +167,12 @@ export async function render(root) {
     {
       label: 'Nájemníci',
       icon: '👥',
-      content: (container) => {
-        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení nájemníků bude doplněna.</div>';
-      }
+      content: (container) => { container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení nájemníků bude doplněna.</div>'; }
     }
   ];
 
   renderTabs(yellowRoot, bottomTabs, { defaultTab: 0 });
 
-  // common actions
   const handlers = {
     onAttach: () => id && window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: id }),
     onWizard: () => alert('Průvodce zatím není k dispozici.'),
