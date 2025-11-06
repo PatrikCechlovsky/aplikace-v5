@@ -1,3 +1,4 @@
+// src/modules/050-najemnik/forms/form.js
 // Upravený form.js - 050 Nájemník (přidána sekce Účty shodná s Můj účet)
 // Opraveno: přidán helper escapeHtml a payments integration
 
@@ -152,7 +153,6 @@ export async function render(root) {
   }
 
   async function renderAccounts() {
-    // Only render into the dedicated accountsHost; do not clear parent containers
     accountsHost.innerHTML = '';
     await ensureBankCodes();
 
@@ -186,15 +186,14 @@ export async function render(root) {
           editBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             selectedAccount = a;
-            renderAccountForm(a, right); // render into the right panel only
+            renderAccountForm(a, right);
           });
         }
       });
       left.appendChild(listEl);
     }
 
-    // initial right form (empty)
-    renderAccountForm(null, right);
+    renderAccountForm(selectedAccount, right);
   }
 
   function renderAccountForm(account = null, host = null) {
@@ -283,7 +282,6 @@ export async function render(root) {
 
         const { data: d, error: err } = await upsertPaymentAccount(payload, window.currentUser);
         if (err) return alert('Chyba při ukládání účtu: ' + (err.message || JSON.stringify(err)));
-        // Refresh accounts safely (do not re-render parent tabs)
         await loadAccounts();
         alert('Účet uložen.');
       });
@@ -322,8 +320,6 @@ export async function render(root) {
   smallTabs.appendChild(btnAccs);
   accountsHost.prepend(smallTabs);
 
-  // default show accounts list
-  // (renderAccounts already called by loadAccounts)
   const myRole = window.currentUserRole || 'admin';
   const handlers = {
     onSave: () => formEl ? formEl.requestSubmit() : null,
