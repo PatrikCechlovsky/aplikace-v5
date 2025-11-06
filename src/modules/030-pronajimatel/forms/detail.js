@@ -12,7 +12,8 @@ import { renderCommonActions } from '/src/ui/commonActions.js';
 import { renderTabs, createRelatedEntitiesTable } from '/src/ui/tabs.js';
 import { navigateTo } from '/src/app.js';
 import { getSubject } from '/src/modules/030-pronajimatel/db.js';
-import { listProperties } from '/src/modules/040-nemovitost/db.js';
+import { listProperties, listUnits } from '/src/modules/040-nemovitost/db.js';
+import { listSubjects } from '/src/db/subjects.js';
 import { showHistoryModal } from '/src/ui/history.js';
 import TYPE_SCHEMAS from '/src/modules/030-pronajimatel/type-schemas.js';
 
@@ -71,11 +72,6 @@ export async function render(root) {
   const mainContainer = document.createElement('div');
   mainContainer.className = 'p-4';
 
-  // Create form container
-  const formContainer = document.createElement('div');
-  formContainer.className = 'mb-6';
-  mainContainer.appendChild(formContainer);
-
   // Create tabs container
   const tabsContainer = document.createElement('div');
   tabsContainer.className = 'mt-6';
@@ -83,33 +79,33 @@ export async function render(root) {
 
   root.appendChild(mainContainer);
 
-  // Render form (readonly)
-  const sections = [
-    { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
-    { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
-  ];
-
-  renderForm(formContainer, fields, data, null, {
-    readOnly: true,
-    showSubmit: false,
-    layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
-    sections
-  });
-
-  // Define tabs
+  // Define tabs according to requirements from Modul 030.docx
   const tabs = [
     {
-      label: 'Přehled',
-      icon: '📋',
+      label: 'Detail pronajímatele',
+      icon: '👤',
+      content: (container) => {
+        // Render the editable form in this tab
+        const sections = [
+          { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
+          { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
+        ];
+
+        renderForm(container, fields, data, null, {
+          readOnly: true,
+          showSubmit: false,
+          layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
+          sections
+        });
+      }
+    },
+    {
+      label: 'Účty',
+      icon: '💳',
       content: `
         <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Základní informace</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div><strong>Název:</strong> ${data.display_name || '-'}</div>
-            <div><strong>IČO:</strong> ${data.ico || '-'}</div>
-            <div><strong>Email:</strong> ${data.primary_email || '-'}</div>
-            <div><strong>Telefon:</strong> ${data.primary_phone || '-'}</div>
-          </div>
+          <h3 class="text-lg font-semibold mb-2">Bankovní účty</h3>
+          <p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p>
         </div>
       `
     },
@@ -183,15 +179,100 @@ export async function render(root) {
       }
     },
     {
-      label: 'Kontakty',
-      icon: '📞',
+      label: 'Jednotky',
+      icon: '📦',
+      badge: null,
+      content: async (container) => {
+        container.innerHTML = '<div class="text-center py-4">Načítání jednotek...</div>';
+        
+        // Load properties first, then get units for all properties
+        const { data: properties, error: propError } = await listProperties({ landlordId: id });
+        
+        if (propError) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání: ${propError.message}</div>`;
+          return;
+        }
+
+        if (!properties || properties.length === 0) {
+          container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+          return;
+        }
+
+        // Collect all units from all properties
+        const allUnits = [];
+        for (const prop of properties) {
+          const { data: units } = await listUnits(prop.id, { showArchived: false });
+          if (units && units.length > 0) {
+            units.forEach(unit => {
+              unit.property_name = prop.nazev;
+              allUnits.push(unit);
+            });
+          }
+        }
+
+        container.innerHTML = '';
+        
+        if (allUnits.length === 0) {
+          container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+          return;
+        }
+
+        const table = createRelatedEntitiesTable(
+          allUnits,
+          [
+            { 
+              label: 'Označení', 
+              field: 'oznaceni',
+              render: (val) => `<strong>${val || '-'}</strong>`
+            },
+            { 
+              label: 'Nemovitost', 
+              field: 'property_name'
+            },
+            { 
+              label: 'Typ', 
+              field: 'typ_jednotky'
+            },
+            { 
+              label: 'Stav', 
+              field: 'stav'
+            }
+          ],
+          {
+            emptyMessage: 'Žádné jednotky',
+            onRowClick: (row) => {
+              navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`);
+            },
+            className: 'cursor-pointer'
+          }
+        );
+
+        container.appendChild(table);
+      }
+    },
+    {
+      label: 'Nájemníci',
+      icon: '👥',
+      badge: null,
+      content: async (container) => {
+        container.innerHTML = '<div class="text-center py-4">Načítání nájemníků...</div>';
+        
+        // Load tenants related to this landlord's properties
+        // For now, just show placeholder
+        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení nájemníků bude doplněna.</div>';
+      }
+    },
+    {
+      label: 'Systém',
+      icon: '⚙️',
       content: `
         <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Kontaktní údaje</h3>
+          <h3 class="text-lg font-semibold mb-2">Systémové informace</h3>
           <div class="space-y-2">
-            <div><strong>Email:</strong> ${data.primary_email || '-'}</div>
-            <div><strong>Telefon:</strong> ${data.primary_phone || '-'}</div>
-            <div><strong>Adresa:</strong> ${data.ulice || ''} ${data.cislo_popisne || ''}, ${data.mesto || ''} ${data.psc || ''}</div>
+            <div><strong>Vytvořeno:</strong> ${data.created_at || '-'}</div>
+            <div><strong>Poslední úprava:</strong> ${data.updated_at || '-'}</div>
+            <div><strong>Upravil:</strong> ${data.updated_by || '-'}</div>
+            <div><strong>Archivní:</strong> ${data.archived ? 'Ano' : 'Ne'}</div>
           </div>
         </div>
       `
