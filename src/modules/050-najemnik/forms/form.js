@@ -1,4 +1,6 @@
 // Upravený form.js - 050 Nájemník (přidána sekce Účty shodná s Můj účet)
+// Opraveno: přidán helper escapeHtml a payments integration
+
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
@@ -20,6 +22,11 @@ function formatCzechDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d)) return '';
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
+}
+
+// escapeHtml helper (same as used in Můj účet)
+function escapeHtml(s = '') {
+  return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
 }
 
 /**
@@ -138,7 +145,7 @@ export async function render(root) {
     if (!bankCodes || bankCodes.length === 0) bankCodes = await loadBankCodes();
   }
 
-  function renderAccounts() {
+  async function renderAccounts() {
     accountsHost.innerHTML = '';
     const wrap = document.createElement('div');
     wrap.className = 'bg-white border rounded p-4 grid md:grid-cols-2 gap-4';
@@ -302,8 +309,7 @@ export async function render(root) {
   accountsHost.prepend(smallTabs);
 
   // default show accounts list
-  renderAccounts();
-
+  // (renderAccounts already called by loadAccounts)
   const myRole = window.currentUserRole || 'admin';
   const handlers = {
     onSave: () => formEl ? formEl.requestSubmit() : null,
