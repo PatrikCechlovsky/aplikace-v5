@@ -1,3 +1,4 @@
+// Upravený form.js - 050 Nájemník (přidána sekce Účty shodná s Můj účet)
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
@@ -19,6 +20,40 @@ function formatCzechDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d)) return '';
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
+}
+
+/**
+ * Payments/account helpers (same approach as Můj účet)
+ */
+async function initPaymentsHelpers() {
+  let payments = null;
+  let supabase = null;
+  try { payments = await import('/src/services/payments.js'); payments = payments.default || payments; } catch (e) { payments = null; }
+  try { supabase = (await import('/src/supabase.js')).supabase; } catch (e) { supabase = null; }
+
+  const listPaymentAccounts = payments && payments.listPaymentAccounts ? payments.listPaymentAccounts : (async () => ({ data: [], error: null }));
+  const upsertPaymentAccount = payments && payments.upsertPaymentAccount ? payments.upsertPaymentAccount : (async () => ({ data: null, error: new Error('upsertPaymentAccount not implemented') }));
+  const deletePaymentAccount = payments && payments.deletePaymentAccount ? payments.deletePaymentAccount : (async () => ({ data: null, error: new Error('deletePaymentAccount not implemented') }));
+
+  async function loadBankCodes() {
+    let bankCodes = [];
+    if (payments && typeof payments.listBankCodes === 'function') {
+      try {
+        const res = await payments.listBankCodes();
+        bankCodes = (res && res.data) ? res.data : [];
+        return bankCodes;
+      } catch (e) { /* ignore */ }
+    }
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('bank_codes').select('code,name').order('name', { ascending: true });
+        if (!error && Array.isArray(data)) bankCodes = data;
+      } catch (e) { /* ignore */ }
+    }
+    return bankCodes;
+  }
+
+  return { listPaymentAccounts, upsertPaymentAccount, deletePaymentAccount, loadBankCodes };
 }
 
 export async function render(root) {
@@ -54,8 +89,12 @@ export async function render(root) {
     { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
   ];
 
-  // Render form (hide internal submit buttons - commonActions will render Save)
-  renderForm(root, fields, data, async (values) => {
+  // Render main form
+  root.innerHTML = '<div id="tenant-form-root"></div><div id="tenant-accounts-root" class="mt-6"></div>';
+  const formHost = root.querySelector('#tenant-form-root');
+  const accountsHost = root.querySelector('#tenant-accounts-root');
+
+  renderForm(formHost, fields, data, async (values) => {
     try {
       const curUser = window.currentUser || null;
       const { data: saved, error } = await upsertSubject(values, curUser);
@@ -73,51 +112,197 @@ export async function render(root) {
     }
   }, {
     readOnly: mode === 'read',
-    showSubmit: false, // submit moved to commonActions
+    showSubmit: false,
     layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
     sections
   });
 
-  const formEl = root.querySelector('form');
+  const formEl = formHost.querySelector('form');
   if (formEl) useUnsavedHelper(formEl);
 
-  const icoInput = root.querySelector('input[name="ico"]');
-  if (icoInput) {
-    const wrapper = icoInput.parentElement || icoInput;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.title = 'Načíst z ARES';
-    btn.className = 'ml-2 inline-flex items-center px-2 py-1 border rounded text-sm';
-    btn.innerHTML = '🔍';
-    btn.disabled = !icoInput.value;
-    icoInput.addEventListener('input', () => { btn.disabled = !icoInput.value.trim(); });
-    btn.addEventListener('click', async () => {
-      const val = (icoInput.value || '').trim();
-      if (!val) { alert('Zadejte IČO'); return; }
-      try {
-        const res = await lookupIco(val);
-        if (!res) { alert('ARES: nic nenalezeno'); return; }
-        const mapped = {};
-        if (res.name) mapped.display_name = res.name;
-        if (res.ico) mapped.ico = res.ico;
-        if (res.dic) mapped.dic = res.dic;
-        if (res.street) mapped.street = res.street;
-        if (res.city) mapped.city = res.city;
-        if (res.zip) mapped.zip = res.zip;
-        Object.entries(mapped).forEach(([k,v]) => {
-          const el = root.querySelector(`[name="${k}"]`);
-          if (el) {
-            el.value = v;
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-        });
-        alert('Načteno z ARES.');
-      } catch (e) {
-        alert('Chyba ARES: ' + (e.message || e));
-      }
-    });
-    wrapper.appendChild(btn);
+  // === Accounts UI (same UX as Můj účet) ===
+  const paymentsHelpers = await initPaymentsHelpers();
+  const { listPaymentAccounts, upsertPaymentAccount, deletePaymentAccount, loadBankCodes } = paymentsHelpers;
+
+  let bankCodes = [];
+  let accounts = [];
+  let selectedAccount = null;
+
+  async function loadAccounts() {
+    const { data: accData, error } = await listPaymentAccounts({ profileId: id });
+    accounts = (accData && Array.isArray(accData)) ? accData : [];
+    renderAccounts();
   }
+
+  async function ensureBankCodes() {
+    if (!bankCodes || bankCodes.length === 0) bankCodes = await loadBankCodes();
+  }
+
+  function renderAccounts() {
+    accountsHost.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'bg-white border rounded p-4 grid md:grid-cols-2 gap-4';
+    accountsHost.appendChild(wrap);
+
+    const left = document.createElement('div');
+    left.className = 'min-h-[220px]';
+    if (!accounts.length) {
+      left.innerHTML = '<div class="text-slate-500 p-3">Žádné účty.</div>';
+    } else {
+      const listEl = document.createElement('div'); listEl.className = 'space-y-2';
+      accounts.forEach(a => {
+        const bankName = (bankCodes.find(b => b.code === a.bank_code)?.name) || '';
+        const labelHtml = `<div class="font-medium">${escapeHtml(a.label || '')} ${a.is_primary ? '<span class="text-xs text-slate-500">• primární</span>' : ''}</div>`;
+        const acctHtml = `<div class="text-xs text-slate-500">${escapeHtml(a.account_number || '')}${a.bank_code ? ' / ' + escapeHtml(a.bank_code) : ''}${bankName ? ' — ' + escapeHtml(bankName) : ''}</div>`;
+        const row = document.createElement('div');
+        row.className = 'p-2 bg-white border rounded cursor-pointer hover:bg-slate-50 flex justify-between items-center';
+        row.innerHTML = `<div>${labelHtml}${acctHtml}</div><div><button data-id="${a.id}" class="btn-edit text-xs px-2 py-1 border rounded">Upravit</button></div>`;
+        listEl.appendChild(row);
+
+        const editBtn = row.querySelector('.btn-edit');
+        if (editBtn) {
+          editBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            selectedAccount = a;
+            renderAccountForm(a);
+          });
+        }
+      });
+      left.appendChild(listEl);
+    }
+    wrap.appendChild(left);
+
+    const right = document.createElement('div'); right.className='bg-white border rounded p-3';
+    wrap.appendChild(right);
+    renderAccountForm(selectedAccount, right);
+  }
+
+  function renderAccountForm(account = null, host = null) {
+    const container = host || accountsHost.querySelector('.bg-white.border.rounded.p-3');
+    if (!container) return;
+    const acc = account ? { ...account } : { label: '', bank_code: '', account_number: '', iban: '', currency: 'CZK', is_primary: false };
+
+    const bankOptions = (bankCodes || []).map(b => `<option value="${escapeHtml(b.code)}" ${b.code === acc.bank_code ? 'selected' : ''}>${escapeHtml(b.code)} — ${escapeHtml(b.name)}</option>`).join('');
+
+    container.innerHTML = `
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Popisek *</label>
+            <input name="acc_label" value="${escapeHtml(acc.label)}" class="border rounded px-3 py-2 w-full" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Banka *</label>
+            <select name="acc_bank" class="border rounded px-3 py-2 w-full">
+              <option value="">— vyber —</option>
+              ${bankOptions}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Číslo účtu *</label>
+            <input name="acc_number" value="${escapeHtml(acc.account_number)}" class="border rounded px-3 py-2 w-full" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">Měna *</label>
+            <select name="acc_currency" class="border rounded px-3 py-2 w-full">
+              <option value="CZK" ${acc.currency === 'CZK' ? 'selected' : ''}>CZK</option>
+              <option value="EUR" ${acc.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+              <option value="USD" ${acc.currency === 'USD' ? 'selected' : ''}>USD</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-600 mb-1 block">IBAN (nepovinné)</label>
+            <input name="acc_iban" value="${escapeHtml(acc.iban)}" class="border rounded px-3 py-2 w-full" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <label class="inline-flex items-center gap-2"><input type="checkbox" name="acc_primary" ${acc.is_primary ? 'checked' : ''}/> Hlavní</label>
+          <button class="btn-save ml-auto px-3 py-1 border rounded bg-indigo-50 text-indigo-700">Uložit</button>
+          ${account ? '<button class="btn-delete px-3 py-1 border rounded text-red-600">Smazat</button>' : ''}
+          <button class="btn-add px-3 py-1 border rounded">Nový</button>
+        </div>
+
+        <div class="pt-3 border-t text-xs text-slate-500">Seznam účtů najdeš vlevo. Klikni na "Upravit" pro editaci.</div>
+      </div>
+    `;
+
+    try { useUnsavedHelper(container); } catch (e) { /* ignore */ }
+
+    const btnSave = container.querySelector('.btn-save');
+    const btnAdd = container.querySelector('.btn-add');
+    const btnDelete = container.querySelector('.btn-delete');
+
+    if (btnAdd) {
+      btnAdd.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectedAccount = null;
+        renderAccountForm(null, container);
+      });
+    }
+
+    if (btnSave) {
+      btnSave.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const payload = {
+          label: container.querySelector('[name="acc_label"]').value.trim(),
+          bank_code: container.querySelector('[name="acc_bank"]').value,
+          account_number: container.querySelector('[name="acc_number"]').value.trim(),
+          iban: container.querySelector('[name="acc_iban"]').value.trim() || null,
+          currency: container.querySelector('[name="acc_currency"]').value,
+          is_primary: !!container.querySelector('[name="acc_primary"]').checked,
+          profile_id: id
+        };
+        if (!payload.label || !payload.account_number || !payload.bank_code || !payload.currency) {
+          return alert('Vyplňte prosím povinná pole: Popisek, Banka, Číslo účtu a Měna.');
+        }
+        if (selectedAccount && selectedAccount.id) payload.id = selectedAccount.id;
+
+        const { data: d, error: err } = await upsertPaymentAccount(payload, window.currentUser);
+        if (err) return alert('Chyba při ukládání účtu: ' + (err.message || JSON.stringify(err)));
+        await loadAccounts();
+        alert('Účet uložen.');
+      });
+    }
+
+    if (btnDelete) {
+      btnDelete.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!selectedAccount || !selectedAccount.id) return alert('Vyberte účet k odstranění.');
+        if (!confirm('Opravdu smazat účet?')) return;
+        const { data: d, error: err } = await deletePaymentAccount(selectedAccount.id, window.currentUser);
+        if (err) return alert('Chyba při mazání: ' + (err.message || JSON.stringify(err)));
+        selectedAccount = null;
+        await loadAccounts();
+      });
+    }
+  }
+
+  async function setPreferredAccount(accountId) {
+    if (!id) return alert('Profil neznámý');
+    const payload = { preferred_payment_account_id: accountId };
+    const { data, error } = await upsertSubject({ id, ...payload }, window.currentUser);
+    if (error) return alert('Chyba při nastavování preferovaného účtu: ' + (error.message || error));
+    alert('Preferovaný účet nastaven.');
+    await loadAccounts();
+  }
+
+  // initial load for accounts area
+  bankCodes = await loadBankCodes();
+  await loadAccounts();
+
+  // place a small header/tab-like switch above accounts area to mimic Můj účet UX
+  const smallTabs = document.createElement('div');
+  smallTabs.className = 'flex gap-2 mb-3';
+  const btnAccs = document.createElement('button'); btnAccs.type='button'; btnAccs.textContent='Účty'; btnAccs.className='px-3 py-1 border rounded bg-slate-50';
+  smallTabs.appendChild(btnAccs);
+  accountsHost.prepend(smallTabs);
+
+  // default show accounts list
+  renderAccounts();
 
   const myRole = window.currentUserRole || 'admin';
   const handlers = {
@@ -131,8 +316,8 @@ export async function render(root) {
     },
     onArchive: async () => {
       if (!id) { alert('Uložte nejprve záznam.'); return; }
-      const { data, error } = await (await import('/src/modules/050-najemnik/db.js')).archiveSubject(id, window.currentUser);
-      if (error) alert('Chyba: ' + (error.message || JSON.stringify(error))); else { alert('Archivováno'); navigateTo('#/m/050-najemnik/t/prehled'); }
+      const { data: d, error: err } = await (await import('/src/modules/050-najemnik/db.js')).archiveSubject(id, window.currentUser);
+      if (err) alert('Chyba: ' + (err.message || JSON.stringify(err))); else { alert('Archivováno'); navigateTo('#/m/050-najemnik/t/prehled'); }
     }
   };
 
