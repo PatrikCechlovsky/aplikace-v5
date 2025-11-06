@@ -60,12 +60,20 @@ export function renderTabs(container, tabs, options = {}) {
     
     // Call the tab's onActivate callback if it exists
     if (tabs[index].onActivate) {
-      tabs[index].onActivate(tabContents.children[index]);
+      try {
+        tabs[index].onActivate(tabContents.children[index]);
+      } catch (err) {
+        console.error('Error in tab onActivate handler:', err);
+      }
     }
     
     // Call global onTabChange callback
     if (onTabChange) {
-      onTabChange(index, tabs[index]);
+      try {
+        onTabChange(index, tabs[index]);
+      } catch (err) {
+        console.error('Error in global onTabChange handler:', err);
+      }
     }
   };
 
@@ -107,12 +115,14 @@ export function renderTabs(container, tabs, options = {}) {
     // If tab has content, render it
     if (tab.content) {
       if (typeof tab.content === 'function') {
-        // Async content loading
+        // Show loading placeholder for function-based content (may render sync or async)
         content.innerHTML = '<div class="text-center py-4">Načítání...</div>';
       } else if (typeof tab.content === 'string') {
         content.innerHTML = tab.content;
       } else if (tab.content instanceof HTMLElement) {
         content.appendChild(tab.content);
+      } else {
+        // unknown content type - show nothing but keep panel for safety
       }
     }
     
@@ -127,18 +137,45 @@ export function renderTabs(container, tabs, options = {}) {
   // Activate default tab
   activateTab(activeTabIndex);
 
-  // Load async content for tabs with content functions
+  // Load content for tabs that provide a function as content
+  // Robust handling: content function may be sync (rendering directly) or async returning a Promise or value.
   tabs.forEach((tab, index) => {
     if (typeof tab.content === 'function') {
       const contentPanel = tabContents.children[index];
-      tab.content(contentPanel).then(() => {
-        // Content loaded, refresh if this is the active tab
-        if (index === activeTabIndex) {
-          activateTab(activeTabIndex);
-        }
-      }).catch(error => {
-        contentPanel.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání: ${error.message}</div>`;
-      });
+
+      // execute content in try/catch to catch synchronous throws
+      try {
+        const result = tab.content(contentPanel);
+        // Normalize to a Promise - handles sync return (undefined/null), DOM rendering in-place, or Promise
+        Promise.resolve(result).then(resolved => {
+          // If the content function returned a string or a node, render/append it.
+          if (typeof resolved === 'string') {
+            contentPanel.innerHTML = resolved;
+          } else if (resolved instanceof HTMLElement) {
+            contentPanel.innerHTML = '';
+            contentPanel.appendChild(resolved);
+          } else {
+            // If resolved is undefined/null or not a value we can use,
+            // assume the function rendered into the provided container itself.
+            // If the container still contains the loading placeholder, clear it.
+            if (contentPanel.innerHTML && contentPanel.innerHTML.indexOf('Načítání...') !== -1) {
+              contentPanel.innerHTML = '';
+            }
+          }
+
+          // If this tab is active, re-activate to ensure styles / layout updates
+          if (index === activeTabIndex) {
+            try { activateTab(activeTabIndex); } catch (e) { /* ignore */ }
+          }
+        }).catch(error => {
+          console.error('Error loading tab content (async):', error);
+          contentPanel.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání: ${escapeHtml(error?.message || String(error))}</div>`;
+        });
+      } catch (err) {
+        // synchronous error while executing the content function
+        console.error('Error while executing tab content function:', err);
+        contentPanel.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání: ${escapeHtml(err?.message || String(err))}</div>`;
+      }
     }
   });
 
@@ -149,7 +186,8 @@ export function renderTabs(container, tabs, options = {}) {
     updateBadge: (tabIndex, badge) => {
       if (tabIndex >= 0 && tabIndex < tabs.length) {
         const header = tabHeadersList.children[tabIndex];
-        const existingBadge = header.querySelector('.ml-2.px-2');
+        // find existing badge by class (match classes set above)
+        const existingBadge = header.querySelector('.ml-2.px-2.py-0.5');
         if (existingBadge) {
           existingBadge.textContent = badge;
         } else {
@@ -166,9 +204,25 @@ export function renderTabs(container, tabs, options = {}) {
         if (typeof tab.content === 'function') {
           const contentPanel = tabContents.children[tabIndex];
           contentPanel.innerHTML = '<div class="text-center py-4">Načítání...</div>';
-          tab.content(contentPanel).catch(error => {
-            contentPanel.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání: ${error.message}</div>`;
-          });
+          try {
+            const result = tab.content(contentPanel);
+            Promise.resolve(result).then(resolved => {
+              if (typeof resolved === 'string') {
+                contentPanel.innerHTML = resolved;
+              } else if (resolved instanceof HTMLElement) {
+                contentPanel.innerHTML = '';
+                contentPanel.appendChild(resolved);
+              } else {
+                if (contentPanel.innerHTML && contentPanel.innerHTML.indexOf('Načítání...') !== -1) {
+                  contentPanel.innerHTML = '';
+                }
+              }
+            }).catch(error => {
+              contentPanel.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání: ${escapeHtml(error?.message || String(error))}</div>`;
+            });
+          } catch (err) {
+            contentPanel.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání: ${escapeHtml(err?.message || String(err))}</div>`;
+          }
         }
       } else {
         // Refresh active tab
@@ -242,6 +296,8 @@ export function createRelatedEntitiesTable(data, columns, options = {}) {
             td.innerHTML = rendered;
           } else if (rendered instanceof HTMLElement) {
             td.appendChild(rendered);
+          } else {
+            td.textContent = value || '-';
           }
         } else {
           td.textContent = value || '-';
@@ -256,6 +312,11 @@ export function createRelatedEntitiesTable(data, columns, options = {}) {
 
   table.appendChild(tbody);
   return table;
+}
+
+// small helper escapeHtml used in error rendering
+function escapeHtml(s = '') {
+  return ('' + s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 export default {
