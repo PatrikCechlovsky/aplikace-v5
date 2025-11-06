@@ -3,24 +3,44 @@ import { supabase } from '/src/supabase.js';
 
 /**
  * List property types with their colors
+ * Robust: if the DB does not have sort_order column, fall back to selecting without it
+ * and return sort_order = 0 for all entries. Always return data as an array to avoid
+ * caller-side "is not iterable" errors.
  * @returns {Promise<{data: Array, error: Object}>}
  */
 export async function listPropertyTypes() {
   try {
-    const { data, error } = await supabase
+    // Try to include sort_order (preferred)
+    let res = await supabase
       .from('property_types')
       .select('slug,label,color,icon,sort_order')
       .order('label', { ascending: true });
-    
-    if (error) {
-      console.error('Error listing property types:', error);
-      return { data: null, error };
+
+    if (res.error) {
+      // If error indicates missing column sort_order, fallback to query without it
+      const msg = String(res.error?.message || '').toLowerCase();
+      if (msg.includes('property_types.sort_order') || msg.includes('sort_order')) {
+        console.warn('property_types.sort_order not found, falling back to select without sort_order');
+        const res2 = await supabase
+          .from('property_types')
+          .select('slug,label,color,icon')
+          .order('label', { ascending: true });
+        if (res2.error) {
+          console.error('Error listing property types (fallback):', res2.error);
+          return { data: [], error: res2.error };
+        }
+        const data = (res2.data || []).map(d => ({ ...d, sort_order: 0 }));
+        return { data, error: null };
+      }
+      console.error('Error listing property types:', res.error);
+      return { data: [], error: res.error };
     }
-    
-    return { data: data || [], error: null };
+
+    const data = (res.data || []).map(d => ({ ...d, sort_order: Number.isFinite(d.sort_order) ? d.sort_order : 0 }));
+    return { data, error: null };
   } catch (err) {
     console.error('Exception in listPropertyTypes:', err);
-    return { data: null, error: err };
+    return { data: [], error: err };
   }
 }
 
@@ -35,12 +55,12 @@ export async function upsertPropertyType({ slug, label, color, icon }) {
       .from('property_types')
       .upsert({ slug, label, color, icon }, { onConflict: 'slug' })
       .select();
-    
+
     if (error) {
       console.error('Error upserting property type:', error);
       return { data: null, error };
     }
-    
+
     return { data, error: null };
   } catch (err) {
     console.error('Exception in upsertPropertyType:', err);
@@ -50,24 +70,41 @@ export async function upsertPropertyType({ slug, label, color, icon }) {
 
 /**
  * List unit types with their colors
+ * Robust fallback same as listPropertyTypes()
  * @returns {Promise<{data: Array, error: Object}>}
  */
 export async function listUnitTypes() {
   try {
-    const { data, error } = await supabase
+    // Try to include sort_order (preferred)
+    let res = await supabase
       .from('unit_types')
       .select('slug,label,color,icon,sort_order')
       .order('label', { ascending: true });
-    
-    if (error) {
-      console.error('Error listing unit types:', error);
-      return { data: null, error };
+
+    if (res.error) {
+      const msg = String(res.error?.message || '').toLowerCase();
+      if (msg.includes('unit_types.sort_order') || msg.includes('sort_order')) {
+        console.warn('unit_types.sort_order not found, falling back to select without sort_order');
+        const res2 = await supabase
+          .from('unit_types')
+          .select('slug,label,color,icon')
+          .order('label', { ascending: true });
+        if (res2.error) {
+          console.error('Error listing unit types (fallback):', res2.error);
+          return { data: [], error: res2.error };
+        }
+        const data = (res2.data || []).map(d => ({ ...d, sort_order: 0 }));
+        return { data, error: null };
+      }
+      console.error('Error listing unit types:', res.error);
+      return { data: [], error: res.error };
     }
-    
-    return { data: data || [], error: null };
+
+    const data = (res.data || []).map(d => ({ ...d, sort_order: Number.isFinite(d.sort_order) ? d.sort_order : 0 }));
+    return { data, error: null };
   } catch (err) {
     console.error('Exception in listUnitTypes:', err);
-    return { data: null, error: err };
+    return { data: [], error: err };
   }
 }
 
@@ -82,12 +119,12 @@ export async function upsertUnitType({ slug, label, color, icon }) {
       .from('unit_types')
       .upsert({ slug, label, color, icon }, { onConflict: 'slug' })
       .select();
-    
+
     if (error) {
       console.error('Error upserting unit type:', error);
       return { data: null, error };
     }
-    
+
     return { data, error: null };
   } catch (err) {
     console.error('Exception in upsertUnitType:', err);
@@ -96,17 +133,16 @@ export async function upsertUnitType({ slug, label, color, icon }) {
 }
 
 /**
- * Helpers: load type ordering maps
+ * Helpers: load type ordering maps (robust to missing sort_order column)
  */
 async function loadPropertyTypesMap() {
   try {
-    const { data: types, error } = await supabase
-      .from('property_types')
-      .select('slug,sort_order');
-    if (error) {
-      // don't fail hard — return empty map and propagate error if needed
-      return { map: {}, error };
+    const res = await listPropertyTypes();
+    if (res.error) {
+      // log but return empty map
+      console.warn('loadPropertyTypesMap: listPropertyTypes returned error', res.error);
     }
+    const types = res.data || [];
     const map = {};
     (types || []).forEach(t => {
       map[t.slug] = Number.isFinite(t.sort_order) ? t.sort_order : 0;
@@ -119,10 +155,11 @@ async function loadPropertyTypesMap() {
 
 async function loadUnitTypesMap() {
   try {
-    const { data: types, error } = await supabase
-      .from('unit_types')
-      .select('slug,sort_order');
-    if (error) return { map: {}, error };
+    const res = await listUnitTypes();
+    if (res.error) {
+      console.warn('loadUnitTypesMap: listUnitTypes returned error', res.error);
+    }
+    const types = res.data || [];
     const map = {};
     (types || []).forEach(t => {
       map[t.slug] = Number.isFinite(t.sort_order) ? t.sort_order : 0;
@@ -175,7 +212,7 @@ export async function listProperties(options = {}) {
     
     if (error) {
       console.error('Error listing properties:', error);
-      return { data: null, error };
+      return { data: [], error };
     }
 
     const arr = (data || []).map(p => ({ ...p }));
@@ -193,7 +230,7 @@ export async function listProperties(options = {}) {
     return { data: arr, error: null };
   } catch (err) {
     console.error('Exception in listProperties:', err);
-    return { data: null, error: err };
+    return { data: [], error: err };
   }
 }
 
@@ -324,7 +361,7 @@ export async function archiveProperty(id) {
 /**
  * Restore archived property
  * @param {string} id - Property ID
- * @returns {Promise<{data: Object, error: Object}>}
+ * @returns {Promise<{data: Array, error: Object}>}
  */
 export async function restoreProperty(id) {
   try {
@@ -385,7 +422,7 @@ export async function listUnits(propertyId, options = {}) {
     
     if (error) {
       console.error('Error listing units:', error);
-      return { data: null, error };
+      return { data: [], error };
     }
 
     const arr = (data || []).map(u => ({ ...u }));
@@ -403,7 +440,7 @@ export async function listUnits(propertyId, options = {}) {
     return { data: arr, error: null };
   } catch (err) {
     console.error('Exception in listUnits:', err);
-    return { data: null, error: err };
+    return { data: [], error: err };
   }
 }
 
