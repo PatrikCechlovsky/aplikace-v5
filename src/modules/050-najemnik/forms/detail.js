@@ -79,10 +79,10 @@ export async function render(root) {
 
   root.appendChild(mainContainer);
 
-  // Define tabs according to requirements from Modul 030.docx
+  // Define tabs according to requirements - "Profil" first, then other tabs
   const tabs = [
     {
-      label: 'Detail nájemníka',
+      label: 'Profil nájemníka',
       icon: '👤',
       content: (container) => {
         // Render the form in this tab
@@ -100,60 +100,85 @@ export async function render(root) {
       }
     },
     {
-      label: 'Účty',
-      icon: '💳',
-      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
-    },
-    {
-      label: 'Pronajímatel',
-      icon: '🏠',
+      label: 'Smlouvy',
+      icon: '📄',
+      badge: null,
       content: async (container) => {
-        container.innerHTML = '<div class="text-center py-4">Načítání pronajímatelů...</div>';
-        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení pronajímatelů spojených s tímto nájemníkem bude doplněna.</div>';
-      }
-    },
-    {
-      label: 'Účty',
-      icon: '💳',
-      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
-    },
-    {
-      label: 'Nemovitosti',
-      icon: '🏢',
-      content: async (container) => {
-        container.innerHTML = '<div class="text-center py-4">Načítání nemovitostí...</div>';
+        container.innerHTML = '<div class="text-center py-4">Načítání smluv...</div>';
         
-        // Load active contracts to get properties
-        const { data: contracts } = await listContracts({ tenantId: id, status: 'aktivni' });
-        
-        if (!contracts || contracts.length === 0) {
-          container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
-          return;
-        }
-
-        const properties = contracts.map(c => c.property).filter(p => p);
-        
-        if (properties.length === 0) {
-          container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
-          return;
-        }
-
-        const table = createRelatedEntitiesTable(
-          properties,
-          [
-            { label: 'Název', field: 'nazev', render: (val) => `<strong>${val || '-'}</strong>` },
-            { label: 'Adresa', field: 'ulice', render: (val, row) => `${val || ''} ${row.cislo_popisne || ''}, ${row.mesto || ''}` },
-            { label: 'Typ', field: 'typ_nemovitosti' }
-          ],
-          {
-            emptyMessage: 'Žádné nemovitosti',
-            onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`),
-            className: 'cursor-pointer'
+        try {
+          // Load contracts for this tenant
+          const { data: contracts, error: contractsError } = await listContracts({ tenantId: id });
+          
+          if (contractsError) {
+            container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání smluv: ${contractsError.message}</div>`;
+            return;
           }
-        );
 
-        container.innerHTML = '';
-        container.appendChild(table);
+          container.innerHTML = '';
+          
+          if (!contracts || contracts.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné smlouvy</div>';
+            return;
+          }
+
+          // Create table with contracts
+          const table = createRelatedEntitiesTable(
+            contracts,
+            [
+              { 
+                label: 'Číslo smlouvy', 
+                field: 'cislo_smlouvy',
+                render: (val) => `<strong>${val || 'Bez čísla'}</strong>`
+              },
+              { 
+                label: 'Jednotka', 
+                field: 'unit',
+                render: (val) => val ? `${val.oznaceni || '-'} (${val.typ_jednotky || '-'})` : '-'
+              },
+              { 
+                label: 'Nemovitost', 
+                field: 'property',
+                render: (val) => val ? `${val.nazev || '-'}, ${val.mesto || '-'}` : '-'
+              },
+              { 
+                label: 'Stav', 
+                field: 'stav',
+                render: (val) => {
+                  const statusLabels = {
+                    'koncept': '📝 Koncept',
+                    'cekajici_podepsani': '⏳ Čeká na podpis',
+                    'aktivni': '✅ Aktivní',
+                    'ukoncena': '❌ Ukončená',
+                    'zrusena': '🚫 Zrušená'
+                  };
+                  return statusLabels[val] || val || '-';
+                }
+              },
+              { 
+                label: 'Nájem', 
+                field: 'najem_vyse',
+                render: (val) => val ? `${val} Kč/měsíc` : '-'
+              },
+              { 
+                label: 'Začátek', 
+                field: 'datum_zacatek',
+                render: (val) => val ? new Date(val).toLocaleDateString('cs-CZ') : '-'
+              }
+            ],
+            {
+              emptyMessage: 'Žádné smlouvy',
+              onRowClick: (row) => {
+                navigateTo(`#/m/060-smlouva/f/detail?id=${row.id}`);
+              },
+              className: 'cursor-pointer'
+            }
+          );
+
+          container.appendChild(table);
+        } catch (error) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání smluv: ${error.message}</div>`;
+        }
       }
     },
     {
@@ -162,62 +187,111 @@ export async function render(root) {
       content: async (container) => {
         container.innerHTML = '<div class="text-center py-4">Načítání jednotek...</div>';
         
-        // Load active contracts to get units
-        const { data: contracts } = await listContracts({ tenantId: id, status: 'aktivni' });
-        
-        if (!contracts || contracts.length === 0) {
-          container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
-          return;
-        }
-
-        const units = contracts.map(c => c.unit).filter(u => u);
-        
-        if (units.length === 0) {
-          container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
-          return;
-        }
-
-        const table = createRelatedEntitiesTable(
-          units,
-          [
-            { label: 'Označení', field: 'oznaceni', render: (val) => `<strong>${val || '-'}</strong>` },
-            { label: 'Typ', field: 'typ_jednotky' },
-            { label: 'Stav', field: 'stav' },
-            { label: 'Plocha', field: 'plocha', render: (val) => val ? `${val} m²` : '-' }
-          ],
-          {
-            emptyMessage: 'Žádné jednotky',
-            onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`),
-            className: 'cursor-pointer'
+        try {
+          // Load active contracts to get units
+          const { data: contracts } = await listContracts({ tenantId: id, status: 'aktivni' });
+          
+          if (!contracts || contracts.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+            return;
           }
-        );
 
-        container.innerHTML = '';
-        container.appendChild(table);
+          const units = contracts.map(c => c.unit).filter(u => u);
+          
+          if (units.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+            return;
+          }
+
+          const table = createRelatedEntitiesTable(
+            units,
+            [
+              { label: 'Označení', field: 'oznaceni', render: (val) => `<strong>${val || '-'}</strong>` },
+              { label: 'Typ', field: 'typ_jednotky' },
+              { label: 'Stav', field: 'stav' },
+              { label: 'Plocha', field: 'plocha', render: (val) => val ? `${val} m²` : '-' }
+            ],
+            {
+              emptyMessage: 'Žádné jednotky',
+              onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`),
+              className: 'cursor-pointer'
+            }
+          );
+
+          container.innerHTML = '';
+          container.appendChild(table);
+        } catch (error) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání jednotek: ${error.message}</div>`;
+        }
       }
     },
     {
-      label: 'Smlouvy',
-      icon: '📄',
-      badge: null,
+      label: 'Nemovitosti',
+      icon: '🏢',
       content: async (container) => {
-        container.innerHTML = '<div class="text-center py-4">Načítání pronajímatelů...</div>';
-        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení pronajímatelů spojených s tímto nájemníkem bude doplněna.</p></div>';
+        container.innerHTML = '<div class="text-center py-4">Načítání nemovitostí...</div>';
+        
+        try {
+          // Load active contracts to get properties
+          const { data: contracts } = await listContracts({ tenantId: id, status: 'aktivni' });
+          
+          if (!contracts || contracts.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
+            return;
+          }
+
+          const properties = contracts.map(c => c.property).filter(p => p);
+          
+          if (properties.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
+            return;
+          }
+
+          const table = createRelatedEntitiesTable(
+            properties,
+            [
+              { label: 'Název', field: 'nazev', render: (val) => `<strong>${val || '-'}</strong>` },
+              { label: 'Adresa', field: 'ulice', render: (val, row) => `${val || ''} ${row.cislo_popisne || ''}, ${row.mesto || ''}` },
+              { label: 'Typ', field: 'typ_nemovitosti' }
+            ],
+            {
+              emptyMessage: 'Žádné nemovitosti',
+              onRowClick: (row) => navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`),
+              className: 'cursor-pointer'
+            }
+          );
+
+          container.innerHTML = '';
+          container.appendChild(table);
+        } catch (error) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání nemovitostí: ${error.message}</div>`;
+        }
       }
     },
     {
       label: 'Dokumenty',
-      icon: '📄',
-      content: `
-        <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
-          <button 
-            onclick="window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: '${id}' })"
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            Spravovat přílohy
-          </button>
-        </div>
-      `
+      icon: '📎',
+      content: (container) => {
+        container.innerHTML = `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
+            <button 
+              id="tenant-attachments-btn"
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              Spravovat přílohy
+            </button>
+          </div>
+        `;
+        // Add event listener safely
+        const btn = container.querySelector('#tenant-attachments-btn');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (window.showAttachmentsModal) {
+              window.showAttachmentsModal({ entity: 'subjects', entityId: id });
+            }
+          });
+        }
+      }
     },
     {
       label: 'Systém',

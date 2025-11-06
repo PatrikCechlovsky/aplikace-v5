@@ -1,11 +1,11 @@
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
-import { renderCommonActions } from '/src/ui/commonActions.js';
+import { renderCommonActions, toast } from '/src/ui/commonActions.js';
 import { renderTabs, createRelatedEntitiesTable } from '/src/ui/tabs.js';
 import { navigateTo } from '/src/app.js';
-import { getProperty, getPropertyWithOwner, listUnits, archiveProperty } from '/src/modules/040-nemovitost/db.js';
+import { getPropertyWithOwner, listUnits, archiveProperty } from '/src/modules/040-nemovitost/db.js';
 import { showAttachmentsModal } from '/src/ui/attachments.js';
-import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js'; // <- sdílená definice polí
+import { FIELDS } from '/src/modules/040-nemovitost/forms/fields.js';
 
 // Pomocná funkce pro získání parametrů z hash části URL
 function getHashParams() {
@@ -75,55 +75,29 @@ export async function render(root, params) {
     ]);
   } catch (e) {}
 
-  root.innerHTML = `
-    <div id="commonactions" class="mb-4"></div>
-    <div id="property-tabs" class="mt-6"></div>
-  `;
-
-  const myRole = window.currentUserRole || 'admin';
-
-  // --- Akce v liště ---
-  const moduleActions = ['edit', 'units', 'attach', 'wizard', 'archive', 'history'];
-  const handlers = {};
-
-  handlers.onEdit = () => navigateTo(`#/m/040-nemovitost/f/edit?id=${id}`);
+  // Create main container
+  root.innerHTML = '';
   
-  // Archivace (jen pokud není již archivovaný)
-  if (!data.archived) {
-    handlers.onArchive = async () => {
-      await archiveProperty(id);
-      alert('Nemovitost byla archivována.');
-      navigateTo('#/m/040-nemovitost/t/prehled');
-    };
-  }
-
-  // Přílohy
-  handlers.onAttach = () => showAttachmentsModal({ entity: 'properties', entityId: id });
-
-  // Historie změn
-  handlers.onHistory = () => alert('Historie - implementovat');
-
-  // Navigace na seznam jednotek
-  handlers.onUnits = () => {
-    navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`);
-  };
+  // Create commonactions container at the top
+  const commonActionsDiv = document.createElement('div');
+  commonActionsDiv.id = 'commonactions';
+  commonActionsDiv.className = 'mb-4';
+  root.appendChild(commonActionsDiv);
   
-  // Průvodce
-  handlers.onWizard = () => {
-    alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
-  };
+  const mainContainer = document.createElement('div');
+  mainContainer.className = 'p-4';
 
-  // Tlačítka a akce
-  renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions,
-    userRole: myRole,
-    handlers
-  });
+  // Create tabs container
+  const tabsContainer = document.createElement('div');
+  tabsContainer.className = 'mt-6';
+  mainContainer.appendChild(tabsContainer);
 
-  // Render tabs with related information
+  root.appendChild(mainContainer);
+
+  // Define tabs with main form in first tab
   const tabs = [
     {
-      label: 'Detail nemovitosti',
+      label: 'Základní údaje',
       icon: '🏢',
       content: (container) => {
         // Render the form in this tab
@@ -181,98 +155,159 @@ export async function render(root, params) {
       content: async (container) => {
         container.innerHTML = '<div class="text-center py-4">Načítání jednotek...</div>';
         
-        // Load units for this property
-        const { data: units, error: unitsError } = await listUnits(id);
-        
-        if (unitsError) {
-          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání jednotek: ${unitsError.message}</div>`;
-          return;
-        }
-
-        container.innerHTML = '';
-        
-        if (!units || units.length === 0) {
-          container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
-          return;
-        }
-
-        // Create table with units
-        const table = createRelatedEntitiesTable(
-          units,
-          [
-            { 
-              label: 'Označení', 
-              field: 'oznaceni',
-              render: (val) => `<strong>${val || 'Bez označení'}</strong>`
-            },
-            { 
-              label: 'Typ', 
-              field: 'typ_jednotky',
-              render: (val) => {
-                const typeLabels = {
-                  'byt': 'Byt',
-                  'kancelar': 'Kancelář',
-                  'obchod': 'Obchod',
-                  'sklad': 'Sklad',
-                  'garaz': 'Garáž',
-                  'jina_jednotka': 'Jiná'
-                };
-                return typeLabels[val] || val || '-';
-              }
-            },
-            { 
-              label: 'Stav', 
-              field: 'stav',
-              render: (val) => {
-                const statusLabels = {
-                  'volna': '🟢 Volná',
-                  'obsazena': '🔴 Obsazená',
-                  'rezervovana': '🟡 Rezervovaná',
-                  'rekonstrukce': '🔧 Rekonstrukce'
-                };
-                return statusLabels[val] || val || '-';
-              }
-            },
-            { 
-              label: 'Plocha', 
-              field: 'plocha',
-              render: (val) => val ? `${val} m²` : '-'
-            },
-            { 
-              label: 'Nájem', 
-              field: 'mesicni_najem',
-              render: (val) => val ? `${val} Kč` : '-'
-            }
-          ],
-          {
-            emptyMessage: 'Žádné jednotky',
-            onRowClick: (row) => {
-              navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`);
-            },
-            className: 'cursor-pointer'
+        try {
+          // Load units for this property
+          const { data: units, error: unitsError } = await listUnits(id);
+          
+          if (unitsError) {
+            container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání jednotek: ${unitsError.message}</div>`;
+            return;
           }
-        );
 
-        container.appendChild(table);
+          container.innerHTML = '';
+          
+          if (!units || units.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+            return;
+          }
+
+          // Create table with units
+          const table = createRelatedEntitiesTable(
+            units,
+            [
+              { 
+                label: 'Označení', 
+                field: 'oznaceni',
+                render: (val) => `<strong>${val || 'Bez označení'}</strong>`
+              },
+              { 
+                label: 'Typ', 
+                field: 'typ_jednotky',
+                render: (val) => {
+                  const typeLabels = {
+                    'byt': 'Byt',
+                    'kancelar': 'Kancelář',
+                    'obchod': 'Obchod',
+                    'sklad': 'Sklad',
+                    'garaz': 'Garáž',
+                    'jina_jednotka': 'Jiná'
+                  };
+                  return typeLabels[val] || val || '-';
+                }
+              },
+              { 
+                label: 'Stav', 
+                field: 'stav',
+                render: (val) => {
+                  const statusLabels = {
+                    'volna': '🟢 Volná',
+                    'obsazena': '🔴 Obsazená',
+                    'rezervovana': '🟡 Rezervovaná',
+                    'rekonstrukce': '🔧 Rekonstrukce'
+                  };
+                  return statusLabels[val] || val || '-';
+                }
+              },
+              { 
+                label: 'Plocha', 
+                field: 'plocha',
+                render: (val) => val ? `${val} m²` : '-'
+              },
+              { 
+                label: 'Nájem', 
+                field: 'mesicni_najem',
+                render: (val) => val ? `${val} Kč` : '-'
+              }
+            ],
+            {
+              emptyMessage: 'Žádné jednotky',
+              onRowClick: (row) => {
+                navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`);
+              },
+              className: 'cursor-pointer'
+            }
+          );
+
+          container.appendChild(table);
+        } catch (error) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání jednotek: ${error.message}</div>`;
+        }
       }
     },
     {
       label: 'Dokumenty',
       icon: '📄',
+      content: (container) => {
+        container.innerHTML = `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
+            <button 
+              id="property-attachments-btn"
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              Spravovat přílohy
+            </button>
+          </div>
+        `;
+        // Add event listener safely
+        const btn = container.querySelector('#property-attachments-btn');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (window.showAttachmentsModal) {
+              window.showAttachmentsModal({ entity: 'properties', entityId: id });
+            }
+          });
+        }
+      }
+    },
+    {
+      label: 'Systém',
+      icon: '⚙️',
       content: `
         <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
-          <button 
-            onclick="window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'properties', entityId: '${id}' })"
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            Spravovat přílohy
-          </button>
+          <h3 class="text-lg font-semibold mb-2">Systémové informace</h3>
+          <div class="space-y-2">
+            <div><strong>Vytvořeno:</strong> ${formatCzechDate(data.created_at) || '-'}</div>
+            <div><strong>Poslední úprava:</strong> ${formatCzechDate(data.updated_at) || '-'}</div>
+            <div><strong>Upravil:</strong> ${data.updated_by || '-'}</div>
+            <div><strong>Archivní:</strong> ${data.archived ? 'Ano' : 'Ne'}</div>
+          </div>
         </div>
       `
     }
   ];
 
-  renderTabs(root.querySelector('#property-tabs'), tabs, { defaultTab: 0 });
+  // Render tabs
+  renderTabs(tabsContainer, tabs, { defaultTab: 0 });
+
+  // Common actions - per requirements: remove 'refresh', add 'wizard'
+  const myRole = window.currentUserRole || 'admin';
+  const handlers = {
+    onEdit: () => navigateTo(`#/m/040-nemovitost/f/edit?id=${id}`),
+    onAttach: () => showAttachmentsModal({ entity: 'properties', entityId: id }),
+    onWizard: () => {
+      toast('Průvodce zatím není k dispozici. Tato funkce bude doplněna.', 'info');
+    },
+    onUnits: () => {
+      navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`);
+    },
+    onHistory: () => toast('Historie - implementovat', 'info')
+  };
+
+  // Only add archive if not already archived
+  if (!data.archived) {
+    handlers.onArchive = async () => {
+      await archiveProperty(id);
+      toast('Nemovitost byla archivována.', 'info');
+      navigateTo('#/m/040-nemovitost/t/prehled');
+    };
+  }
+
+  // Render common actions
+  renderCommonActions(document.getElementById('commonactions'), {
+    moduleActions: ['edit', 'units', 'attach', 'wizard', 'archive', 'history'],
+    userRole: myRole,
+    handlers
+  });
 }
 
 export default { render };
