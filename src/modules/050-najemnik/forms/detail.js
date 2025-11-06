@@ -271,16 +271,27 @@ export async function render(root) {
     {
       label: 'Dokumenty',
       icon: '📎',
-      content: `
-        <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
-          <button 
-            onclick="window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: '${id}' })"
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            Spravovat přílohy
-          </button>
-        </div>
-      `
+      content: (container) => {
+        container.innerHTML = `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
+            <button 
+              id="tenant-attachments-btn"
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              Spravovat přílohy
+            </button>
+          </div>
+        `;
+        // Add event listener safely
+        const btn = container.querySelector('#tenant-attachments-btn');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (window.showAttachmentsModal) {
+              window.showAttachmentsModal({ entity: 'subjects', entityId: id });
+            }
+          });
+        }
+      }
     },
     {
       label: 'Systém',

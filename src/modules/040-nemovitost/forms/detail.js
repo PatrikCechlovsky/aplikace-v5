@@ -1,6 +1,6 @@
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
-import { renderCommonActions } from '/src/ui/commonActions.js';
+import { renderCommonActions, toast } from '/src/ui/commonActions.js';
 import { renderTabs, createRelatedEntitiesTable } from '/src/ui/tabs.js';
 import { navigateTo } from '/src/app.js';
 import { getPropertyWithOwner, listUnits, archiveProperty } from '/src/modules/040-nemovitost/db.js';
@@ -237,16 +237,27 @@ export async function render(root, params) {
     {
       label: 'Dokumenty',
       icon: '📄',
-      content: `
-        <div class="p-4">
-          <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
-          <button 
-            onclick="window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'properties', entityId: '${id}' })"
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-            Spravovat přílohy
-          </button>
-        </div>
-      `
+      content: (container) => {
+        container.innerHTML = `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
+            <button 
+              id="property-attachments-btn"
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              Spravovat přílohy
+            </button>
+          </div>
+        `;
+        // Add event listener safely
+        const btn = container.querySelector('#property-attachments-btn');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (window.showAttachmentsModal) {
+              window.showAttachmentsModal({ entity: 'properties', entityId: id });
+            }
+          });
+        }
+      }
     },
     {
       label: 'Systém',
@@ -274,19 +285,19 @@ export async function render(root, params) {
     onEdit: () => navigateTo(`#/m/040-nemovitost/f/edit?id=${id}`),
     onAttach: () => showAttachmentsModal({ entity: 'properties', entityId: id }),
     onWizard: () => {
-      alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
+      toast('Průvodce zatím není k dispozici. Tato funkce bude doplněna.', 'info');
     },
     onUnits: () => {
       navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`);
     },
-    onHistory: () => alert('Historie - implementovat')
+    onHistory: () => toast('Historie - implementovat', 'info')
   };
 
   // Only add archive if not already archived
   if (!data.archived) {
     handlers.onArchive = async () => {
       await archiveProperty(id);
-      alert('Nemovitost byla archivována.');
+      toast('Nemovitost byla archivována.', 'info');
       navigateTo('#/m/040-nemovitost/t/prehled');
     };
   }
