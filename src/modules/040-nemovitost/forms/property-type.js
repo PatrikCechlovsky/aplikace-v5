@@ -17,10 +17,12 @@ const PALETTE = [
 ];
 
 const FIELDS = [
-  { key: 'slug', label: 'Slug (ID)', type: 'text', required: true, readOnly: true, placeholder: 'bytovy_dum' },
+  // make slug editable for creation and editable/readonly behavior handled by UI logic (we avoid skipping it)
+  { key: 'slug', label: 'Slug (ID)', type: 'text', required: true, readOnly: false, placeholder: 'bytovy_dum' },
   { key: 'label', label: 'Název', type: 'text', required: true, placeholder: 'Bytový dům' },
   { key: 'color', label: 'Barva', type: 'text', required: true, placeholder: '#f59e0b' },
-  { key: 'icon', label: 'Ikona', type: 'text', placeholder: 'building-2' }
+  { key: 'icon', label: 'Ikona', type: 'text', placeholder: 'building-2' },
+  { key: 'sort_order', label: 'Pořadí', type: 'number', placeholder: '0' }
 ];
 
 export async function render(root) {
@@ -50,19 +52,20 @@ export async function render(root) {
 
     const rows = data || [];
     const columns = [
-      { key: 'slug', label: 'Slug', width: '30%' },
-      { key: 'label', label: 'Název', width: '40%' },
+      { key: 'slug', label: 'Slug', width: '25%' },
+      { key: 'label', label: 'Název', width: '35%' },
       {
         key: 'color',
         label: 'Barva',
-        width: '30%',
+        width: '20%',
         render: (r) => `
           <div class="flex items-center gap-2">
             <span class="inline-block w-4 h-4 rounded" style="background:${escapeHtml(r.color || '#ddd')}"></span>
             <code>${escapeHtml(r.color || '')}</code>
           </div>
         `
-      }
+      },
+      { key: 'sort_order', label: 'Pořadí', width: '20%', render: r => `<div>${(r.sort_order !== undefined && r.sort_order !== null) ? escapeHtml(String(r.sort_order)) : ''}</div>` }
     ];
 
     renderTable(listRoot, {
@@ -84,14 +87,23 @@ export async function render(root) {
 
   function drawForm() {
     if (!selectedRow) {
-      renderForm(formRoot, FIELDS, { color: PALETTE[0] }, async () => true, {
+      // new item defaults
+      renderForm(formRoot, FIELDS, { color: PALETTE[0], sort_order: 0 }, async () => true, {
         readOnly: false,
         showSubmit: false,
         layout: { columns: { base: 1 }, density: 'normal' }
       });
       pickColor(formRoot, PALETTE[0]);
     } else {
-      renderForm(formRoot, FIELDS, selectedRow, async () => true, {
+      // editing existing, populate including sort_order
+      const init = {
+        slug: selectedRow.slug,
+        label: selectedRow.label,
+        color: selectedRow.color,
+        icon: selectedRow.icon,
+        sort_order: (Number.isFinite(selectedRow.sort_order) ? selectedRow.sort_order : 0)
+      };
+      renderForm(formRoot, FIELDS, init, async () => true, {
         readOnly: false,
         showSubmit: false,
         layout: { columns: { base: 1 }, density: 'normal' }
@@ -110,15 +122,20 @@ export async function render(root) {
       return false;
     }
 
+    // parse sort_order as integer
+    v.sort_order = parseInt(v.sort_order, 10);
+    if (!Number.isFinite(v.sort_order) || v.sort_order < 0) v.sort_order = 0;
+
     const { data, error } = await upsertPropertyType({
       slug: v.slug,
       label: v.label,
       color: v.color,
-      icon: v.icon || null
+      icon: v.icon || null,
+      sort_order: v.sort_order
     });
 
     if (error) {
-      alert('Chyba při ukládání: ' + error.message);
+      alert('Chyba při ukládání: ' + (error.message || JSON.stringify(error)));
       return false;
     }
 
@@ -156,7 +173,7 @@ export async function render(root) {
 function grabValues(scopeEl) {
   const obj = {};
   for (const f of FIELDS) {
-    if (f.readOnly && !selectedRow) continue;
+    // do not skip based on static f.readOnly anymore (we set fields to editable)
     const el = scopeEl.querySelector(`[name="${f.key}"]`);
     if (!el) continue;
     obj[f.key] = (el.type === 'checkbox') ? !!el.checked : el.value;
