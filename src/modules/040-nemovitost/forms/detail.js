@@ -1,3 +1,4 @@
+//040-nemovitost/forms/detail.js
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions, toast } from '/src/ui/commonActions.js';
