@@ -13,7 +13,6 @@ import { renderTabs, createRelatedEntitiesTable } from '/src/ui/tabs.js';
 import { navigateTo } from '/src/app.js';
 import { getSubject } from '/src/modules/030-pronajimatel/db.js';
 import { listProperties, listUnits } from '/src/modules/040-nemovitost/db.js';
-import { listSubjects } from '/src/db/subjects.js';
 import { showHistoryModal } from '/src/ui/history.js';
 import TYPE_SCHEMAS from '/src/modules/030-pronajimatel/type-schemas.js';
 

@@ -114,11 +114,10 @@ export async function render(root, params) {
 
   const myRole = window.currentUserRole || 'admin';
 
-  // --- Akce v liště --- (Per requirements: remove 'refresh', add 'wizard')
-  const moduleActions = ['add', 'edit', 'attach', 'wizard', 'archive', 'history'];
+  // --- Akce v liště --- (Per requirements: remove 'refresh' and 'add', keep edit, attach, wizard, archive, history)
+  const moduleActions = ['edit', 'attach', 'wizard', 'archive', 'history'];
   const handlers = {};
 
-  handlers.onAdd = () => navigateTo(`#/m/040-nemovitost/f/unit-chooser`);
   handlers.onEdit = () => navigateTo(`#/m/040-nemovitost/f/unit-edit?id=${id}`);
   
   // Archivace (jen pokud není již archivovaný)

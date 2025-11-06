@@ -13,7 +13,7 @@ import { renderTabs, createRelatedEntitiesTable } from '/src/ui/tabs.js';
 import { navigateTo } from '/src/app.js';
 import { getSubject } from '/src/modules/050-najemnik/db.js';
 import { listContracts } from '/src/modules/060-smlouva/db.js';
-import { listProperties, listUnits } from '/src/modules/040-nemovitost/db.js';
+import { listUnits } from '/src/modules/040-nemovitost/db.js';
 import { showHistoryModal } from '/src/ui/history.js';
 import TYPE_SCHEMAS from '/src/modules/050-najemnik/type-schemas.js';
 
