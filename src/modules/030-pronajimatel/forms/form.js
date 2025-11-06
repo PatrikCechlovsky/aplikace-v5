@@ -1,3 +1,7 @@
+// Upravený form.js - 030 Pronajímatel
+// Horní sekce (zelená): Detail (edit), Účty (edit), Systém (readonly)
+// Spodní sekce (žlutá): Nemovitosti, Jednotky, Nájemníci (readonly tables)
+
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
@@ -24,6 +28,85 @@ function formatCzechDate(dateStr) {
   return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ');
 }
 
+// Small helper to render accounts list and add/remove
+function createAccountsUI(subjectData, container, subjectId, onSaved) {
+  container.innerHTML = '';
+  const accounts = Array.isArray(subjectData?.bank_accounts) ? subjectData.bank_accounts.slice() : [];
+
+  const header = document.createElement('div');
+  header.className = 'flex items-center justify-between mb-3';
+  header.innerHTML = `<h3 class="text-lg font-semibold">Bankovní účty</h3>`;
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'ml-2 inline-flex items-center px-3 py-1 border rounded text-sm bg-white hover:bg-gray-50';
+  addBtn.textContent = 'Přidat účet';
+  header.appendChild(addBtn);
+  container.appendChild(header);
+
+  const listEl = document.createElement('div');
+  listEl.className = 'space-y-2';
+  container.appendChild(listEl);
+
+  function renderList() {
+    listEl.innerHTML = '';
+    if (accounts.length === 0) {
+      listEl.innerHTML = '<div class="text-gray-500 p-2">Žádné účty</div>';
+      return;
+    }
+    accounts.forEach((acc, idx) => {
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between p-2 border rounded';
+      row.innerHTML = `
+        <div>
+          <div class="font-medium">${acc.name || acc.label || 'Bankovní účet'}</div>
+          <div class="text-sm text-gray-600">${acc.iban || acc.number || ''}</div>
+        </div>
+      `;
+      const actions = document.createElement('div');
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'ml-2 inline-flex items-center px-2 py-1 border rounded text-sm bg-red-50 text-red-700';
+      del.textContent = 'Smazat';
+      del.addEventListener('click', async () => {
+        if (!confirm('Opravdu smazat tento účet?')) return;
+        accounts.splice(idx, 1);
+        // persist change
+        try {
+          const payload = { id: subjectId, bank_accounts: accounts };
+          const { data, error } = await upsertSubject(payload, window.currentUser || null);
+          if (error) { alert('Chyba při mazání účtu: ' + (error.message || JSON.stringify(error))); return; }
+          onSaved && onSaved(data);
+        } catch (e) {
+          alert('Chyba: ' + e.message);
+        }
+      });
+      actions.appendChild(del);
+      row.appendChild(actions);
+      listEl.appendChild(row);
+    });
+  }
+
+  addBtn.addEventListener('click', async () => {
+    // simple prompt-based add; you can replace with modal/form
+    const name = prompt('Název účtu (např. KB / Běžný účet):');
+    if (name === null) return;
+    const number = prompt('IBAN / číslo účtu:');
+    if (number === null) return;
+    const newAcc = { name: name.trim(), iban: number.trim() };
+    accounts.push(newAcc);
+    try {
+      const payload = { id: subjectId, bank_accounts: accounts };
+      const { data, error } = await upsertSubject(payload, window.currentUser || null);
+      if (error) { alert('Chyba při ukládání účtu: ' + (error.message || JSON.stringify(error))); return; }
+      onSaved && onSaved(data);
+    } catch (e) {
+      alert('Chyba: ' + e.message);
+    }
+  });
+
+  renderList();
+}
+
 export async function render(root) {
   const { id, type: qtype, mode: modeParam } = getHashParams();
   const type = qtype || 'spolek';
@@ -48,7 +131,6 @@ export async function render(root) {
       return;
     }
     data = sub || {};
-    // format some readonly date fields
     data.updated_at = formatCzechDate(data.updated_at);
     data.created_at = formatCzechDate(data.created_at);
   }
@@ -57,108 +139,204 @@ export async function render(root) {
   const schema = TYPE_SCHEMAS[type] || [];
   const fields = schema.map(f => ({ ...f }));
 
-  const sections = [
-    { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
-    { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
+  // layout: top green area (editable tabs), bottom yellow area (readonly related tables)
+  root.innerHTML = `
+    <div id="commonactions" class="mb-4"></div>
+    <div id="green-section" class="p-4 rounded bg-green-50"></div>
+    <div id="yellow-section" class="mt-6 p-4 rounded bg-yellow-50"></div>
+  `;
+
+  const greenRoot = root.querySelector('#green-section');
+  const yellowRoot = root.querySelector('#yellow-section');
+
+  // Top tabs (editable group)
+  const topTabs = [
+    {
+      label: 'Detail pronajímatele',
+      icon: '👤',
+      content: (container) => {
+        // render editable form inside this tab
+        const sections = [
+          { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
+          { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
+        ];
+
+        // create a container to render form into
+        container.innerHTML = '<div id="profile-form-root"></div>';
+        const formContainer = container.querySelector('#profile-form-root');
+
+        renderForm(formContainer, fields, data, async (values) => {
+          // submit handler: reuse existing upsertSubject logic
+          try {
+            const curUser = window.currentUser || null;
+            const payload = { ...values, id: id || undefined };
+            const { data: saved, error } = await upsertSubject(payload, curUser);
+            if (error) {
+              alert('Chyba při ukládání: ' + (error.message || JSON.stringify(error)));
+              return false;
+            }
+            alert('Uloženo.');
+            // refresh local data & notify
+            if (id) {
+              const refreshed = await getSubject(id);
+              if (refreshed?.data) data = refreshed.data;
+            }
+            setUnsaved(false);
+            return true;
+          } catch (e) {
+            alert('Chyba při ukládání: ' + e.message);
+            return false;
+          }
+        }, {
+          readOnly: mode === 'read' ? true : false,
+          showSubmit: false,
+          layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
+          sections
+        });
+
+        // attach unsaved helper to the form (if present)
+        const formEl = formContainer.querySelector('form');
+        if (formEl) useUnsavedHelper(formEl);
+      }
+    },
+    {
+      label: 'Účty',
+      icon: '💳',
+      content: (container) => {
+        // Accounts UI - editable; uses upsertSubject to persist bank_accounts
+        container.innerHTML = '<div id="accounts-root">Načítání...</div>';
+        const accountsRoot = container.querySelector('#accounts-root');
+        createAccountsUI(data, accountsRoot, id, (fresh) => {
+          // refresh local data after saving accounts
+          if (fresh) data = fresh;
+        });
+      }
+    },
+    {
+      label: 'Systém',
+      icon: '⚙️',
+      content: (container) => {
+        container.innerHTML = `
+          <div class="p-4">
+            <h3 class="text-lg font-semibold mb-2">Systémové informace</h3>
+            <div class="space-y-2">
+              <div><strong>Vytvořeno:</strong> ${data.created_at || '-'}</div>
+              <div><strong>Poslední úprava:</strong> ${data.updated_at || '-'}</div>
+              <div><strong>Upravil:</strong> ${data.updated_by || '-'}</div>
+              <div><strong>Archivní:</strong> ${data.archived ? 'Ano' : 'Ne'}</div>
+            </div>
+          </div>
+        `;
+      }
+    }
   ];
 
-  // Render form (hide internal submit buttons - commonActions will render Save)
-  renderForm(root, fields, data, async (values) => {
-    // submit handler
-    try {
-      // pass current user if available
-      const curUser = window.currentUser || null;
-      const { data: saved, error } = await upsertSubject(values, curUser);
-      if (error) {
-        alert('Chyba při ukládání: ' + (error.message || JSON.stringify(error)));
-        return false;
+  renderTabs(greenRoot, topTabs, { defaultTab: 0 });
+
+  // Bottom tabs (readonly group: related entities)
+  const bottomTabs = [
+    {
+      label: 'Nemovitosti',
+      icon: '🏢',
+      content: async (container) => {
+        container.innerHTML = '<div class="text-center py-4">Načítání nemovitostí...</div>';
+        try {
+          const { data: properties, error: propError } = await listProperties({ landlordId: id, showArchived: false, limit: 1000 });
+          if (propError) {
+            container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání nemovitostí: ${propError.message}</div>`;
+            return;
+          }
+          container.innerHTML = '';
+          if (!properties || properties.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
+            return;
+          }
+          const table = createRelatedEntitiesTable(
+            properties,
+            [
+              { label: 'Název', field: 'nazev', render: (v) => `<strong>${v || 'Bez názvu'}</strong>` },
+              { label: 'Adresa', field: 'ulice', render: (val,row) => `${[val, row.cislo_popisne].filter(Boolean).join(' ')}${row.mesto ? ', ' + row.mesto : ''}` },
+              { label: 'Typ', field: 'typ_nemovitosti' },
+              { label: 'Vytvořeno', field: 'created_at', render: v => v ? new Date(v).toLocaleDateString('cs-CZ') : '-' }
+            ],
+            {
+              emptyMessage: 'Žádné nemovitosti',
+              onRowClick: (row) => { navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`); },
+              className: 'cursor-pointer'
+            }
+          );
+          container.appendChild(table);
+        } catch (e) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba: ${e.message || 'Neznámá chyba'}</div>`;
+        }
       }
-      alert('Uloženo.');
-      setUnsaved(false);
-      // navigate to overview or keep editing
-      navigateTo('#/m/030-pronajimatel/t/prehled');
-      return true;
-    } catch (e) {
-      alert('Chyba při ukládání: ' + e.message);
-      return false;
-    }
-  }, {
-    readOnly: mode === 'read',
-    showSubmit: false, // submit moved to commonActions
-    layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
-    sections
-  });
-
-  // attach unsaved helper
-  const formEl = root.querySelector('form');
-  if (formEl) useUnsavedHelper(formEl);
-
-  // add ARES lookup button if schema contains ico
-  const icoInput = root.querySelector('input[name="ico"]');
-  if (icoInput) {
-    const wrapper = icoInput.parentElement || icoInput;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.title = 'Načíst z ARES';
-    btn.className = 'ml-2 inline-flex items-center px-2 py-1 border rounded text-sm';
-    btn.innerHTML = '🔍';
-    btn.disabled = !icoInput.value;
-    icoInput.addEventListener('input', () => { btn.disabled = !icoInput.value.trim(); });
-    btn.addEventListener('click', async () => {
-      const val = (icoInput.value || '').trim();
-      if (!val) { alert('Zadejte IČO'); return; }
-      try {
-        const aresData = await fetchFromARES(val);
-        if (!aresData) { alert('ARES: nic nenalezeno'); return; }
-        
-        // Map ARES data to form fields
-        const fieldMapping = {
-          'display_name': aresData.display_name,
-          'nazev': aresData.nazev,
-          'ico': aresData.ico,
-          'dic': aresData.dic,
-          'ulice': aresData.ulice,
-          'cislo_popisne': aresData.cislo_popisne,
-          'cislo_orientacni': aresData.cislo_orientacni,
-          'mesto': aresData.mesto || aresData.city,
-          'city': aresData.city || aresData.mesto,
-          'psc': aresData.psc,
-          'kraj': aresData.kraj,
-          'stat': aresData.stat,
-          'street': aresData.ulice,
-          'zip': aresData.psc,
-          'primary_email': aresData.primary_email,
-          'primary_phone': aresData.primary_phone,
-          'pravni_forma_kod': aresData.pravni_forma_kod,
-          'pravni_forma_nazev': aresData.pravni_forma_nazev,
-          'datum_vzniku': aresData.datum_vzniku,
-          'datum_zaniku': aresData.datum_zaniku
-        };
-        
-        // Set values into inputs and dispatch input events
-        Object.entries(fieldMapping).forEach(([fieldName, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            const el = root.querySelector(`[name="${fieldName}"]`);
-            if (el) {
-              el.value = value;
-              el.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+    {
+      label: 'Jednotky',
+      icon: '📦',
+      content: async (container) => {
+        container.innerHTML = '<div class="text-center py-4">Načítání jednotek...</div>';
+        try {
+          const { data: properties } = await listProperties({ landlordId: id });
+          if (!properties || properties.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+            return;
+          }
+          const allUnits = [];
+          for (const prop of properties) {
+            const mod040 = await import('/src/modules/040-nemovitost/db.js');
+            const { data: units } = await mod040.listUnits(prop.id, { showArchived: false });
+            if (units && units.length) {
+              units.forEach(u => { u.property_name = prop.nazev; allUnits.push(u); });
             }
           }
-        });
-        
-        alert('Data byla úspěšně načtena z ARES.');
-      } catch (e) {
-        alert('Chyba ARES: ' + (e.message || e));
+          if (allUnits.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 p-4">Žádné jednotky</div>';
+            return;
+          }
+          const table = createRelatedEntitiesTable(
+            allUnits,
+            [
+              { label: 'Označení', field: 'oznaceni', render: v => `<strong>${v || '-'}</strong>` },
+              { label: 'Nemovitost', field: 'property_name' },
+              { label: 'Typ', field: 'typ_jednotky' },
+              { label: 'Stav', field: 'stav' }
+            ],
+            {
+              emptyMessage: 'Žádné jednotky',
+              onRowClick: (row) => { navigateTo(`#/m/040-nemovitost/f/unit-detail?id=${row.id}`); },
+              className: 'cursor-pointer'
+            }
+          );
+          container.innerHTML = '';
+          container.appendChild(table);
+        } catch (e) {
+          container.innerHTML = `<div class="text-red-600 p-4">Chyba: ${e.message || 'Neznámá chyba'}</div>`;
+        }
       }
-    });
-    // place button after the input
-    wrapper.appendChild(btn);
-  }
+    },
+    {
+      label: 'Nájemníci',
+      icon: '👥',
+      content: async (container) => {
+        container.innerHTML = '<div class="text-center py-4">Načítání nájemníků...</div>';
+        // placeholder - lze doplnit dotazem na contracts/tenants
+        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení nájemníků bude doplněna.</div>';
+      }
+    }
+  ];
 
-  // common actions (save, archive, history etc.)
+  renderTabs(yellowRoot, bottomTabs, { defaultTab: 0 });
+
+  // common actions (save is form-submission in detail tab)
   const myRole = window.currentUserRole || 'admin';
   const handlers = {
-    onSave: () => formEl ? formEl.requestSubmit() : null,
+    onSave: () => {
+      // if detail tab shows form, submit it by triggering its form element
+      const profileForm = greenRoot.querySelector('form');
+      if (profileForm) profileForm.requestSubmit();
+      else alert('Není nic k uložení');
+    },
     onAttach: () => id && window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: id }),
     onHistory: () => {
       if (!id) { alert('Historie dostupná po uložení'); return; }
@@ -173,103 +351,11 @@ export async function render(root) {
     }
   };
 
-  // render common actions in header area
   renderCommonActions(document.getElementById('commonactions'), {
     moduleActions: mode === 'read' ? ['edit','attach','history'] : ['save','attach','archive','history'],
     userRole: myRole,
     handlers
   });
-
-  // Add tabs container for related entities (only when editing existing record)
-  if (id) {
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'mt-6';
-    root.appendChild(tabsContainer);
-
-    // Define tabs with Nemovitosti tab
-    const tabs = [
-      {
-        label: 'Nemovitosti',
-        icon: '🏢',
-        badge: null,
-        content: async (container) => {
-          container.innerHTML = '<div class="text-center py-4">Načítání nemovitostí...</div>';
-          
-          try {
-            // Load properties for this landlord
-            const { data: properties, error: propError } = await listProperties({ landlordId: id, showArchived: false, limit: 1000 });
-            
-            if (propError) {
-              container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání nemovitostí: ${propError.message}</div>`;
-              return;
-            }
-
-            container.innerHTML = '';
-            
-            if (!properties || properties.length === 0) {
-              container.innerHTML = '<div class="text-gray-500 p-4">Žádné nemovitosti</div>';
-              return;
-            }
-
-            // Create table with properties
-            const table = createRelatedEntitiesTable(
-              properties,
-              [
-                { 
-                  label: 'Název', 
-                  field: 'nazev',
-                  render: (val, row) => `<strong>${val || 'Bez názvu'}</strong>`
-                },
-                { 
-                  label: 'Adresa', 
-                  field: 'ulice',
-                  render: (val, row) => {
-                    const parts = [val, row.cislo_popisne].filter(Boolean).join(' ');
-                    const mesto = row.mesto || '';
-                    return [parts, mesto].filter(Boolean).join(', ');
-                  }
-                },
-                { 
-                  label: 'Typ', 
-                  field: 'typ_nemovitosti',
-                  render: (val) => {
-                    const typeLabels = {
-                      'bytovy_dum': 'Bytový dům',
-                      'rodinny_dum': 'Rodinný dům',
-                      'kancelar': 'Kancelář',
-                      'obchod': 'Obchod',
-                      'sklad': 'Sklad',
-                      'jina_nemovitost': 'Jiná nemovitost'
-                    };
-                    return typeLabels[val] || val || '-';
-                  }
-                },
-                { 
-                  label: 'Vytvořeno', 
-                  field: 'created_at',
-                  render: (val) => val ? new Date(val).toLocaleDateString('cs-CZ') : '-'
-                }
-              ],
-              {
-                emptyMessage: 'Žádné nemovitosti',
-                onRowClick: (row) => {
-                  navigateTo(`#/m/040-nemovitost/f/detail?id=${row.id}`);
-                },
-                className: 'cursor-pointer'
-              }
-            );
-
-            container.appendChild(table);
-          } catch (e) {
-            container.innerHTML = `<div class="text-red-600 p-4">Chyba: ${e.message || 'Neznámá chyba'}</div>`;
-          }
-        }
-      }
-    ];
-
-    // Render tabs
-    renderTabs(tabsContainer, tabs, { defaultTab: 0 });
-  }
 }
 
 export default { render };
