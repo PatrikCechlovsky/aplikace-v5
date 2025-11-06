@@ -84,11 +84,15 @@ export async function render(root, params) {
   const myRole = window.currentUserRole || 'admin';
 
   // --- Akce v liště ---
-  const moduleActions = ['edit', 'units', 'attach', 'archive', 'refresh', 'history'];
+  const moduleActions = ['edit', 'units', 'attach', 'wizard', 'archive', 'history'];
   const handlers = {};
 
   handlers.onEdit = () => navigateTo(`#/m/040-nemovitost/f/edit?id=${id}`);
-  handlers.onRefresh = () => render(root, params);
+  
+  // Wizard placeholder
+  handlers.onWizard = () => {
+    alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
+  };
   
   // Archivace (jen pokud není již archivovaný)
   if (!data.archived) {
