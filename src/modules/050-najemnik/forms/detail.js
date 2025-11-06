@@ -82,12 +82,27 @@ export async function render(root) {
   // Define tabs according to requirements from Modul 030.docx
   const tabs = [
     {
-      label: 'Pronajímatel',
-      icon: '🏠',
-      content: async (container) => {
-        container.innerHTML = '<div class="text-center py-4">Načítání pronajímatelů...</div>';
-        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení pronajímatelů spojených s tímto nájemníkem bude doplněna.</div>';
+      label: 'Detail nájemníka',
+      icon: '👤',
+      content: (container) => {
+        // Render the form in this tab
+        const sections = [
+          { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
+          { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
+        ];
+
+        renderForm(container, fields, data, null, {
+          readOnly: true,
+          showSubmit: false,
+          layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
+          sections
+        });
       }
+    },
+    {
+      label: 'Účty',
+      icon: '💳',
+      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
     },
     {
       label: 'Nemovitosti',
@@ -127,11 +142,6 @@ export async function render(root) {
         container.innerHTML = '';
         container.appendChild(table);
       }
-    },
-    {
-      label: '—',
-      icon: '📌',
-      content: '<div class="p-4 text-gray-500">Rezervováno pro budoucí použití</div>'
     },
     {
       label: 'Jednotky',
@@ -174,115 +184,26 @@ export async function render(root) {
       }
     },
     {
-      label: 'Detail nájemníka',
-      icon: '👤',
-      content: (container) => {
-        // Render the form in this tab
-        const sections = [
-          { id: 'profil', label: 'Profil', fields: fields.map(f => f.key) },
-          { id: 'system', label: 'Systém', fields: ['archived','created_at','updated_at','updated_by'] }
-        ];
-
-        renderForm(container, fields, data, null, {
-          readOnly: true,
-          showSubmit: false,
-          layout: { columns: { base: 1, md: 2, xl: 2 }, density: 'compact' },
-          sections
-        });
-      }
-    },
-    {
-      label: 'Účty nájemníka',
-      icon: '💳',
-      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty nájemníka</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
-    },
-    {
-      label: 'Smlouvy',
-      icon: '📄',
-      badge: null,
+      label: 'Pronajímatelé',
+      icon: '🏠',
       content: async (container) => {
-        container.innerHTML = '<div class="text-center py-4">Načítání smluv...</div>';
-        
-        // Load contracts for this tenant
-        const { data: contracts, error: contractsError } = await listContracts({ tenantId: id });
-        
-        if (contractsError) {
-          container.innerHTML = `<div class="text-red-600 p-4">Chyba při načítání smluv: ${contractsError.message}</div>`;
-          return;
-        }
-
-        container.innerHTML = '';
-        
-        if (!contracts || contracts.length === 0) {
-          container.innerHTML = '<div class="text-gray-500 p-4">Žádné smlouvy</div>';
-          return;
-        }
-
-        // Create table with contracts
-        const table = createRelatedEntitiesTable(
-          contracts,
-          [
-            { 
-              label: 'Číslo smlouvy', 
-              field: 'cislo_smlouvy',
-              render: (val) => `<strong>${val || 'Bez čísla'}</strong>`
-            },
-            { 
-              label: 'Jednotka', 
-              field: 'unit',
-              render: (val) => val ? `${val.oznaceni || '-'} (${val.typ_jednotky || '-'})` : '-'
-            },
-            { 
-              label: 'Nemovitost', 
-              field: 'property',
-              render: (val) => val ? `${val.nazev || '-'}, ${val.mesto || '-'}` : '-'
-            },
-            { 
-              label: 'Stav', 
-              field: 'stav',
-              render: (val) => {
-                const statusLabels = {
-                  'koncept': '📝 Koncept',
-                  'cekajici_podepsani': '⏳ Čeká na podpis',
-                  'aktivni': '✅ Aktivní',
-                  'ukoncena': '❌ Ukončená',
-                  'zrusena': '🚫 Zrušená'
-                };
-                return statusLabels[val] || val || '-';
-              }
-            },
-            { 
-              label: 'Nájem', 
-              field: 'najem_vyse',
-              render: (val) => val ? `${val} Kč/měsíc` : '-'
-            },
-            { 
-              label: 'Začátek', 
-              field: 'datum_zacatek',
-              render: (val) => val ? new Date(val).toLocaleDateString('cs-CZ') : '-'
-            }
-          ],
-          {
-            emptyMessage: 'Žádné smlouvy',
-            onRowClick: (row) => {
-              navigateTo(`#/m/060-smlouva/f/detail?id=${row.id}`);
-            },
-            className: 'cursor-pointer'
-          }
-        );
-
-        container.appendChild(table);
+        container.innerHTML = '<div class="text-center py-4">Načítání pronajímatelů...</div>';
+        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení pronajímatelů spojených s tímto nájemníkem bude doplněna.</p></div>';
       }
     },
     {
-      label: 'Služby',
-      icon: '🔧',
-      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Služby</h3><p class="text-gray-500">Funkce pro zobrazení služeb bude doplněna.</p></div>'
-    },
-    {
-      label: 'Platby',
-      icon: '💰',
-      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Rozpis plateb</h3><p class="text-gray-500">Funkce pro zobrazení plateb bude doplněna.</p></div>'
+      label: 'Dokumenty',
+      icon: '📄',
+      content: `
+        <div class="p-4">
+          <h3 class="text-lg font-semibold mb-2">Dokumenty a přílohy</h3>
+          <button 
+            onclick="window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'subjects', entityId: '${id}' })"
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Spravovat přílohy
+          </button>
+        </div>
+      `
     },
     {
       label: 'Systém',
