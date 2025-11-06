@@ -105,6 +105,19 @@ export async function render(root) {
       content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
     },
     {
+      label: 'Pronajímatel',
+      icon: '🏠',
+      content: async (container) => {
+        container.innerHTML = '<div class="text-center py-4">Načítání pronajímatelů...</div>';
+        container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení pronajímatelů spojených s tímto nájemníkem bude doplněna.</div>';
+      }
+    },
+    {
+      label: 'Účty',
+      icon: '💳',
+      content: '<div class="p-4"><h3 class="text-lg font-semibold mb-2">Bankovní účty</h3><p class="text-gray-500">Funkce pro správu bankovních účtů bude doplněna.</p></div>'
+    },
+    {
       label: 'Nemovitosti',
       icon: '🏢',
       content: async (container) => {
@@ -184,8 +197,9 @@ export async function render(root) {
       }
     },
     {
-      label: 'Pronajímatelé',
-      icon: '🏠',
+      label: 'Smlouvy',
+      icon: '📄',
+      badge: null,
       content: async (container) => {
         container.innerHTML = '<div class="text-center py-4">Načítání pronajímatelů...</div>';
         container.innerHTML = '<div class="text-gray-500 p-4">Funkce pro zobrazení pronajímatelů spojených s tímto nájemníkem bude doplněna.</p></div>';

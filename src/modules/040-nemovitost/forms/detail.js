@@ -77,7 +77,6 @@ export async function render(root, params) {
 
   root.innerHTML = `
     <div id="commonactions" class="mb-4"></div>
-    <div id="property-detail"></div>
     <div id="property-tabs" class="mt-6"></div>
   `;
 
@@ -88,11 +87,6 @@ export async function render(root, params) {
   const handlers = {};
 
   handlers.onEdit = () => navigateTo(`#/m/040-nemovitost/f/edit?id=${id}`);
-  
-  // Wizard placeholder
-  handlers.onWizard = () => {
-    alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
-  };
   
   // Archivace (jen pokud není již archivovaný)
   if (!data.archived) {
@@ -113,6 +107,11 @@ export async function render(root, params) {
   handlers.onUnits = () => {
     navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`);
   };
+  
+  // Průvodce
+  handlers.onWizard = () => {
+    alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
+  };
 
   // Tlačítka a akce
   renderCommonActions(document.getElementById('commonactions'), {
@@ -121,24 +120,31 @@ export async function render(root, params) {
     handlers
   });
 
-  // Vykreslení formuláře v readonly režimu
-  renderForm(root.querySelector('#property-detail'), FIELDS, data, async () => true, {
-    readOnly: true,
-    showSubmit: false,
-    layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
-    sections: [
-      { id: 'zakladni', label: 'Základní údaje', fields: [
-        'nazev', 'typ_nemovitosti', 'ulice', 'cislo_popisne', 'cislo_orientacni', 'mesto', 'psc',
-        'kraj', 'stat', 'pocet_podlazi', 'rok_vystavby', 'rok_rekonstrukce', 'celkova_plocha', 'pocet_jednotek'
-      ] },
-      { id: 'system', label: 'Systém', fields: [
-        'archivedLabel', 'poznamky', 'vybaveni', 'prilohy', 'pronajimatel', 'updated_at', 'updated_by', 'created_at'
-      ] },
-    ]
-  });
-
   // Render tabs with related information
   const tabs = [
+    {
+      label: 'Detail nemovitosti',
+      icon: '🏢',
+      content: (container) => {
+        // Render the form in this tab
+        const sections = [
+          { id: 'zakladni', label: 'Základní údaje', fields: [
+            'nazev', 'typ_nemovitosti', 'ulice', 'cislo_popisne', 'cislo_orientacni', 'mesto', 'psc',
+            'kraj', 'stat', 'pocet_podlazi', 'rok_vystavby', 'rok_rekonstrukce', 'celkova_plocha', 'pocet_jednotek'
+          ] },
+          { id: 'system', label: 'Systém', fields: [
+            'archivedLabel', 'poznamky', 'vybaveni', 'prilohy', 'pronajimatel', 'updated_at', 'updated_by', 'created_at'
+          ] },
+        ];
+
+        renderForm(container, FIELDS, data, async () => true, {
+          readOnly: true,
+          showSubmit: false,
+          layout: { columns: { base: 1, md: 2, xl: 3 }, density: 'compact' },
+          sections
+        });
+      }
+    },
     {
       label: 'Vlastník',
       icon: '👤',
