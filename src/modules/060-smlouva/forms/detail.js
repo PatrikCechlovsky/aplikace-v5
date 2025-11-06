@@ -456,16 +456,22 @@ export default async function render(root) {
   const handlers = {
     onEdit: () => navigateTo(`#/m/060-smlouva/f/edit?id=${id}`),
     onAttach: () => window.showAttachmentsModal && window.showAttachmentsModal({ entity: 'contracts', entityId: id }),
+    onWizard: () => {
+      alert('Průvodce zatím není k dispozici. Tato funkce bude doplněna.');
+    },
     onArchive: async () => {
       if (!id) { alert('Chyba: ID smlouvy není k dispozici'); return; }
       const { error } = await (await import('/src/modules/060-smlouva/db.js')).archiveContract(id);
       if (error) alert('Chyba: ' + (error.message || JSON.stringify(error))); 
       else { alert('Smlouva byla archivována'); navigateTo('#/m/060-smlouva/t/prehled'); }
+    },
+    onHistory: () => {
+      alert('Historie změn bude doplněna.');
     }
   };
 
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['edit','attach','archive'],
+    moduleActions: ['edit','attach','wizard','archive','history'],
     userRole: myRole,
     handlers
   });
