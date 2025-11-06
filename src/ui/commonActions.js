@@ -29,14 +29,10 @@ const CATALOG = {
   // oblíbené (renderuj jen pokud existuje handler onStar)
   star:    { key: 'star',    icon: 'star',       label: 'Oblíbené',  title: 'Přidat/odebrat z oblíbených' },
 
-  // HISTORIE změn
   history: { key: 'history', icon: 'history',    label: 'Historie',  title: 'Zobrazit historii změn' },
 
-  // Jednotky (správa jednotek) - nově v katalogu
   units:   { key: 'units',   icon: 'grid',       label: 'Jednotky',  title: 'Správa jednotek' },
-  
-  // Průvodce
-  wizard:  { key: 'wizard',  icon: 'compass',  label: 'Průvodce',  title: 'Spustit průvodce' },
+  wizard:  { key: 'wizard',  icon: 'compass',    label: 'Průvodce',  title: 'Spustit průvodce' },
 };
 
 // Když nepředáš moduleActions, odvozujeme je z názvů handlerů (onAdd → 'add'…)
@@ -56,7 +52,6 @@ function normalizeAllowed(input = [], fallbackKeys = []) {
       const k = a;
       return { ...(CATALOG[k] || { key: k, icon: k }), key: k };
     }
-    // pokud je objekt, podpůrně přeneseme href/icon/label/title
     const k = a.key || a.id;
     const base = CATALOG[k] || {};
     return {
@@ -80,12 +75,10 @@ export function renderCommonActions(
   if (!root) return;
   root.innerHTML = '';
 
-  // 1) jaké akce chceme?
   const wantedKeys = (moduleActions && moduleActions.length)
     ? moduleActions
     : deriveFromHandlers(handlers);
 
-  // 2) permissions (bez pádu, když nejsou)
   let allowedRaw = [];
   try {
     allowedRaw = getAllowedActions(userRole, wantedKeys) || [];
@@ -93,15 +86,12 @@ export function renderCommonActions(
     allowedRaw = wantedKeys;
   }
 
-  // 3) normalizace
   let acts = normalizeAllowed(allowedRaw, wantedKeys);
 
-  // 4) hvězdička jen pokud je handler
   if (typeof handlers.onStar === 'function') {
     acts = acts.concat([{ ...CATALOG.star, title: isStarred ? 'Odebrat z oblíbených' : 'Přidat do oblíbených' }]);
   }
 
-  // 4.5) defaultní inteligentní řazení (intuitivní pořadí)
   const PREFERRED_ORDER = [
     'save', 'approve', 'add', 'edit', 'invite', 'send', 'attach', 'units', 'history',
     'refresh', 'search', 'print', 'export', 'import', 'archive', 'delete',
@@ -110,9 +100,9 @@ export function renderCommonActions(
   const LAST_KEYS = new Set(['reject', 'exit']);
 
   function orderIndex(key) {
-    if (LAST_KEYS.has(key)) return 1000; // force to end
+    if (LAST_KEYS.has(key)) return 1000;
     const idx = PREFERRED_ORDER.indexOf(key);
-    if (idx === -1) return 500; // unknown actions land in middle
+    if (idx === -1) return 500;
     return idx;
   }
 
@@ -123,16 +113,13 @@ export function renderCommonActions(
     return;
   }
 
-  // 5) render
   const wrap = document.createElement('div');
   wrap.className = 'flex items-center gap-2';
 
   acts.forEach(act => {
-    // handlerName podle klíče, např. 'onEdit', 'onUnits' atd.
     const handlerName = 'on' + act.key.charAt(0).toUpperCase() + act.key.slice(1);
     const handler = handlers[handlerName];
 
-    // Pokud máme handler -> renderovat button s handlerem
     if (typeof handler === 'function') {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -144,13 +131,19 @@ export function renderCommonActions(
       btn.innerHTML = uiIcon(act.icon);
       btn.title = act.title || act.label || act.key;
       btn.setAttribute('aria-label', act.label || act.key);
-      btn.addEventListener('click', handler);
+      btn.addEventListener('click', (ev) => {
+        try {
+          handler(ev);
+        } catch (e) {
+          console.error('commonAction handler error', act.key, e);
+          alert('Chyba akce: ' + (e?.message || String(e)));
+        }
+      });
       if (act.key === 'star' && isStarred) btn.classList.add('!bg-yellow-100');
       wrap.appendChild(btn);
       return;
     }
 
-    // Pokud nemáme handler, ale máme href (nebo act obsahuje href), renderuj odkaz
     if (act.href) {
       const a = document.createElement('a');
       a.href = act.href;
@@ -162,7 +155,6 @@ export function renderCommonActions(
       a.innerHTML = uiIcon(act.icon);
       a.title = act.title || act.label || act.key;
       a.setAttribute('aria-label', act.label || act.key);
-      // pokud app poskytuje navigateTo, použij ji pro single-page navigation
       if (typeof window.navigateTo === 'function') {
         a.addEventListener('click', (ev) => {
           ev.preventDefault();
@@ -173,7 +165,6 @@ export function renderCommonActions(
       return;
     }
 
-    // fallback: žádný handler a žádný href -> render disabled button (star/other handled above)
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = [
@@ -195,13 +186,10 @@ export { CATALOG };
 
 /**
  * Small exported toast helper for forms and other UI parts.
- * - If your app already exposes window.showAppToast(...) it uses that.
- * - Otherwise it renders a small DOM toast container with auto-dismiss.
  */
 export function toast(message, type = 'info', opts = {}) {
   try {
     if (typeof window.showAppToast === 'function') {
-      // prefer app's native toast if available (keeps consistent UX)
       window.showAppToast({ message, type, ...opts });
       return true;
     }
@@ -242,7 +230,6 @@ export function toast(message, type = 'info', opts = {}) {
 
     return true;
   } catch (e) {
-    // graceful fallback to console
     try { console.log('toast:', type, message); } catch (e2) {}
     return false;
   }
