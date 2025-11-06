@@ -34,6 +34,9 @@ const CATALOG = {
 
   // Jednotky (správa jednotek) - nově v katalogu
   units:   { key: 'units',   icon: 'grid',       label: 'Jednotky',  title: 'Správa jednotek' },
+  
+  // Průvodce
+  wizard:  { key: 'wizard',  icon: 'compass',  label: 'Průvodce',  title: 'Spustit průvodce' },
 };
 
 // Když nepředáš moduleActions, odvozujeme je z názvů handlerů (onAdd → 'add'…)
