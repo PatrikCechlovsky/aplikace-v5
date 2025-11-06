@@ -63,7 +63,7 @@ export function createTableWithDetail(config) {
     const checkboxId = 'show-archived-' + (
       typeof crypto !== 'undefined' && crypto.randomUUID 
         ? crypto.randomUUID() 
-        : Date.now().toString(36) + Math.random().toString(36).substr(2)
+        : Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000000).toString(36)
     );
     
     const checkbox = document.createElement('input');
