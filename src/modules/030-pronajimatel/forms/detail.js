@@ -1,4 +1,5 @@
-// Upravený detail.js - 030 Pronajímatel (stejná logika jako form.js, ale read-only top tab)
+// Upravený detail.js - 030 Pronajímatel (stejná logika jako form.js, ale read-only top tab
+// 030-pronajimatel/forms/detail.js
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { renderForm } from '/src/ui/form.js';
 import { renderCommonActions } from '/src/ui/commonActions.js';
