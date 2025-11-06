@@ -33,6 +33,8 @@ function _toStringOrNull(v) {
  * options: { q, type, role, profileId, limit, offset, orderBy, filterByProfile }
  * pokud filterByProfile === true a profileId není zadáno, použije se aktuální auth.uid()
  * pokud filterByProfile === false nebo není nastaveno, vrátí všechny subjekty (s filtry type/role)
+ *
+ * Pozn.: vrací vždy pole v data při selhání (data: []) aby volající nemusel kontrolovat null/undefined.
  */
 export async function listSubjects(options = {}) {
   const { q, type, role, profileId: pProfileId, limit = 50, offset = 0, orderBy = 'display_name', filterByProfile = false } = options;
@@ -48,7 +50,7 @@ export async function listSubjects(options = {}) {
         .select('subject_id')
         .eq('profile_id', profileId);
 
-      if (linkErr) return { data: null, error: linkErr };
+      if (linkErr) return { data: [], error: linkErr };
 
       const ids = (linkRows || []).map(r => r.subject_id).filter(Boolean);
       if (ids.length === 0) return { data: [], error: null };
@@ -62,7 +64,7 @@ export async function listSubjects(options = {}) {
       }
 
       const { data, error } = await query;
-      return { data, error };
+      return { data: data || [], error };
     }
 
     // bez profileId - obecný seznam
@@ -75,9 +77,10 @@ export async function listSubjects(options = {}) {
     }
 
     const { data, error } = await query;
-    return { data, error };
+    return { data: data || [], error };
   } catch (e) {
-    return { data: null, error: e };
+    // pokud se něco neočekávaného stane, vrátíme prázdné pole, aby volající nezkolaboval
+    return { data: [], error: e };
   }
 }
 
