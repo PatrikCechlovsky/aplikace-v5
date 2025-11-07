@@ -461,6 +461,152 @@ Všechna dostupná tlačítka a akce v aplikaci:
 | `wrench` | 🔧 | MISC |
 
 ---
+[
+  {
+    "id": 1,
+    "name": "Červená",
+    "hex": "#E74C3C",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#E74C3C;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 2,
+    "name": "Růžová",
+    "hex": "#E05570",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#E05570;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 3,
+    "name": "Fialová světlá",
+    "hex": "#A569BD",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#A569BD;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 4,
+    "name": "Fialová tmavá",
+    "hex": "#8E44AD",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#8E44AD;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 5,
+    "name": "Modrá světlejší",
+    "hex": "#5DADE2",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#5DADE2;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 6,
+    "name": "Modrá střední",
+    "hex": "#3498DB",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#3498DB;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 7,
+    "name": "Modrá tmavší",
+    "hex": "#2E86C1",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#2E86C1;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 8,
+    "name": "Tyrkysová",
+    "hex": "#1ABC9C",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#1ABC9C;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 9,
+    "name": "Zelená světlá",
+    "hex": "#58D68D",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#58D68D;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 10,
+    "name": "Zelená střední",
+    "hex": "#27AE60",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#27AE60;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 11,
+    "name": "Zelená tmavá",
+    "hex": "#1E8449",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#1E8449;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 12,
+    "name": "Žlutá světlá",
+    "hex": "#F9E79F",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#F9E79F;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 13,
+    "name": "Žlutá",
+    "hex": "#F4D03F",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#F4D03F;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 14,
+    "name": "Oranžová světlá",
+    "hex": "#F5B041",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#F5B041;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 15,
+    "name": "Oranžová tmavá",
+    "hex": "#E67E22",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#E67E22;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 16,
+    "name": "Hnědá světlá",
+    "hex": "#DC7633",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#DC7633;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 17,
+    "name": "Hnědá",
+    "hex": "#935116",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#935116;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 18,
+    "name": "Béžová",
+    "hex": "#D7CCC8",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#D7CCC8;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 19,
+    "name": "Šedá světlá",
+    "hex": "#BDC3C7",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#BDC3C7;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 20,
+    "name": "Šedá střední",
+    "hex": "#95A5A6",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#95A5A6;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 21,
+    "name": "Antracit",
+    "hex": "#566573",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#566573;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 22,
+    "name": "Modrošedá",
+    "hex": "#5D6D7E",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#5D6D7E;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 23,
+    "name": "Tmavě šedá",
+    "hex": "#424949",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#424949;border:1px solid #ccc'></div>"
+  },
+  {
+    "id": 24,
+    "name": "Grafit / černá",
+    "hex": "#212F3D",
+    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#212F3D;border:1px solid #ccc'></div>"
+  }
+]
 
 ## 💡 Použití
 
