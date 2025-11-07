@@ -1,633 +1,434 @@
 # Ikony a Tlačítka v Aplikaci
 
-Tento dokument obsahuje přehled všech ikon a tlačítek použitých v aplikaci.
-
 ## 📊 Statistiky
 
-- **Celkem ikon:** 242
-- **Celkem tlačítek/akcí:** 19
-- **Kategorií ikon:** 17
+- **Celkem ikon v systému:** 242
+- **Celkem použitých ikon:** 84
+- **Celkem tlačítek:** 19
+- **Kategorií:** 17
 
 ---
 
-## 🔘 Tlačítka a Akce
+## 🔘 Tlačítka
 
-Všechna dostupná tlačítka a akce v aplikaci:
-
-| Klíč | Ikona | Název | Popis |
-|------|-------|-------|-------|
-| `detail` | 👁️ | Detail | Zobrazit detail |
-| `add` | ➕ | Přidat | Přidat nový záznam |
-| `edit` | ✏️ | Upravit | Upravit záznam |
-| `delete` | 🗑️ | Smazat | Smazat záznam |
-| `archive` | 🗄️ | Archivovat | Přesunout do archivu |
-| `attach` | 📎 | Přílohy | Zobrazit přílohy |
-| `refresh` | 🔄 | Obnovit | Obnovit data |
-| `search` | 🔍 | Hledat | Hledat / filtrovat |
-| `approve` | 💾 | Uložit | Uložit a zůstat |
-| `reject` | ❌ | Zpět | Zpět bez uložení |
-| `invite` | 📨 | Pozvat | Odeslat pozvánku e-mailem |
-| `send` | 📤 | Odeslat | Odeslat dokument / e-mail |
-| `export` | 📤 | Export | Exportovat |
-| `import` | 📥 | Import | Importovat |
-| `print` | 🖨️ | Tisk | Vytisknout |
-| `star` | ⭐️ | Oblíbené | Přidat/odebrat z oblíbených |
-| `history` | 🕘 | Historie | Zobrazit historii změn |
-| `units` | 🟦 | Jednotky | Správa jednotek |
-| `wizard` | 🧭 | Průvodce | Spustit průvodce |
+| Klíč | Ikona | Název CZ | Název EN | Popis |
+|------|-------|----------|----------|-------|
+| `detail` | 👁️ | Detail | Detail | Zobrazit detail |
+| `add` | ➕ | Přidat | Add | Přidat nový záznam |
+| `edit` | ✏️ | Upravit | Edit | Upravit záznam |
+| `delete` | 🗑️ | Smazat | Delete | Smazat záznam |
+| `archive` | 🗄️ | Archivovat | Archive | Přesunout do archivu |
+| `attach` | 📎 | Přílohy | paperclip | Zobrazit přílohy |
+| `refresh` | 🔄 | Obnovit | Refresh | Obnovit data |
+| `search` | 🔍 | Hledat | Search | Hledat / filtrovat |
+| `approve` | 💾 | Uložit | Save | Uložit a zůstat |
+| `reject` | ❌ | Zpět | reject | Zpět bez uložení |
+| `invite` | 📨 | Pozvat | invite | Odeslat pozvánku e-mailem |
+| `send` | 📤 | Odeslat | send | Odeslat dokument / e-mail |
+| `export` | 📤 | Export | Export | Exportovat |
+| `import` | 📥 | Import | Import | Importovat |
+| `print` | 🖨️ | Tisk | Print | Vytisknout |
+| `star` | ⭐️ | Oblíbené | Star | Přidat/odebrat z oblíbených |
+| `history` | 🕘 | Historie | History | Zobrazit historii změn |
+| `units` | 🟦 | Jednotky | Grid | Správa jednotek |
+| `wizard` | 🧭 | Průvodce | compass | Spustit průvodce |
 
 ---
 
-## 🎨 Ikony podle Kategorií
+## 🎨 Použité ikony
+
+| Klíč | Ikona | Název CZ | Název EN | Kategorie |
+|------|-------|----------|----------|----------|
+| `account` | 👤 | account | account | ZÁKLAD / NAV |
+| `add` | ➕ | Přidat | Add | CRUD / ACTIONS |
+| `apartment` | 🏘️ | Byt | Apartment | BUILDINGS / PROPERTY |
+| `apartment-unit` | 🚪 | apartment-unit | apartment-unit | BUILDINGS / PROPERTY |
+| `approve` | ✔️ | approve | approve | CRUD / ACTIONS |
+| `archive` | 🗄️ | Archivovat | Archive | CRUD / ACTIONS |
+| `attic` | 🏚️ | attic | attic | BUILDINGS / PROPERTY |
+| `bank` | 🏦 | bank | bank | BUILDINGS / PROPERTY |
+| `basement` | 🔒 | basement | basement | BUILDINGS / PROPERTY |
+| `bolt` | ⚡️ | bolt | bolt | HEALTH / WEATHER / NATURE |
+| `briefcase` | 💼 | briefcase | briefcase | MISC |
+| `building` | 🏢 | Budova | Building | ZÁKLAD / NAV |
+| `building-2` | 🏢 | building-2 | building-2 | BUILDINGS / PROPERTY |
+| `car` | 🚗 | Auto | Car | TRANSPORT |
+| `compass` | 🧭 | compass | compass | MAP / GEO |
+| `delete` | 🗑️ | Smazat | Delete | CRUD / ACTIONS |
+| `description` | 📝 | description | description | NAV/FILE |
+| `detail` | 👁️ | Detail | Detail | CRUD / ACTIONS |
+| `draft` | 📝 | draft | draft | NAV/FILE |
+| `edit` | ✏️ | Upravit | Edit | CRUD / ACTIONS |
+| `export` | 📤 | Exportovat | Export | MISC |
+| `eye` | 👁️ | eye | eye | MISC |
+| `file` | 📄 | file | file | NAV/FILE |
+| `form` | 📝 | Formulář | Form | ACCESSIBILITY / UI TYPES |
+| `grid` | 🟦 | Mřížka | Grid | ACCESSIBILITY / UI TYPES |
+| `handshake` | 🤝 | handshake | handshake | MISC |
+| `history` | 🕘 | Historie | History | CALENDAR / TIME |
+| `home` | 🏠 | Domů | Home | ZÁKLAD / NAV |
+| `import` | 📥 | Importovat | Import | MISC |
+| `invite` | 📨 | invite | invite | MISC |
+| `list` | 📄 | list | list | ZÁKLAD / NAV |
+| `map` | 🗺️ | Mapa | Map | MAP / GEO |
+| `office` | 🏬 | Kancelář | Office | ZÁKLAD / NAV |
+| `office-building` | 🏬 | office-building | office-building | BUILDINGS / PROPERTY |
+| `paperclip` | 📎 | paperclip | paperclip | CRUD / ACTIONS |
+| `payments` | 💳 | payments | payments | E-COMMERCE / FINANCE |
+| `pencil-alt` | ✏️ | pencil-alt | pencil-alt | CRUD / ACTIONS |
+| `person` | 👤 | person | person | ZÁKLAD / NAV |
+| `print` | 🖨️ | Tisk | Print | MISC |
+| `refresh` | 🔄 | Obnovit | Refresh | CRUD / ACTIONS |
+| `reject` | ❌ | reject | reject | CRUD / ACTIONS |
+| `save` | 💾 | Uložit | Save | CRUD / ACTIONS |
+| `schedule` | 📅 | schedule | schedule | CALENDAR / TIME |
+| `search` | 🔍 | Hledat | Search | ZÁKLAD / NAV |
+| `send` | 📤 | send | send | COMMUNICATION |
+| `settings` | ⚙️ | Nastavení | Settings | ZÁKLAD / NAV |
+| `shopping-cart` | 🛒 | shopping-cart | shopping-cart | E-COMMERCE / FINANCE |
+| `south` | ⬇️ | south | south | MAP / GEO |
+| `star` | ⭐️ | Hvězdička | Star | SOCIAL / FAVORITES |
+| `storage` | 📦 | storage | storage | BUILDINGS / PROPERTY |
+| `undo` | ↩️ | undo | undo | CRUD / ACTIONS |
+| `unit-key` | 🔑 | unit-key | unit-key | BUILDINGS / PROPERTY |
+| `user` | 👤 | Uživatel | User | ZÁKLAD / NAV |
+| `users` | 👥 | Uživatelé | Users | ZÁKLAD / NAV |
+| `view` | 👁️ | view | view | CRUD / ACTIONS |
+| `visibility` | 👁️ | visibility | visibility | MISC |
+| `warehouse` | 🏭 | Sklad | Warehouse | BUILDINGS / PROPERTY |
+| `warning` | ⚠️ | warning | warning | STATUS / STATE |
+| `wifi` | 📶 | wifi | wifi | HEALTH / WEATHER / NATURE |
+
+---
+
+## 📚 Všechny dostupné ikony
 
 ### ACCESSIBILITY / UI TYPES
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `tile` | 🟦 | `grid` | 🟦 | `form` | 📝 |
-| `menu-grid` | ▦ | `avatar` | 👤 | `badge` | 🔰 |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 🟦 | `tile` | tile | tile |  |  |
+| 🟦 | `grid` | Mřížka | Grid | tabulka | table |
+| 📝 | `form` | Formulář | Form | vstup | input |
+| ▦ | `menu-grid` | menu-grid | menu-grid |  |  |
+| 👤 | `avatar` | avatar | avatar |  |  |
+| 🔰 | `badge` | badge | badge |  |  |
 
 ### BUILDINGS / PROPERTY
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `building-2` | 🏢 | `warehouse` | 🏭 | `office-building` | 🏬 |
-| `apartment` | 🏘️ | `apartment-unit` | 🚪 | `basement` | 🔒 |
-| `attic` | 🏚️ | `garage` | 🚗 | `storage` | 📦 |
-| `unit-key` | 🔑 | `bank` | 🏦 | `account-balance` | 🏦 |
-| `account-tree` | 🕸️ | | | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 🏢 | `building-2` | building-2 | building-2 |  |  |
+| 🏭 | `warehouse` | Sklad | Warehouse | skladiště | storage |
+| 🏬 | `office-building` | office-building | office-building |  |  |
+| 🏘️ | `apartment` | Byt | Apartment | bytová jednotka | flat |
+| 🚪 | `apartment-unit` | apartment-unit | apartment-unit |  |  |
+| 🔒 | `basement` | basement | basement |  |  |
+| 🏚️ | `attic` | attic | attic |  |  |
+| 🚗 | `garage` | garage | garage |  |  |
+| 📦 | `storage` | storage | storage |  |  |
+| 🔑 | `unit-key` | unit-key | unit-key |  |  |
+| 🏦 | `bank` | bank | bank |  |  |
+| 🏦 | `account-balance` | account-balance | account-balance |  |  |
+| 🕸️ | `account-tree` | account-tree | account-tree |  |  |
 
 ### CALENDAR / TIME
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `calendar` | 📅 | `calendar-day` | 📆 | `calendar-alt` | 📆 |
-| `calendar-check` | ✅ | `clock` | ⏰ | `timer` | ⏱️ |
-| `history` | 🕘 | `stopwatch` | ⏱️ | `reminder` | 🔔 |
-| `schedule` | 📅 | | | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 📅 | `calendar` | Kalendář | Calendar | datum | date |
+| 📆 | `calendar-day` | calendar-day | calendar-day |  |  |
+| 📆 | `calendar-alt` | calendar-alt | calendar-alt |  |  |
+| ✅ | `calendar-check` | calendar-check | calendar-check |  |  |
+| ⏰ | `clock` | clock | clock |  |  |
+| ⏱️ | `timer` | timer | timer |  |  |
+| 🕘 | `history` | Historie | History | záznamy | log |
+| ⏱️ | `stopwatch` | stopwatch | stopwatch |  |  |
+| 🔔 | `reminder` | reminder | reminder |  |  |
+| 📅 | `schedule` | schedule | schedule |  |  |
 
 ### COMMUNICATION
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `mail` | ✉️ | `email` | ✉️ | `inbox` | 📥 |
-| `outbox` | 📤 | `send` | 📤 | `receive` | 📥 |
-| `comment` | 💬 | `chat` | 💬 | `message` | 💬 |
-| `notification` | 🔔 | | | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| ✉️ | `mail` | Pošta | Mail | e-mail | email |
+| ✉️ | `email` | email | email |  |  |
+| 📥 | `inbox` | inbox | inbox |  |  |
+| 📤 | `outbox` | outbox | outbox |  |  |
+| 📤 | `send` | send | send |  |  |
+| 📥 | `receive` | receive | receive |  |  |
+| 💬 | `comment` | comment | comment |  |  |
+| 💬 | `chat` | chat | chat |  |  |
+| 💬 | `message` | message | message |  |  |
+| 🔔 | `notification` | notification | notification |  |  |
 
 ### CRUD / ACTIONS
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `add` | ➕ | `plus` | ➕ | `add-circle` | ➕ |
-| `minus` | ➖ | `edit` | ✏️ | `pencil` | ✏️ |
-| `pencil-alt` | ✏️ | `detail` | 👁️ | `view` | 👁️ |
-| `delete` | 🗑️ | `trash` | 🗑️ | `remove` | ❌ |
-| `archive` | 🗄️ | `paperclip` | 📎 | `attach` | 📎 |
-| `refresh` | 🔄 | `reload` | 🔁 | `save` | 💾 |
-| `approve` | ✔️ | `accept` | ✔️ | `reject` | ❌ |
-| `exit` | 🚪 | `logout` | 🚪 | `login` | 🔐 |
-| `lock` | 🔒 | `unlock` | 🔓 | `key` | 🔑 |
-| `undo` | ↩️ | | | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| ➕ | `add` | Přidat | Add | nový | new, plus |
+| ➕ | `plus` | plus | plus |  |  |
+| ➕ | `add-circle` | add-circle | add-circle |  |  |
+| ➖ | `minus` | minus | minus |  |  |
+| ✏️ | `edit` | Upravit | Edit | změnit | modify |
+| ✏️ | `pencil` | pencil | pencil |  |  |
+| ✏️ | `pencil-alt` | pencil-alt | pencil-alt |  |  |
+| 👁️ | `detail` | Detail | Detail | zobrazit | view |
+| 👁️ | `view` | view | view |  |  |
+| 🗑️ | `delete` | Smazat | Delete | odstranit | remove |
+| 🗑️ | `trash` | trash | trash |  |  |
+| ❌ | `remove` | remove | remove |  |  |
+| 🗄️ | `archive` | Archivovat | Archive | uložit | store |
+| 📎 | `paperclip` | paperclip | paperclip |  |  |
+| 📎 | `attach` | attach | attach |  |  |
+| 🔄 | `refresh` | Obnovit | Refresh | reload | reload |
+| 🔁 | `reload` | reload | reload |  |  |
+| 💾 | `save` | Uložit | Save | potvrdit | confirm |
+| ✔️ | `approve` | approve | approve |  |  |
+| ✔️ | `accept` | accept | accept |  |  |
+| ❌ | `reject` | reject | reject |  |  |
+| 🚪 | `exit` | exit | exit |  |  |
+| 🚪 | `logout` | logout | logout |  |  |
+| 🔐 | `login` | login | login |  |  |
+| 🔒 | `lock` | lock | lock |  |  |
+| 🔓 | `unlock` | unlock | unlock |  |  |
+| 🔑 | `key` | key | key |  |  |
+| ↩️ | `undo` | undo | undo |  |  |
 
 ### DATA / CHARTS
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `stats` | 📊 | `chart` | 📈 | `chart-bar` | 📊 |
-| `chart-pie` | 🥧 | `trend-up` | 📈 | `trend-down` | 📉 |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 📊 | `stats` | stats | stats |  |  |
+| 📈 | `chart` | chart | chart |  |  |
+| 📊 | `chart-bar` | chart-bar | chart-bar |  |  |
+| 🥧 | `chart-pie` | chart-pie | chart-pie |  |  |
+| 📈 | `trend-up` | trend-up | trend-up |  |  |
+| 📉 | `trend-down` | trend-down | trend-down |  |  |
 
 ### DEVOPS / INFRA
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `bug` | 🐛 | `shield` | 🛡️ | `lock-shield` | 🔐 |
-| `server` | 🖥️ | `api` | 🔗 | `webhook` | 🔔 |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 🐛 | `bug` | bug | bug |  |  |
+| 🛡️ | `shield` | shield | shield |  |  |
+| 🔐 | `lock-shield` | lock-shield | lock-shield |  |  |
+| 🖥️ | `server` | server | server |  |  |
+| 🔗 | `api` | api | api |  |  |
+| 🔔 | `webhook` | webhook | webhook |  |  |
 
 ### E-COMMERCE / FINANCE
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `cart` | 🛒 | `shopping-cart` | 🛒 | `creditcard` | 💳 |
-| `credit-card` | 💳 | `wallet` | 👛 | `cash` | 💵 |
-| `invoice` | 🧾 | `price` | 💲 | `discount` | 🏷️ |
-| `tag` | 🏷️ | `payments` | 💳 | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 🛒 | `cart` | cart | cart |  |  |
+| 🛒 | `shopping-cart` | shopping-cart | shopping-cart |  |  |
+| 💳 | `creditcard` | creditcard | creditcard |  |  |
+| 💳 | `credit-card` | credit-card | credit-card |  |  |
+| 👛 | `wallet` | wallet | wallet |  |  |
+| 💵 | `cash` | cash | cash |  |  |
+| 🧾 | `invoice` | invoice | invoice |  |  |
+| 💲 | `price` | price | price |  |  |
+| 🏷️ | `discount` | discount | discount |  |  |
+| 🏷️ | `tag` | tag | tag |  |  |
+| 💳 | `payments` | payments | payments |  |  |
 
 ### HEALTH / WEATHER / NATURE
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `sun` | ☀️ | `moon` | 🌙 | `cloud` | ☁️ |
-| `cloud-rain` | 🌧️ | `rain` | 🌧️ | `snow` | ❄️ |
-| `water-drop` | 💧 | `bolt` | ⚡️ | `fire` | 🔥 |
-| `leaf` | 🍃 | `recycle` | ♻️ | `wifi` | 📶 |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| ☀️ | `sun` | sun | sun |  |  |
+| 🌙 | `moon` | moon | moon |  |  |
+| ☁️ | `cloud` | cloud | cloud |  |  |
+| 🌧️ | `cloud-rain` | cloud-rain | cloud-rain |  |  |
+| 🌧️ | `rain` | rain | rain |  |  |
+| ❄️ | `snow` | snow | snow |  |  |
+| 💧 | `water-drop` | water-drop | water-drop |  |  |
+| ⚡️ | `bolt` | bolt | bolt |  |  |
+| 🔥 | `fire` | fire | fire |  |  |
+| 🍃 | `leaf` | leaf | leaf |  |  |
+| ♻️ | `recycle` | recycle | recycle |  |  |
+| 📶 | `wifi` | wifi | wifi |  |  |
 
 ### MAP / GEO
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `map` | 🗺️ | `location` | 📍 | `pin` | 📌 |
-| `map-pin` | 📍 | `compass` | 🧭 | `globe` | 🌍 |
-| `language` | 🗣️ | `south` | ⬇️ | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 🗺️ | `map` | Mapa | Map | plán | plan |
+| 📍 | `location` | location | location |  |  |
+| 📌 | `pin` | pin | pin |  |  |
+| 📍 | `map-pin` | map-pin | map-pin |  |  |
+| 🧭 | `compass` | compass | compass |  |  |
+| 🌍 | `globe` | globe | globe |  |  |
+| 🗣️ | `language` | language | language |  |  |
+| ⬇️ | `south` | south | south |  |  |
 
 ### MEDIA / PLAYER
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `play` | ▶️ | `pause` | ⏸️ | `stop` | ⏹️ |
-| `record` | ⏺️ | `rewind` | ⏪ | `forward` | ⏩ |
-| `volume` | 🔊 | `mute` | 🔇 | `image` | 🖼️ |
-| `camera` | 📷 | `video` | 🎥 | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| ▶️ | `play` | play | play |  |  |
+| ⏸️ | `pause` | pause | pause |  |  |
+| ⏹️ | `stop` | stop | stop |  |  |
+| ⏺️ | `record` | record | record |  |  |
+| ⏪ | `rewind` | rewind | rewind |  |  |
+| ⏩ | `forward` | forward | forward |  |  |
+| 🔊 | `volume` | volume | volume |  |  |
+| 🔇 | `mute` | mute | mute |  |  |
+| 🖼️ | `image` | image | image |  |  |
+| 📷 | `camera` | camera | camera |  |  |
+| 🎥 | `video` | video | video |  |  |
 
 ### MISC
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `phone` | 📞 | `mobile` | 📱 | `laptop` | 💻 |
-| `tablet` | 📱 | `tv` | 📺 | `book` | 📚 |
-| `docs` | 📑 | `note` | 📝 | `comment-alt` | 💭 |
-| `invite` | 📨 | `report` | 📝 | `export` | 📤 |
-| `import` | 📥 | `print` | 🖨️ | `paperclip2` | 📎 |
-| `fingerprint` | 🪪 | `qr` | 🔳 | `barcode` | 🏷️ |
-| `wrench` | 🔧 | `hammer` | 🔨 | `plug` | 🔌 |
-| `battery` | 🔋 | `thermometer` | 🌡️ | `eye` | 👁️ |
-| `eye-off` | 🙈 | `visibility` | 👁️ | `paint` | 🎨 |
-| `brush` | 🖌️ | `bucket` | 🪣 | `nodes` | 🕸️ |
-| `cluster` | ⚛️ | `rocket` | 🚀 | `flag` | 🚩 |
-| `check` | ✔️ | `clock2` | 🕒 | `search-alt` | 🔎 |
-| `settings-alt` | 🔧 | `support` | 🆘 | `bug-report` | 🐞 |
-| `maintenance` | 🛠️ | `sort-asc` | 🔼 | `sort-desc` | 🔽 |
-| `lock-open` | 🔓 | `network` | 🌐 | `briefcase` | 💼 |
-| `handshake` | 🤝 | | | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 📞 | `phone` | phone | phone |  |  |
+| 📱 | `mobile` | mobile | mobile |  |  |
+| 💻 | `laptop` | laptop | laptop |  |  |
+| 📱 | `tablet` | tablet | tablet |  |  |
+| 📺 | `tv` | tv | tv |  |  |
+| 📚 | `book` | book | book |  |  |
+| 📑 | `docs` | docs | docs |  |  |
+| 📝 | `note` | note | note |  |  |
+| 💭 | `comment-alt` | comment-alt | comment-alt |  |  |
+| 📨 | `invite` | invite | invite |  |  |
+| 📝 | `report` | report | report |  |  |
+| 📤 | `export` | Exportovat | Export | stáhnout | download |
+| 📥 | `import` | Importovat | Import | nahrát | upload |
+| 🖨️ | `print` | Tisk | Print | vytisknout | printer |
+| 📎 | `paperclip2` | paperclip2 | paperclip2 |  |  |
+| 🪪 | `fingerprint` | fingerprint | fingerprint |  |  |
+| 🔳 | `qr` | qr | qr |  |  |
+| 🏷️ | `barcode` | barcode | barcode |  |  |
+| 🔧 | `wrench` | wrench | wrench |  |  |
+| 🔨 | `hammer` | hammer | hammer |  |  |
+| 🔌 | `plug` | plug | plug |  |  |
+| 🔋 | `battery` | battery | battery |  |  |
+| 🌡️ | `thermometer` | thermometer | thermometer |  |  |
+| 👁️ | `eye` | eye | eye |  |  |
+| 🙈 | `eye-off` | eye-off | eye-off |  |  |
+| 👁️ | `visibility` | visibility | visibility |  |  |
+| 🎨 | `paint` | paint | paint |  |  |
+| 🖌️ | `brush` | brush | brush |  |  |
+| 🪣 | `bucket` | bucket | bucket |  |  |
+| 🕸️ | `nodes` | nodes | nodes |  |  |
+| ⚛️ | `cluster` | cluster | cluster |  |  |
+| 🚀 | `rocket` | rocket | rocket |  |  |
+| 🚩 | `flag` | flag | flag |  |  |
+| ✔️ | `check` | check | check |  |  |
+| 🕒 | `clock2` | clock2 | clock2 |  |  |
+| 🔎 | `search-alt` | search-alt | search-alt |  |  |
+| 🔧 | `settings-alt` | settings-alt | settings-alt |  |  |
+| 🆘 | `support` | support | support |  |  |
+| 🐞 | `bug-report` | bug-report | bug-report |  |  |
+| 🛠️ | `maintenance` | maintenance | maintenance |  |  |
+| 🔼 | `sort-asc` | sort-asc | sort-asc |  |  |
+| 🔽 | `sort-desc` | sort-desc | sort-desc |  |  |
+| 🔓 | `lock-open` | lock-open | lock-open |  |  |
+| 🌐 | `network` | network | network |  |  |
+| 💼 | `briefcase` | briefcase | briefcase |  |  |
+| 🤝 | `handshake` | handshake | handshake |  |  |
 
 ### NAV/FILE
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `folder` | 📁 | `folder-open` | 📂 | `file` | 📄 |
-| `file-alt` | 📝 | `code` | 💻 | `terminal` | 🖥️ |
-| `database` | 🗄️ | `cloud` | ☁️ | `sync` | 🔁 |
-| `upload` | 📤 | `upload-file` | 📤 | `download` | 📥 |
-| `link` | 🔗 | `external-link` | 🔗 | `share` | 📤 |
-| `list-alt` | 📋 | `description` | 📝 | `draft` | 📝 |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 📁 | `folder` | folder | folder |  |  |
+| 📂 | `folder-open` | folder-open | folder-open |  |  |
+| 📄 | `file` | file | file |  |  |
+| 📝 | `file-alt` | file-alt | file-alt |  |  |
+| 💻 | `code` | code | code |  |  |
+| 🖥️ | `terminal` | terminal | terminal |  |  |
+| 🗄️ | `database` | database | database |  |  |
+| ☁️ | `cloud` | cloud | cloud |  |  |
+| 🔁 | `sync` | sync | sync |  |  |
+| 📤 | `upload` | upload | upload |  |  |
+| 📤 | `upload-file` | upload-file | upload-file |  |  |
+| 📥 | `download` | download | download |  |  |
+| 🔗 | `link` | link | link |  |  |
+| 🔗 | `external-link` | external-link | external-link |  |  |
+| 📤 | `share` | share | share |  |  |
+| 📋 | `list-alt` | list-alt | list-alt |  |  |
+| 📝 | `description` | description | description |  |  |
+| 📝 | `draft` | draft | draft |  |  |
 
 ### SOCIAL / FAVORITES
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `star` | ⭐️ | `heart` | ❤️ | `like` | 👍 |
-| `dislike` | 👎 | `favorite` | ⭐️ | `bookmark` | 🔖 |
-| `trophy` | 🏆 | `medal` | 🏅 | `gift` | 🎁 |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| ⭐️ | `star` | Hvězdička | Star | oblíbené | favorite |
+| ❤️ | `heart` | heart | heart |  |  |
+| 👍 | `like` | like | like |  |  |
+| 👎 | `dislike` | dislike | dislike |  |  |
+| ⭐️ | `favorite` | favorite | favorite |  |  |
+| 🔖 | `bookmark` | bookmark | bookmark |  |  |
+| 🏆 | `trophy` | trophy | trophy |  |  |
+| 🏅 | `medal` | medal | medal |  |  |
+| 🎁 | `gift` | gift | gift |  |  |
 
 ### STATUS / STATE
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `pending` | ⏳ | `inprogress` | ⏳ | `done` | ✅ |
-| `success` | ✅ | `error` | ❌ | `warning` | ⚠️ |
-| `info2` | ℹ️ | `removed` | 🚫 | `locked` | 🔒 |
-| `unlocked` | 🔓 | `check-circle` | ✅ | `check` | ✔️ |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| ⏳ | `pending` | pending | pending |  |  |
+| ⏳ | `inprogress` | inprogress | inprogress |  |  |
+| ✅ | `done` | done | done |  |  |
+| ✅ | `success` | success | success |  |  |
+| ❌ | `error` | error | error |  |  |
+| ⚠️ | `warning` | warning | warning |  |  |
+| ℹ️ | `info2` | info2 | info2 |  |  |
+| 🚫 | `removed` | removed | removed |  |  |
+| 🔒 | `locked` | locked | locked |  |  |
+| 🔓 | `unlocked` | unlocked | unlocked |  |  |
+| ✅ | `check-circle` | check-circle | check-circle |  |  |
+| ✔️ | `check` | check | check |  |  |
 
 ### TRANSPORT
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `car` | 🚗 | `bike` | 🚲 | `bicycle` | 🚲 |
-| `motorcycle` | 🏍️ | `bus` | 🚌 | `train` | 🚆 |
-| `plane` | ✈️ | `ship` | 🚢 | `truck` | 🚚 |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 🚗 | `car` | Auto | Car | vozidlo | vehicle |
+| 🚲 | `bike` | bike | bike |  |  |
+| 🚲 | `bicycle` | bicycle | bicycle |  |  |
+| 🏍️ | `motorcycle` | motorcycle | motorcycle |  |  |
+| 🚌 | `bus` | bus | bus |  |  |
+| 🚆 | `train` | train | train |  |  |
+| ✈️ | `plane` | plane | plane |  |  |
+| 🚢 | `ship` | ship | ship |  |  |
+| 🚚 | `truck` | truck | truck |  |  |
 
 ### ZÁKLAD / NAV
 
-| Klíč | Ikona | Klíč | Ikona | Klíč | Ikona |
-|------|-------|------|-------|------|-------|
-| `home` | 🏠 | `dashboard` | 📊 | `overview` | 🧭 |
-| `apps` | 🧩 | `menu` | ☰ | `users` | 👥 |
-| `user` | 👤 | `account` | 👤 | `profile` | 👤 |
-| `person` | 👤 | `org` | 🏢 | `building` | 🏢 |
-| `office` | 🏬 | `settings` | ⚙️ | `cog` | ⚙️ |
-| `tools` | 🛠️ | `list` | 📄 | `table` | 📋 |
-| `columns` | 📑 | `bell` | 🔔 | `bell-slash` | 🔕 |
-| `help` | ❓ | `info` | ℹ️ | `search` | 🔍 |
-| `filter` | 🔍 | `chevron-right` | ▶️ | `chevron-left` | ◀️ |
-| `chevron-up` | ▲ | `chevron-down` | ▼ | | |
+| Ikona | Klíč | Název CZ | Název EN | Aliasy CZ | Aliasy EN |
+|-------|------|----------|----------|-----------|----------|
+| 🏠 | `home` | Domů | Home | domovská stránka | house |
+| 📊 | `dashboard` | Nástěnka | Dashboard | přehled | overview |
+| 🧭 | `overview` | overview | overview |  |  |
+| 🧩 | `apps` | apps | apps |  |  |
+| ☰ | `menu` | menu | menu |  |  |
+| 👥 | `users` | Uživatelé | Users | lidé | people |
+| 👤 | `user` | Uživatel | User | osoba | person |
+| 👤 | `account` | account | account |  |  |
+| 👤 | `profile` | profile | profile |  |  |
+| 👤 | `person` | person | person |  |  |
+| 🏢 | `org` | org | org |  |  |
+| 🏢 | `building` | Budova | Building | objekt | structure |
+| 🏬 | `office` | Kancelář | Office | pracoviště | workplace |
+| ⚙️ | `settings` | Nastavení | Settings | konfigurace | config |
+| ⚙️ | `cog` | cog | cog |  |  |
+| 🛠️ | `tools` | tools | tools |  |  |
+| 📄 | `list` | list | list |  |  |
+| 📋 | `table` | table | table |  |  |
+| 📑 | `columns` | columns | columns |  |  |
+| 🔔 | `bell` | bell | bell |  |  |
+| 🔕 | `bell-slash` | bell-slash | bell-slash |  |  |
+| ❓ | `help` | help | help |  |  |
+| ℹ️ | `info` | info | info |  |  |
+| 🔍 | `search` | Hledat | Search | vyhledávání | find |
+| 🔍 | `filter` | filter | filter |  |  |
+| ▶️ | `chevron-right` | chevron-right | chevron-right |  |  |
+| ◀️ | `chevron-left` | chevron-left | chevron-left |  |  |
+| ▲ | `chevron-up` | chevron-up | chevron-up |  |  |
+| ▼ | `chevron-down` | chevron-down | chevron-down |  |  |
 
----
-
-## 📋 Všechny Ikony (abecedně)
-
-| Klíč | Ikona | Kategorie |
-|------|-------|----------|
-| `accept` | ✔️ | CRUD / ACTIONS |
-| `account` | 👤 | ZÁKLAD / NAV |
-| `account-balance` | 🏦 | BUILDINGS / PROPERTY |
-| `account-tree` | 🕸️ | BUILDINGS / PROPERTY |
-| `add` | ➕ | CRUD / ACTIONS |
-| `add-circle` | ➕ | CRUD / ACTIONS |
-| `apartment` | 🏘️ | BUILDINGS / PROPERTY |
-| `apartment-unit` | 🚪 | BUILDINGS / PROPERTY |
-| `api` | 🔗 | DEVOPS / INFRA |
-| `approve` | ✔️ | CRUD / ACTIONS |
-| `apps` | 🧩 | ZÁKLAD / NAV |
-| `archive` | 🗄️ | CRUD / ACTIONS |
-| `attach` | 📎 | CRUD / ACTIONS |
-| `attic` | 🏚️ | BUILDINGS / PROPERTY |
-| `avatar` | 👤 | ACCESSIBILITY / UI TYPES |
-| `badge` | 🔰 | ACCESSIBILITY / UI TYPES |
-| `bank` | 🏦 | BUILDINGS / PROPERTY |
-| `barcode` | 🏷️ | MISC |
-| `basement` | 🔒 | BUILDINGS / PROPERTY |
-| `battery` | 🔋 | MISC |
-| `bell` | 🔔 | ZÁKLAD / NAV |
-| `bell-slash` | 🔕 | ZÁKLAD / NAV |
-| `bicycle` | 🚲 | TRANSPORT |
-| `bike` | 🚲 | TRANSPORT |
-| `bolt` | ⚡️ | HEALTH / WEATHER / NATURE |
-| `book` | 📚 | MISC |
-| `bookmark` | 🔖 | SOCIAL / FAVORITES |
-| `briefcase` | 💼 | MISC |
-| `brush` | 🖌️ | MISC |
-| `bucket` | 🪣 | MISC |
-| `bug` | 🐛 | DEVOPS / INFRA |
-| `bug-report` | 🐞 | MISC |
-| `building` | 🏢 | ZÁKLAD / NAV |
-| `building-2` | 🏢 | BUILDINGS / PROPERTY |
-| `bus` | 🚌 | TRANSPORT |
-| `calendar` | 📅 | CALENDAR / TIME |
-| `calendar-alt` | 📆 | CALENDAR / TIME |
-| `calendar-check` | ✅ | CALENDAR / TIME |
-| `calendar-day` | 📆 | CALENDAR / TIME |
-| `camera` | 📷 | MEDIA / PLAYER |
-| `car` | 🚗 | TRANSPORT |
-| `cart` | 🛒 | E-COMMERCE / FINANCE |
-| `cash` | 💵 | E-COMMERCE / FINANCE |
-| `chart` | 📈 | DATA / CHARTS |
-| `chart-bar` | 📊 | DATA / CHARTS |
-| `chart-pie` | 🥧 | DATA / CHARTS |
-| `chat` | 💬 | COMMUNICATION |
-| `check` | ✔️ | MISC |
-| `check-circle` | ✅ | STATUS / STATE |
-| `chevron-down` | ▼ | ZÁKLAD / NAV |
-| `chevron-left` | ◀️ | ZÁKLAD / NAV |
-| `chevron-right` | ▶️ | ZÁKLAD / NAV |
-| `chevron-up` | ▲ | ZÁKLAD / NAV |
-| `clock` | ⏰ | CALENDAR / TIME |
-| `clock2` | 🕒 | MISC |
-| `cloud` | ☁️ | HEALTH / WEATHER / NATURE |
-| `cloud-rain` | 🌧️ | HEALTH / WEATHER / NATURE |
-| `cluster` | ⚛️ | MISC |
-| `code` | 💻 | NAV/FILE |
-| `cog` | ⚙️ | ZÁKLAD / NAV |
-| `columns` | 📑 | ZÁKLAD / NAV |
-| `comment` | 💬 | COMMUNICATION |
-| `comment-alt` | 💭 | MISC |
-| `compass` | 🧭 | MAP / GEO |
-| `credit-card` | 💳 | E-COMMERCE / FINANCE |
-| `creditcard` | 💳 | E-COMMERCE / FINANCE |
-| `dashboard` | 📊 | ZÁKLAD / NAV |
-| `database` | 🗄️ | NAV/FILE |
-| `delete` | 🗑️ | CRUD / ACTIONS |
-| `description` | 📝 | NAV/FILE |
-| `detail` | 👁️ | CRUD / ACTIONS |
-| `discount` | 🏷️ | E-COMMERCE / FINANCE |
-| `dislike` | 👎 | SOCIAL / FAVORITES |
-| `docs` | 📑 | MISC |
-| `done` | ✅ | STATUS / STATE |
-| `download` | 📥 | NAV/FILE |
-| `draft` | 📝 | NAV/FILE |
-| `edit` | ✏️ | CRUD / ACTIONS |
-| `email` | ✉️ | COMMUNICATION |
-| `error` | ❌ | STATUS / STATE |
-| `exit` | 🚪 | CRUD / ACTIONS |
-| `export` | 📤 | MISC |
-| `external-link` | 🔗 | NAV/FILE |
-| `eye` | 👁️ | MISC |
-| `eye-off` | 🙈 | MISC |
-| `favorite` | ⭐️ | SOCIAL / FAVORITES |
-| `file` | 📄 | NAV/FILE |
-| `file-alt` | 📝 | NAV/FILE |
-| `filter` | 🔍 | ZÁKLAD / NAV |
-| `fingerprint` | 🪪 | MISC |
-| `fire` | 🔥 | HEALTH / WEATHER / NATURE |
-| `flag` | 🚩 | MISC |
-| `folder` | 📁 | NAV/FILE |
-| `folder-open` | 📂 | NAV/FILE |
-| `form` | 📝 | ACCESSIBILITY / UI TYPES |
-| `forward` | ⏩ | MEDIA / PLAYER |
-| `garage` | 🚗 | BUILDINGS / PROPERTY |
-| `gift` | 🎁 | SOCIAL / FAVORITES |
-| `globe` | 🌍 | MAP / GEO |
-| `grid` | 🟦 | ACCESSIBILITY / UI TYPES |
-| `hammer` | 🔨 | MISC |
-| `handshake` | 🤝 | MISC |
-| `heart` | ❤️ | SOCIAL / FAVORITES |
-| `help` | ❓ | ZÁKLAD / NAV |
-| `history` | 🕘 | CALENDAR / TIME |
-| `home` | 🏠 | ZÁKLAD / NAV |
-| `image` | 🖼️ | MEDIA / PLAYER |
-| `import` | 📥 | MISC |
-| `inbox` | 📥 | COMMUNICATION |
-| `info` | ℹ️ | ZÁKLAD / NAV |
-| `info2` | ℹ️ | STATUS / STATE |
-| `inprogress` | ⏳ | STATUS / STATE |
-| `invite` | 📨 | MISC |
-| `invoice` | 🧾 | E-COMMERCE / FINANCE |
-| `key` | 🔑 | CRUD / ACTIONS |
-| `language` | 🗣️ | MAP / GEO |
-| `laptop` | 💻 | MISC |
-| `leaf` | 🍃 | HEALTH / WEATHER / NATURE |
-| `like` | 👍 | SOCIAL / FAVORITES |
-| `link` | 🔗 | NAV/FILE |
-| `list` | 📄 | ZÁKLAD / NAV |
-| `list-alt` | 📋 | NAV/FILE |
-| `location` | 📍 | MAP / GEO |
-| `lock` | 🔒 | CRUD / ACTIONS |
-| `lock-open` | 🔓 | MISC |
-| `lock-shield` | 🔐 | DEVOPS / INFRA |
-| `locked` | 🔒 | STATUS / STATE |
-| `login` | 🔐 | CRUD / ACTIONS |
-| `logout` | 🚪 | CRUD / ACTIONS |
-| `mail` | ✉️ | COMMUNICATION |
-| `maintenance` | 🛠️ | MISC |
-| `map` | 🗺️ | MAP / GEO |
-| `map-pin` | 📍 | MAP / GEO |
-| `medal` | 🏅 | SOCIAL / FAVORITES |
-| `menu` | ☰ | ZÁKLAD / NAV |
-| `menu-grid` | ▦ | ACCESSIBILITY / UI TYPES |
-| `message` | 💬 | COMMUNICATION |
-| `minus` | ➖ | CRUD / ACTIONS |
-| `mobile` | 📱 | MISC |
-| `moon` | 🌙 | HEALTH / WEATHER / NATURE |
-| `motorcycle` | 🏍️ | TRANSPORT |
-| `mute` | 🔇 | MEDIA / PLAYER |
-| `network` | 🌐 | MISC |
-| `nodes` | 🕸️ | MISC |
-| `note` | 📝 | MISC |
-| `notification` | 🔔 | COMMUNICATION |
-| `office` | 🏬 | ZÁKLAD / NAV |
-| `office-building` | 🏬 | BUILDINGS / PROPERTY |
-| `org` | 🏢 | ZÁKLAD / NAV |
-| `outbox` | 📤 | COMMUNICATION |
-| `overview` | 🧭 | ZÁKLAD / NAV |
-| `paint` | 🎨 | MISC |
-| `paperclip` | 📎 | CRUD / ACTIONS |
-| `paperclip2` | 📎 | MISC |
-| `pause` | ⏸️ | MEDIA / PLAYER |
-| `payments` | 💳 | E-COMMERCE / FINANCE |
-| `pencil` | ✏️ | CRUD / ACTIONS |
-| `pencil-alt` | ✏️ | CRUD / ACTIONS |
-| `pending` | ⏳ | STATUS / STATE |
-| `person` | 👤 | ZÁKLAD / NAV |
-| `phone` | 📞 | MISC |
-| `pin` | 📌 | MAP / GEO |
-| `plane` | ✈️ | TRANSPORT |
-| `play` | ▶️ | MEDIA / PLAYER |
-| `plug` | 🔌 | MISC |
-| `plus` | ➕ | CRUD / ACTIONS |
-| `price` | 💲 | E-COMMERCE / FINANCE |
-| `print` | 🖨️ | MISC |
-| `profile` | 👤 | ZÁKLAD / NAV |
-| `qr` | 🔳 | MISC |
-| `rain` | 🌧️ | HEALTH / WEATHER / NATURE |
-| `receive` | 📥 | COMMUNICATION |
-| `record` | ⏺️ | MEDIA / PLAYER |
-| `recycle` | ♻️ | HEALTH / WEATHER / NATURE |
-| `refresh` | 🔄 | CRUD / ACTIONS |
-| `reject` | ❌ | CRUD / ACTIONS |
-| `reload` | 🔁 | CRUD / ACTIONS |
-| `reminder` | 🔔 | CALENDAR / TIME |
-| `remove` | ❌ | CRUD / ACTIONS |
-| `removed` | 🚫 | STATUS / STATE |
-| `report` | 📝 | MISC |
-| `rewind` | ⏪ | MEDIA / PLAYER |
-| `rocket` | 🚀 | MISC |
-| `save` | 💾 | CRUD / ACTIONS |
-| `schedule` | 📅 | CALENDAR / TIME |
-| `search` | 🔍 | ZÁKLAD / NAV |
-| `search-alt` | 🔎 | MISC |
-| `send` | 📤 | COMMUNICATION |
-| `server` | 🖥️ | DEVOPS / INFRA |
-| `settings` | ⚙️ | ZÁKLAD / NAV |
-| `settings-alt` | 🔧 | MISC |
-| `share` | 📤 | NAV/FILE |
-| `shield` | 🛡️ | DEVOPS / INFRA |
-| `ship` | 🚢 | TRANSPORT |
-| `shopping-cart` | 🛒 | E-COMMERCE / FINANCE |
-| `snow` | ❄️ | HEALTH / WEATHER / NATURE |
-| `sort-asc` | 🔼 | MISC |
-| `sort-desc` | 🔽 | MISC |
-| `south` | ⬇️ | MAP / GEO |
-| `star` | ⭐️ | SOCIAL / FAVORITES |
-| `stats` | 📊 | DATA / CHARTS |
-| `stop` | ⏹️ | MEDIA / PLAYER |
-| `stopwatch` | ⏱️ | CALENDAR / TIME |
-| `storage` | 📦 | BUILDINGS / PROPERTY |
-| `success` | ✅ | STATUS / STATE |
-| `sun` | ☀️ | HEALTH / WEATHER / NATURE |
-| `support` | 🆘 | MISC |
-| `sync` | 🔁 | NAV/FILE |
-| `table` | 📋 | ZÁKLAD / NAV |
-| `tablet` | 📱 | MISC |
-| `tag` | 🏷️ | E-COMMERCE / FINANCE |
-| `terminal` | 🖥️ | NAV/FILE |
-| `thermometer` | 🌡️ | MISC |
-| `tile` | 🟦 | ACCESSIBILITY / UI TYPES |
-| `timer` | ⏱️ | CALENDAR / TIME |
-| `tools` | 🛠️ | ZÁKLAD / NAV |
-| `train` | 🚆 | TRANSPORT |
-| `trash` | 🗑️ | CRUD / ACTIONS |
-| `trend-down` | 📉 | DATA / CHARTS |
-| `trend-up` | 📈 | DATA / CHARTS |
-| `trophy` | 🏆 | SOCIAL / FAVORITES |
-| `truck` | 🚚 | TRANSPORT |
-| `tv` | 📺 | MISC |
-| `undo` | ↩️ | CRUD / ACTIONS |
-| `unit-key` | 🔑 | BUILDINGS / PROPERTY |
-| `unlock` | 🔓 | CRUD / ACTIONS |
-| `unlocked` | 🔓 | STATUS / STATE |
-| `upload` | 📤 | NAV/FILE |
-| `upload-file` | 📤 | NAV/FILE |
-| `user` | 👤 | ZÁKLAD / NAV |
-| `users` | 👥 | ZÁKLAD / NAV |
-| `video` | 🎥 | MEDIA / PLAYER |
-| `view` | 👁️ | CRUD / ACTIONS |
-| `visibility` | 👁️ | MISC |
-| `volume` | 🔊 | MEDIA / PLAYER |
-| `wallet` | 👛 | E-COMMERCE / FINANCE |
-| `warehouse` | 🏭 | BUILDINGS / PROPERTY |
-| `warning` | ⚠️ | STATUS / STATE |
-| `water-drop` | 💧 | HEALTH / WEATHER / NATURE |
-| `webhook` | 🔔 | DEVOPS / INFRA |
-| `wifi` | 📶 | HEALTH / WEATHER / NATURE |
-| `wrench` | 🔧 | MISC |
-
----
-[
-  {
-    "id": 1,
-    "name": "Červená",
-    "hex": "#E74C3C",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#E74C3C;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 2,
-    "name": "Růžová",
-    "hex": "#E05570",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#E05570;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 3,
-    "name": "Fialová světlá",
-    "hex": "#A569BD",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#A569BD;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 4,
-    "name": "Fialová tmavá",
-    "hex": "#8E44AD",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#8E44AD;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 5,
-    "name": "Modrá světlejší",
-    "hex": "#5DADE2",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#5DADE2;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 6,
-    "name": "Modrá střední",
-    "hex": "#3498DB",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#3498DB;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 7,
-    "name": "Modrá tmavší",
-    "hex": "#2E86C1",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#2E86C1;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 8,
-    "name": "Tyrkysová",
-    "hex": "#1ABC9C",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#1ABC9C;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 9,
-    "name": "Zelená světlá",
-    "hex": "#58D68D",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#58D68D;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 10,
-    "name": "Zelená střední",
-    "hex": "#27AE60",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#27AE60;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 11,
-    "name": "Zelená tmavá",
-    "hex": "#1E8449",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#1E8449;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 12,
-    "name": "Žlutá světlá",
-    "hex": "#F9E79F",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#F9E79F;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 13,
-    "name": "Žlutá",
-    "hex": "#F4D03F",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#F4D03F;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 14,
-    "name": "Oranžová světlá",
-    "hex": "#F5B041",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#F5B041;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 15,
-    "name": "Oranžová tmavá",
-    "hex": "#E67E22",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#E67E22;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 16,
-    "name": "Hnědá světlá",
-    "hex": "#DC7633",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#DC7633;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 17,
-    "name": "Hnědá",
-    "hex": "#935116",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#935116;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 18,
-    "name": "Béžová",
-    "hex": "#D7CCC8",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#D7CCC8;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 19,
-    "name": "Šedá světlá",
-    "hex": "#BDC3C7",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#BDC3C7;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 20,
-    "name": "Šedá střední",
-    "hex": "#95A5A6",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#95A5A6;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 21,
-    "name": "Antracit",
-    "hex": "#566573",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#566573;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 22,
-    "name": "Modrošedá",
-    "hex": "#5D6D7E",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#5D6D7E;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 23,
-    "name": "Tmavě šedá",
-    "hex": "#424949",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#424949;border:1px solid #ccc'></div>"
-  },
-  {
-    "id": 24,
-    "name": "Grafit / černá",
-    "hex": "#212F3D",
-    "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#212F3D;border:1px solid #ccc'></div>"
-  }
-]
-<img width="923" height="639" alt="image" src="https://github.com/user-attachments/assets/e17bd0d5-1c62-4838-823a-779ac7d683d6" />
-
-## 💡 Použití
-
-### V kódu JavaScript:
-
-```javascript
-import { icon } from './src/ui/icons.js';
-
-// Použití ikony
-element.innerHTML = icon('check_circle');
-```
-
-### V tlačítkách:
-
-```javascript
-import { ACTIONS } from './src/ui/actionButtons.js';
-
-// Vytvoření tlačítka pro přidání
-const addButton = ACTIONS.add({
-  onClick: () => console.log('Přidat kliknuto'),
-  disabled: false
-});
-```
