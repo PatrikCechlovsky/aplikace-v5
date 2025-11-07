@@ -299,13 +299,36 @@ export default async function render(root) {
     navigateTo(`#/m/060-smlouva/f/detail?id=${data.id}`);
     return true;
   }
-  
+
+  // --- build sections automatically from fields (fixes duplicate rendering when passing strings) ---
+  function slugifyLabel(label) {
+    return String(label || '').toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^\w\-]/g, '')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  const sectionsFromFields = (() => {
+    const map = new Map();
+    fields.forEach(f => {
+      const sec = f.section || 'Default';
+      if (!map.has(sec)) map.set(sec, []);
+      map.get(sec).push(f.key);
+    });
+    return Array.from(map.entries()).map(([label, keys]) => ({
+      id: slugifyLabel(label),
+      label,
+      fields: keys
+    }));
+  })();
+  // -------------------------------------------------------------------------
+
   // Render form
   renderForm(formContainer, fields, initialData, handleSubmit, {
     submitLabel: id ? 'Uložit změny' : 'Vytvořit smlouvu',
     showSubmit: true,
     layout: { columns: { base: 1, md: 2 } },
-    sections: ['Základní údaje', 'Strany a nemovitost', 'Období platnosti', 'Platební podmínky', 'Kauce', 'Další informace']
+    sections: sectionsFromFields
   });
   
   root.innerHTML = '';
