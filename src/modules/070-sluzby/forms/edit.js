@@ -185,8 +185,11 @@ export default async function render(root) {
       if (serviceCode) {
         dataToSave.kod = serviceCode;
       } else {
-        alert('Nepodařilo se vygenerovat kód služby. Zadejte prosím kód ručně.');
-        return false;
+        const shouldContinue = confirm('Nepodařilo se vygenerovat kód služby automaticky.\n\nMožné příčiny:\n- Není nastavena konfigurace číslování v Nastavení\n- Databázová chyba\n\nChcete zadat kód ručně?\n\nKlikněte OK pro pokračování nebo Zrušit pro návrat.');
+        if (!shouldContinue) {
+          return false;
+        }
+        // User chose to continue - they must fill in the code manually
       }
     }
     

@@ -66,7 +66,7 @@ export default async function render(root) {
       label: 'Prefix',
       type: 'text',
       required: true,
-      help: 'Prefix pro kód služby (např. "SLU", "ENERG", "VODA"). Prefix nebo text musí být jedinečný.',
+      help: 'Prefix pro kód služby (např. "SLU", "ENERG", "VODA"). Tento prefix bude součástí každého kódu služby a pomůže zajistit jedinečnost. Např. s prefixem "VODA" vzniknou kódy VODA-0001, VODA-0002 atd.',
       section: 'Formát číslování'
     },
     {

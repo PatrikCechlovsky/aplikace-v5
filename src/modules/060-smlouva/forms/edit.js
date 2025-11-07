@@ -12,7 +12,7 @@ function getHashParams() {
 }
 
 // Helper to generate next contract number
-async function generateContractNumber(propertyId, unitId) {
+async function generateContractNumber() {
   try {
     // Call the database function to generate next ID
     const { data, error } = await supabase.rpc('generate_next_id', {
@@ -113,18 +113,27 @@ export default async function render(root) {
         // Auto-fill property and landlord when unit is selected
         if (value) {
           try {
-            const { data: unit } = await supabase
+            const { data: unit, error } = await supabase
               .from('units')
               .select('property_id, properties!inner(landlord_id)')
               .eq('id', value)
               .single();
             
+            if (error) {
+              console.error('Error auto-filling from unit:', error);
+              alert('Chyba: Nepodařilo se načíst informace o jednotce. Zkontrolujte prosím nemovitost a pronajímatele ručně.');
+              return;
+            }
+            
             if (unit) {
               formData.property_id = unit.property_id;
               formData.landlord_id = unit.properties?.landlord_id;
+            } else {
+              alert('Upozornění: Jednotka nemá přiřazenou nemovitost nebo pronajímatele.');
             }
           } catch (err) {
             console.error('Error auto-filling from unit:', err);
+            alert('Chyba: Nepodařilo se automaticky doplnit nemovitost a pronajímatele. Zkontrolujte prosím tato pole ručně.');
           }
         }
       }
@@ -252,12 +261,16 @@ export default async function render(root) {
     
     // Generate contract number if creating new and not provided
     if (!id && !dataToSave.cislo_smlouvy) {
-      const contractNumber = await generateContractNumber(dataToSave.property_id, dataToSave.unit_id);
+      const contractNumber = await generateContractNumber();
       if (contractNumber) {
         dataToSave.cislo_smlouvy = contractNumber;
       } else {
-        alert('Nepodařilo se vygenerovat číslo smlouvy. Zadejte prosím číslo ručně.');
-        return false;
+        const shouldContinue = confirm('Nepodařilo se vygenerovat číslo smlouvy automaticky. Chcete zadat číslo ručně?\n\nKlikněte OK pro pokračování (budete muset zadat číslo ručně) nebo Zrušit pro návrat.');
+        if (!shouldContinue) {
+          return false;
+        }
+        // User chose to continue - they must fill in the number manually
+        // The form validation will catch if it's empty
       }
     }
     

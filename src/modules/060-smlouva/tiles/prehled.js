@@ -43,6 +43,7 @@ export default async function render(root) {
   `;
 
   // Load contracts
+  // TODO: Implement pagination for better performance with large datasets
   const { data: contracts = [], error } = await listContracts({ showArchived, limit: 1000 });
   if (error) {
     root.querySelector('#contracts-table').innerHTML = `<div class="p-4 text-red-600">Chyba při načítání smluv: ${error.message || JSON.stringify(error)}</div>`;
