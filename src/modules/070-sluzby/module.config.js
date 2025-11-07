@@ -14,6 +14,7 @@ const MANIFEST = {
     { id: 'voda', title: 'Voda', icon: 'water_drop' },
     { id: 'internet', title: 'Internet', icon: 'wifi' },
     { id: 'spravne-poplatky', title: 'Správné poplatky', icon: 'account_balance' },
+    { id: 'nastaveni', title: 'Nastavení', icon: 'settings' }
   ],
   forms: [
     { id: 'detail', title: 'Detail služby', icon: 'visibility' },

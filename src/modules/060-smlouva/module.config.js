@@ -19,7 +19,8 @@ export async function getManifest() {
       { id: 'aktivni', title: 'Aktivní', icon: 'check_circle' },
       { id: 'koncepty', title: 'Koncepty', icon: 'draft' },
       { id: 'expirujici', title: 'Expirující', icon: 'warning' },
-      { id: 'ukoncene', title: 'Ukončené', icon: 'archive' }
+      { id: 'ukoncene', title: 'Ukončené', icon: 'archive' },
+      { id: 'nastaveni', title: 'Nastavení', icon: 'settings' }
     ],
     forms: [
       { id: 'detail', title: 'Detail smlouvy', icon: 'visibility' },
