@@ -108,37 +108,16 @@ console.log('🔍 Scanning repository...');
 const usedIcons = scanDirectory(path.join(__dirname, 'src'));
 console.log(`✅ Found ${usedIcons.size} icons used in code`);
 
-// Icon translations with Czech/English names and aliases
-const iconTranslations = {
-  'home': { cz: 'Domů', en: 'Home', aliases_cz: ['domovská stránka'], aliases_en: ['house'] },
-  'dashboard': { cz: 'Nástěnka', en: 'Dashboard', aliases_cz: ['přehled'], aliases_en: ['overview'] },
-  'users': { cz: 'Uživatelé', en: 'Users', aliases_cz: ['lidé'], aliases_en: ['people'] },
-  'user': { cz: 'Uživatel', en: 'User', aliases_cz: ['osoba'], aliases_en: ['person'] },
-  'settings': { cz: 'Nastavení', en: 'Settings', aliases_cz: ['konfigurace'], aliases_en: ['config'] },
-  'add': { cz: 'Přidat', en: 'Add', aliases_cz: ['nový'], aliases_en: ['new', 'plus'] },
-  'edit': { cz: 'Upravit', en: 'Edit', aliases_cz: ['změnit'], aliases_en: ['modify'] },
-  'delete': { cz: 'Smazat', en: 'Delete', aliases_cz: ['odstranit'], aliases_en: ['remove'] },
-  'detail': { cz: 'Detail', en: 'Detail', aliases_cz: ['zobrazit'], aliases_en: ['view'] },
-  'save': { cz: 'Uložit', en: 'Save', aliases_cz: ['potvrdit'], aliases_en: ['confirm'] },
-  'archive': { cz: 'Archivovat', en: 'Archive', aliases_cz: ['uložit'], aliases_en: ['store'] },
-  'refresh': { cz: 'Obnovit', en: 'Refresh', aliases_cz: ['reload'], aliases_en: ['reload'] },
-  'search': { cz: 'Hledat', en: 'Search', aliases_cz: ['vyhledávání'], aliases_en: ['find'] },
-  'building': { cz: 'Budova', en: 'Building', aliases_cz: ['objekt'], aliases_en: ['structure'] },
-  'calendar': { cz: 'Kalendář', en: 'Calendar', aliases_cz: ['datum'], aliases_en: ['date'] },
-  'mail': { cz: 'Pošta', en: 'Mail', aliases_cz: ['e-mail'], aliases_en: ['email'] },
-  'star': { cz: 'Hvězdička', en: 'Star', aliases_cz: ['oblíbené'], aliases_en: ['favorite'] },
-  'map': { cz: 'Mapa', en: 'Map', aliases_cz: ['plán'], aliases_en: ['plan'] },
-  'car': { cz: 'Auto', en: 'Car', aliases_cz: ['vozidlo'], aliases_en: ['vehicle'] },
-  'warehouse': { cz: 'Sklad', en: 'Warehouse', aliases_cz: ['skladiště'], aliases_en: ['storage'] },
-  'apartment': { cz: 'Byt', en: 'Apartment', aliases_cz: ['bytová jednotka'], aliases_en: ['flat'] },
-  'office': { cz: 'Kancelář', en: 'Office', aliases_cz: ['pracoviště'], aliases_en: ['workplace'] },
-  'export': { cz: 'Exportovat', en: 'Export', aliases_cz: ['stáhnout'], aliases_en: ['download'] },
-  'import': { cz: 'Importovat', en: 'Import', aliases_cz: ['nahrát'], aliases_en: ['upload'] },
-  'print': { cz: 'Tisk', en: 'Print', aliases_cz: ['vytisknout'], aliases_en: ['printer'] },
-  'history': { cz: 'Historie', en: 'History', aliases_cz: ['záznamy'], aliases_en: ['log'] },
-  'grid': { cz: 'Mřížka', en: 'Grid', aliases_cz: ['tabulka'], aliases_en: ['table'] },
-  'form': { cz: 'Formulář', en: 'Form', aliases_cz: ['vstup'], aliases_en: ['input'] },
-};
+// Load comprehensive icon translations
+let iconTranslations = {};
+try {
+  const translationsContent = fs.readFileSync(path.join(__dirname, 'icon-translations.json'), 'utf-8');
+  iconTranslations = JSON.parse(translationsContent);
+  console.log(`📖 Loaded ${Object.keys(iconTranslations).length} icon translations`);
+} catch (err) {
+  console.warn('⚠️ Could not load icon-translations.json, using defaults');
+  iconTranslations = {};
+}
 
 // Add defaults for icons without translation
 Object.keys(icons).forEach(key => {
