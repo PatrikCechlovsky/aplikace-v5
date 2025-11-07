@@ -98,7 +98,8 @@ SELECT * FROM (VALUES
   ('module:030', 'subject', 'PRON', 1, 4, '{PREFIX}-{YEAR}-{NUMBER}'),
   ('module:050', 'subject', 'NAJ', 1, 4, '{PREFIX}-{YEAR}-{NUMBER}'),
   ('module:040', 'property', 'NEM', 1, 4, '{PREFIX}-{YEAR}-{NUMBER}'),
-  ('module:060', 'contract', 'SML', 1, 4, '{PREFIX}-{YEAR}-{NUMBER}')
+  ('module:060', 'contract', 'SML', 1, 4, '{PREFIX}-{YEAR}-{NUMBER}'),
+  ('module:070', 'service', 'SLU', 1, 4, '{PREFIX}-{YEAR}-{NUMBER}')
 ) AS t(scope, entity_type, prefix, start_number, zero_padding, format_template)
 WHERE NOT EXISTS (SELECT 1 FROM numbering_config LIMIT 1);
 
