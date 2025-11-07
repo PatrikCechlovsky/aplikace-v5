@@ -35,6 +35,11 @@ async function generateContractNumber() {
 export default async function render(root) {
   const { id } = getHashParams();
   
+  // debug: zjistit, odkud je render volán (odstranit po vyřešení)
+  console.trace('render:060-smlouva called, id=', id);
+  window.__render_060_calls = (window.__render_060_calls || 0) + 1;
+  console.log('render:060-smlouva call #', window.__render_060_calls);
+
   // Set breadcrumb
   try {
     setBreadcrumb(document.getElementById('crumb'), [
