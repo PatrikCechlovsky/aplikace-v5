@@ -1,4 +1,5 @@
 # aplikace-v5
+<img width="842" height="297" alt="image" src="https://github.com/user-attachments/assets/7e5f5e9b-8e11-4dba-8589-d0d512e400b9" />
 
 ## 📋 Dokumentace k standardizaci modulů
 
