@@ -607,6 +607,7 @@ Všechna dostupná tlačítka a akce v aplikaci:
     "preview": "<div style='width:18px;height:18px;border-radius:4px;background-color:#212F3D;border:1px solid #ccc'></div>"
   }
 ]
+<img width="923" height="639" alt="image" src="https://github.com/user-attachments/assets/e17bd0d5-1c62-4838-823a-779ac7d683d6" />
 
 ## 💡 Použití
 
