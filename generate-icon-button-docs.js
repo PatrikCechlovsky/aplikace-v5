@@ -3,14 +3,32 @@
  * Generuje dokumentaci a Excel soubor se všemi ikonami a tlačítky z aplikace
  * - icon_button.md - přehled v markdown formátu
  * - icon_button.xlsx - Excel s dvěma listy: ikony/tlačítka z databáze + dostupné ikony pro výběr
+ * 
+ * Poznámka: Tento skript používá jednoduché regex parsování, které předpokládá
+ * konzistentní formátování zdrojových souborů. Pro změny formátu je třeba
+ * upravit regex výrazy.
  */
+
+// Check for required dependencies
+try {
+  require('exceljs');
+} catch (err) {
+  console.error('❌ Chybí závislost "exceljs". Spusťte: npm install');
+  process.exit(1);
+}
 
 const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 
 // Načtení ICONS z src/ui/icons.js
-const iconsContent = fs.readFileSync(path.join(__dirname, 'src/ui/icons.js'), 'utf-8');
+let iconsContent;
+try {
+  iconsContent = fs.readFileSync(path.join(__dirname, 'src/ui/icons.js'), 'utf-8');
+} catch (err) {
+  console.error('❌ Nepodařilo se načíst soubor src/ui/icons.js:', err.message);
+  process.exit(1);
+}
 
 // Extrakce ICONS objektu pomocí regulárního výrazu
 const iconsMatch = iconsContent.match(/export const ICONS = \{([\s\S]*?)\};/);
@@ -49,7 +67,13 @@ iconLines.forEach(line => {
 });
 
 // Načtení akcí/tlačítek z src/ui/commonActions.js
-const commonActionsContent = fs.readFileSync(path.join(__dirname, 'src/ui/commonActions.js'), 'utf-8');
+let commonActionsContent;
+try {
+  commonActionsContent = fs.readFileSync(path.join(__dirname, 'src/ui/commonActions.js'), 'utf-8');
+} catch (err) {
+  console.error('❌ Nepodařilo se načíst soubor src/ui/commonActions.js:', err.message);
+  process.exit(1);
+}
 const catalogMatch = commonActionsContent.match(/const CATALOG = \{([\s\S]*?)\};/);
 
 const buttons = [];
@@ -72,7 +96,13 @@ if (catalogMatch) {
 }
 
 // Načtení akcí z src/ui/actionButtons.js
-const actionButtonsContent = fs.readFileSync(path.join(__dirname, 'src/ui/actionButtons.js'), 'utf-8');
+let actionButtonsContent;
+try {
+  actionButtonsContent = fs.readFileSync(path.join(__dirname, 'src/ui/actionButtons.js'), 'utf-8');
+} catch (err) {
+  console.error('❌ Nepodařilo se načíst soubor src/ui/actionButtons.js:', err.message);
+  process.exit(1);
+}
 const actionsMatch = actionButtonsContent.match(/export const ACTIONS = \{([\s\S]*?)\};/);
 
 const additionalButtons = [];
