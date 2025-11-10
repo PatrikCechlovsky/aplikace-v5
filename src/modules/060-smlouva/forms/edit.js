@@ -4,6 +4,12 @@ import { upsertContract, getContract } from '/src/modules/060-smlouva/db.js';
 import { setBreadcrumb } from '/src/ui/breadcrumb.js';
 import { navigateTo } from '/src/app.js';
 import { supabase } from '/src/supabase.js';
+import {
+  listServiceDefinitions,
+  listContractServiceLines,
+  upsertContractServiceLine,
+  deleteContractServiceLine
+} from '/src/modules/070-sluzby/db.js';
 
 // Helper to parse hash params
 function getHashParams() {
@@ -261,6 +267,8 @@ export default async function render(root) {
   ];
   
   // Handle form submission
+  // We'll integrate saving of service lines after contract is saved
+  let removedServiceLineIds = []; // track deleted lines
   async function handleSubmit(formData) {
     const dataToSave = { ...formData };
     
@@ -288,6 +296,7 @@ export default async function render(root) {
       dataToSave.datum_konec = null;
     }
     
+    // Save contract first
     const { data, error } = await upsertContract(dataToSave);
     
     if (error) {
@@ -295,11 +304,20 @@ export default async function render(root) {
       return false;
     }
     
+    // Save service lines (if any) using contract id
+    try {
+      await saveServiceLinesAfterContractSaved(data.id);
+    } catch (e) {
+      console.error('Error saving service lines:', e);
+      alert('Smlouva uložena, ale nastala chyba při ukládání služeb položek. Zkontrolujte prosím konzoli.');
+      // We proceed to navigate anyway, or you might choose to stop
+    }
+    
     alert('Smlouva byla úspěšně uložena.');
     navigateTo(`#/m/060-smlouva/f/detail?id=${data.id}`);
     return true;
   }
-
+  
   // --- build sections automatically from fields (fixes duplicate rendering when passing strings) ---
   function slugifyLabel(label) {
     return String(label || '').toLowerCase()
@@ -322,6 +340,241 @@ export default async function render(root) {
     }));
   })();
   // -------------------------------------------------------------------------
+
+  // --- Service lines UI integration ---
+  // will hold current lines (loaded from DB or newly created)
+  let serviceLines = [];
+  // track ids removed by user (to delete server-side)
+  removedServiceLineIds = [];
+
+  async function loadServiceLines() {
+    if (!id) { serviceLines = []; return; }
+    const { data, error } = await listContractServiceLines(id);
+    if (error) {
+      console.error('Error loading service lines', error);
+      serviceLines = [];
+      return;
+    }
+    serviceLines = (data || []).map(d => ({
+      id: d.id,
+      contract_id: d.contract_id,
+      service_definition_id: d.service_definition_id,
+      price: parseFloat(d.price || 0),
+      quantity: parseFloat(d.quantity || 1),
+      unit: d.unit || '',
+      typ_uctovani: d.typ_uctovani,
+      plati_for: d.plati_for,
+      note: d.note,
+      service_definition: d.service_definition
+    }));
+  }
+
+  // render the add / chooser box
+  async function renderAddServiceBox(container) {
+    const box = document.createElement('div');
+    box.className = 'grid grid-cols-12 gap-2 items-center mb-3';
+  
+    // service select (simple select)
+    const selWrap = document.createElement('div'); selWrap.className = 'col-span-5';
+    const sel = document.createElement('select'); sel.className = 'w-full border rounded px-2 py-1';
+    sel.appendChild(new Option('--- Vyberte službu ---', ''));
+    const { data: services } = await listServiceDefinitions();
+    (services || []).forEach(s => sel.appendChild(new Option(s.nazev, s.id)));
+    selWrap.appendChild(sel);
+    box.appendChild(selWrap);
+  
+    // price input
+    const priceWrap = document.createElement('div'); priceWrap.className = 'col-span-2';
+    const priceIn = document.createElement('input'); priceIn.type='number'; priceIn.step='0.01'; priceIn.className='w-full border rounded px-2 py-1'; priceWrap.appendChild(priceIn);
+    box.appendChild(priceWrap);
+  
+    // quantity
+    const qWrap = document.createElement('div'); qWrap.className='col-span-1';
+    const qIn = document.createElement('input'); qIn.type='number'; qIn.step='0.001'; qIn.value = 1; qIn.className='w-full border rounded px-2 py-1';
+    qWrap.appendChild(qIn); box.appendChild(qWrap);
+  
+    // payer
+    const payerWrap = document.createElement('div'); payerWrap.className='col-span-2';
+    const payerSel = document.createElement('select'); payerSel.className='w-full border rounded px-2 py-1';
+    ['najemnik','pronajimatel','sdilene'].forEach(v => payerSel.appendChild(new Option(v,v)));
+    payerWrap.appendChild(payerSel); box.appendChild(payerWrap);
+  
+    // add button
+    const addWrap = document.createElement('div'); addWrap.className='col-span-2 flex justify-end';
+    const addBtn = document.createElement('button'); addBtn.type='button'; addBtn.className='px-4 py-2 rounded bg-slate-900 text-white';
+    addBtn.textContent = 'Přidat službu';
+    addBtn.addEventListener('click', async () => {
+      if (!sel.value) return alert('Vyberte službu.');
+      const svc = (services || []).find(s => s.id === sel.value);
+      const newLine = {
+        contract_id: id || null,
+        service_definition_id: svc.id,
+        price: parseFloat(priceIn.value || svc.zakladni_cena || 0),
+        quantity: parseFloat(qIn.value || 1),
+        unit: svc.jednotka || '',
+        typ_uctovani: svc.typ_uctovani || null,
+        plati_for: payerSel.value,
+        _service_name: svc.nazev
+      };
+      // optimistically push locally
+      serviceLines.push(newLine);
+      renderServiceLines(container);
+      computeRentSum();
+      // reset inputs
+      sel.value = '';
+      priceIn.value = '';
+      qIn.value = 1;
+      payerSel.value = 'najemnik';
+    });
+    addWrap.appendChild(addBtn);
+    box.appendChild(addWrap);
+  
+    container.appendChild(box);
+  }
+
+  // render lines list in a simple grid
+  function renderServiceLines(container) {
+    // remove existing table if present
+    const existing = container.querySelector('.service-lines-table');
+    if (existing) existing.remove();
+
+    const table = document.createElement('div');
+    table.className = 'service-lines-table space-y-2';
+  
+    serviceLines.forEach((ln, idx) => {
+      const row = document.createElement('div');
+      row.className = 'grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded';
+      // label
+      const title = document.createElement('div');
+      title.className = 'col-span-4';
+      title.innerHTML = `<strong>${ln.service_definition?.nazev || ln._service_name || '---'}</strong><div class="text-xs text-slate-500">${ln.unit || ''}</div>`;
+      row.appendChild(title);
+  
+      // price
+      const priceWrap = document.createElement('div');
+      priceWrap.className = 'col-span-2';
+      const priceInput = document.createElement('input');
+      priceInput.type = 'number';
+      priceInput.step = '0.01';
+      priceInput.className = 'w-full border rounded px-2 py-1 text-sm';
+      priceInput.value = (ln.price ?? 0);
+      priceInput.addEventListener('input', (e) => {
+        ln.price = parseFloat(e.target.value || 0);
+        computeRentSum();
+      });
+      priceWrap.appendChild(priceInput);
+      row.appendChild(priceWrap);
+  
+      // quantity
+      const qWrap = document.createElement('div');
+      qWrap.className = 'col-span-1';
+      const qInput = document.createElement('input');
+      qInput.type = 'number';
+      qInput.step = '0.001';
+      qInput.className = 'w-full border rounded px-2 py-1 text-sm';
+      qInput.value = (ln.quantity ?? 1);
+      qInput.addEventListener('input', (e) => {
+        ln.quantity = parseFloat(e.target.value || 1);
+        computeRentSum();
+      });
+      qWrap.appendChild(qInput);
+      row.appendChild(qWrap);
+  
+      // payer
+      const payer = document.createElement('div');
+      payer.className = 'col-span-2';
+      const payerSel = document.createElement('select');
+      payerSel.className = 'w-full border rounded px-2 py-1 text-sm';
+      ['najemnik','pronajimatel','sdilene'].forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; if(ln.plati_for===v) o.selected=true;
+        payerSel.appendChild(o);
+      });
+      payerSel.addEventListener('change', e => ln.plati_for = e.target.value);
+      payer.appendChild(payerSel);
+      row.appendChild(payer);
+  
+      // actions
+      const actions = document.createElement('div');
+      actions.className = 'col-span-3 flex gap-2 justify-end';
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'px-3 py-1 rounded border text-sm';
+      del.textContent = 'Smazat';
+      del.addEventListener('click', async () => {
+        if (ln.id) {
+          // mark for deletion
+          removedServiceLineIds.push(ln.id);
+        }
+        serviceLines.splice(idx, 1);
+        renderServiceLines(container);
+        computeRentSum();
+      });
+      actions.appendChild(del);
+  
+      row.appendChild(actions);
+  
+      table.appendChild(row);
+    });
+  
+    container.appendChild(table);
+  }
+
+  // compute sum into najem_vyse in form data object
+  function computeRentSum() {
+    const sum = serviceLines.reduce((s, ln) => s + (parseFloat(ln.price || 0) * parseFloat(ln.quantity || 1)), 0);
+    initialData.najem_vyse = sum;
+    // if price input exists in form UI, update it (optional)
+    const el = document.querySelector('input[name="najem_vyse"]');
+    if (el) el.value = sum;
+  }
+
+  // persist service lines after contract has an id
+  async function saveServiceLinesAfterContractSaved(contractId) {
+    // delete removed
+    for (const delId of removedServiceLineIds || []) {
+      try {
+        await deleteContractServiceLine(delId);
+      } catch (e) {
+        console.error('Error deleting service line', delId, e);
+      }
+    }
+    // upsert current
+    for (const ln of serviceLines) {
+      const payload = { ...ln, contract_id: contractId };
+      delete payload._service_name;
+      try {
+        const { data, error } = await upsertContractServiceLine(payload);
+        if (error) console.error('Chyba ukládání služby:', error);
+        else {
+          ln.id = data.id;
+          ln.contract_id = contractId;
+        }
+      } catch (e) {
+        console.error('Exception saving service line', e);
+      }
+    }
+    // reset removed list
+    removedServiceLineIds = [];
+  }
+
+  // create container for services UI and load initial lines
+  const servicesSectionContainer = document.createElement('div');
+  servicesSectionContainer.className = 'mb-4';
+
+  // load existing lines and render add box + lines
+  await loadServiceLines();
+  await renderAddServiceBox(servicesSectionContainer);
+  renderServiceLines(servicesSectionContainer);
+  computeRentSum();
+
+  // Append services UI to form container (after form fields)
+  formContainer.appendChild(document.createElement('hr'));
+  const h3 = document.createElement('h3');
+  h3.className = 'text-lg font-medium my-3';
+  h3.textContent = 'Služby k této smlouvě';
+  formContainer.appendChild(h3);
+  formContainer.appendChild(servicesSectionContainer);
+  // --- end service lines UI integration ---
 
   // Render form
   renderForm(formContainer, fields, initialData, handleSubmit, {
