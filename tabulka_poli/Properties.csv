@@ -1,0 +1,4 @@
+Module,Tab,Field Label (CZ),Field Label (EN),Technical Key,Data Type,UI Component,Required,Editable in Context,ReadOnly Default,Default Value,Validation Rules,Options Source,Example Value,API Mapping,Visible In Lists,Sortable,Filterable,Notes
+Property,Základní údaje,Název nemovitosti,Property name,property.name,string,TextInput,Ano,Primary,Ne,,max 100,,Admin budova Alfa,GET/PUT /api/properties/{id} → name,Ano,Ano,Ano,
+Property,Základní údaje,Adresa,Address,property.address,string,TextInput,Ne,Primary,Ne,, ,Hlavní 1, Prague,GET/PUT /api/properties/{id} → address,Ano,Ano,Ano,
+Property,Základní údaje,Typ nemovitosti,Property type,property.type,enum,Select,Ne,Primary,Ne,byt,,lookup.property_type,byt,property.type,Ano,Ano,Ano,byt/komerční

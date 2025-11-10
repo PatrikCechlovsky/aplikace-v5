@@ -1,0 +1,12 @@
+LookupName,Key,Label (CZ),Label (EN),Order,Notes
+lookup.unit_type,byt,Byt,Apartment,1,
+lookup.unit_type,nebyt,Nebytový prostor,Commercial,2,
+lookup.unit_type,garaz,Garáž,Garage,3,
+lookup.unit_type,sklad,Sklad,4,
+lookup.unit_state,volna,Volná,Available,1,
+lookup.unit_state,pronajata,Pronajata,Rented,2,
+lookup.unit_state,rezervovana,Rezervová,Reserved,3,
+lookup.property_type,byt,Byt,Residential,1,
+lookup.property_type,komercni,Komerní,Commercial,2,
+lookup.tenant_type,osoba,Osoba,Individual,1,
+lookup.tenant_type,spolecnost,Společnost,Company,2,

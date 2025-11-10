@@ -1,0 +1,24 @@
+{
+  "GET /api/units/{id}": {
+    "id": "uuid-unit-1",
+    "code": "K1",
+    "type": "Byt",
+    "floor": 3,
+    "area_m2": 35,
+    "rooms_count": 1,
+    "layout": "open-space",
+    "state": "Volná",
+    "monthly_rent_czk": 9000,
+    "deposit_czk": null,
+    "current_contract_summary": {
+      "contract_id": null,
+      "rent": null,
+      "from": null,
+      "to": null,
+      "status": null
+    },
+    "owner": { "id": "owner-123", "name": "Pronajímatel s.r.o.", "link": "/owners/owner-123" },
+    "property": { "id": "prop-456", "name": "Admin budova Alfa", "link": "/properties/prop-456" },
+    "audit": { "created_at": "2025-01-01T12:00:00Z", "created_by": "admin", "updated_at": "2025-10-01T10:00:00Z", "updated_by": "petr" }
+  }
+}

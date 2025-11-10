@@ -1,0 +1,4 @@
+Module,Tab,Field Label (CZ),Field Label (EN),Technical Key,Data Type,UI Component,Required,Editable in Context,ReadOnly Default,Default Value,Validation Rules,Options Source,Example Value,API Mapping,Visible In Lists,Sortable,Filterable,Notes
+Owner,Základní údaje,Jméno pronajímatele,Owner name,owner.name,string,TextInput,Ano,Primary,Ne,,max 200,,Pronajímatel s.r.o.,GET/PUT /api/owners/{id} → name,Ano,Ano,Ano,
+Owner,Základní údaje,Email,email,owner.email,string,EmailInput,Ne,Primary,Ne,,email format,,owner@example.com,owner.email,Ano,Ano,Ano,
+Owner,Základní údaje,BANK účet,bank_account,owner.bank_account,string,TextInput,Ne,Primary,Ne,, ,CZ650800000000123456789,owner.bank_account,Ne,Ne,Ne,

@@ -1,0 +1,3 @@
+Module,Tab,Field Label (CZ),Field Label (EN),Technical Key,Data Type,UI Component,Required,Editable in Context,ReadOnly Default,Default Value,Validation Rules,Options Source,Example Value,API Mapping,Visible In Lists,Sortable,Filterable,Notes
+Tenant,Základní údaje,Jméno nájemníka,Tenant name,tenant.full_name,string,TextInput,Ano,Primary,Ne,,max 200,,Jan Novák,GET/PUT /api/tenants/{id} → full_name,Ano,Ano,Ano,
+Tenant,Základní údaje,Typ nájemníka,Tenant type,tenant.type,enum,Select,Ne,Primary,Ne,osoba,,lookup.tenant_type,osoba,tenant.type,Ano,Ano,Ano,osoba/společnost
