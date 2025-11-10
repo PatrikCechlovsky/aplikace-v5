@@ -1,0 +1,7 @@
+Module,Tab,Field Label (CZ),Field Label (EN),Technical Key,Data Type,UI Component,Required,Editable in Context,ReadOnly Default,Default Value,Validation Rules,Options Source,Example Value,API Mapping,Visible In Lists,Sortable,Filterable,Notes
+Unit,Základní údaje,Označení jednotky,Unit code,unit.code,string,TextInput,Ano,Primary,Ne,,max 30; regex /^[A-Z0-9\-]+$/,,K1,GET/PUT /api/units/{id} → code,Ano,Ano,Ano,unikátní v rámci nemovitosti
+Unit,Základní údaje,Typ jednotky,Unit type,unit.type,enum,Select,Ano,Primary,Ne,Byt,,lookup.unit_type,Byt,unit.type,Ano,Ano,Ano,hodnoty: Byt; Nebytový prostor; Garáž; Sklad
+Unit,Základní údaje,Podlaží,Floor,unit.floor,integer,NumberInput,Ne,Primary,Ne,,min -5; max 100,,3,unit.floor,Ano,Ano,Ano,
+Unit,Základní údaje,Plocha (m²),Area (m2),unit.area_m2,decimal,NumberInput,Ne,Primary,Ne,,min 0,,35,unit.area_m2,Ano,Ano,Ano,
+Unit,Nájem,Měsíční nájem (Kč),Monthly rent,unit.monthly_rent_czk,money,MoneyInput,Ne,Primary,Ne,,min 0,,9000,unit.monthly_rent_czk,Ano,Ano,Ano,zobrazeno bez DPH
+Unit,Systém,Poslední změna,Last modified,audit.updated_at,datetime,Text (readonly),Ne,ReadOnlyWhenEmbedded,Ano,, ,2025-10-01T10:00:00Z,audit.updated_at,Ne,Ne,Ne,zobrazuje se v záložce Systém
