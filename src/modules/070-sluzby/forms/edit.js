@@ -208,13 +208,44 @@ export default async function render(root) {
     navigateTo(`#/m/070-sluzby/f/detail?id=${data.id}`);
     return true;
   }
-  
+
+  // --- build explicit sections from fields to avoid duplicate rendering ---
+  function slugifyLabel(label) {
+    return String(label || '').toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^\w\-]/g, '')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  const sectionsFromFields = (() => {
+    const groups = new Map();
+    fields.forEach(f => {
+      const secLabel = f.section || 'Default';
+      if (!groups.has(secLabel)) groups.set(secLabel, []);
+      groups.get(secLabel).push(f.key);
+    });
+
+    // build array: first "Vše" (all keys) then each group in original order
+    const allKeys = fields.map(f => f.key);
+    const result = [{ id: 'vse', label: 'Vše', fields: allKeys }];
+
+    for (const [label, keys] of groups.entries()) {
+      result.push({
+        id: slugifyLabel(label),
+        label,
+        fields: keys
+      });
+    }
+    return result;
+  })();
+  // -------------------------------------------------------------------------
+
   // Render form
   renderForm(formContainer, fields, initialData, handleSubmit, {
     submitLabel: id ? 'Uložit změny' : 'Vytvořit službu',
     showSubmit: true,
     layout: { columns: { base: 1, md: 2 } },
-    sections: ['Základní údaje', 'Výpočet a cena', 'Propojení na měřidlo', 'Stav', 'Další informace']
+    sections: sectionsFromFields
   });
   
   root.innerHTML = '';
