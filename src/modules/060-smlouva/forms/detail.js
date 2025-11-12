@@ -381,11 +381,15 @@ export default async function render(root) {
       const { error } = await (await import('/src/modules/060-smlouva/db.js')).archiveContract(id);
       if (error) alert('Chyba: ' + (error.message || JSON.stringify(error))); 
       else { alert('Smlouva byla archivována'); navigateTo('#/m/060-smlouva/t/prehled'); }
+    },
+    onDetail: () => {
+      if (!id) return;
+      navigateTo(`#/m/060-smlouva/f/detail-tabs?id=${id}`);
     }
   };
 
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['edit','attach','history','archive'],
+    moduleActions: ['detail','edit','attach','history','archive'],
     userRole: myRole,
     handlers
   });

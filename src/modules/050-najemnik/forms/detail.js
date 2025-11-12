@@ -317,11 +317,15 @@ export async function render(root) {
       const { data: d, error: err } = await (await import('/src/modules/050-najemnik/db.js')).archiveSubject(id, window.currentUser);
       if (err) alert('Chyba: ' + (err.message || JSON.stringify(err))); 
       else { alert('Archivováno'); navigateTo('#/m/050-najemnik/t/prehled'); }
+    },
+    onDetail: () => {
+      if (!id) return;
+      navigateTo(`#/m/050-najemnik/f/detail-tabs?id=${id}`);
     }
   };
 
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['edit','attach','history','archive'],
+    moduleActions: ['detail','edit','attach','history','archive'],
     userRole: window.currentUserRole || 'admin',
     handlers
   });

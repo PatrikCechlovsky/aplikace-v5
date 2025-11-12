@@ -204,7 +204,8 @@ export async function render(root, params) {
     onAttach: () => showAttachmentsModal({ entity: 'properties', entityId: id }),
     onWizard: () => { toast('Průvodce zatím není k dispozici. Tato funkce bude doplněna.', 'info'); },
     onUnits: () => navigateTo(`#/m/040-nemovitost/t/jednotky?propertyId=${id}`),
-    onHistory: () => toast('Historie - implementovat', 'info')
+    onHistory: () => toast('Historie - implementovat', 'info'),
+    onDetail: () => navigateTo(`#/m/040-nemovitost/f/detail-tabs?id=${id}`)
   };
 
   if (!data.archived) {
@@ -216,7 +217,7 @@ export async function render(root, params) {
   }
 
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['edit', 'units', 'attach', 'wizard', 'archive', 'history'],
+    moduleActions: ['detail', 'edit', 'units', 'attach', 'wizard', 'archive', 'history'],
     userRole: myRole,
     handlers
   });

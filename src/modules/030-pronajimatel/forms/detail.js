@@ -181,11 +181,15 @@ export async function render(root) {
       showHistoryModal(async (subjectId) => {
         return await (await import('/src/modules/030-pronajimatel/db.js')).getSubjectHistory(subjectId);
       }, id);
+    },
+    onDetail: () => {
+      if (!id) return;
+      navigateTo(`#/m/030-pronajimatel/f/detail-tabs?id=${id}`);
     }
   };
 
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['attach','wizard','history'],
+    moduleActions: ['detail','attach','wizard','history'],
     userRole: window.currentUserRole || 'admin',
     handlers
   });

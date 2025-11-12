@@ -324,12 +324,16 @@ export default async function render(root) {
     onEdit: () => navigateTo(`#/m/080-platby/f/edit?id=${id}`),
     onHistory: () => {
       alert('Historie změn bude doplněna.');
+    },
+    onDetail: () => {
+      if (!id) return;
+      navigateTo(`#/m/080-platby/f/detail-tabs?id=${id}`);
     }
   };
   
   // Render common actions in header area
   renderCommonActions(document.getElementById('commonactions'), {
-    moduleActions: ['edit', 'history'],
+    moduleActions: ['detail', 'edit', 'history'],
     userRole: myRole,
     handlers
   });
