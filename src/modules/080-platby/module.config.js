@@ -16,6 +16,7 @@ const MANIFEST = {
   ],
   forms: [
     { id: 'detail', title: 'Detail platby', icon: 'visibility' },
+    { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid' },
     { id: 'edit', title: 'Vložit platbu', icon: 'add' },
     { id: 'alokace', title: 'Alokace platby', icon: 'account_tree' },
     { id: 'import', title: 'Import plateb', icon: 'upload_file' },

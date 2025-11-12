@@ -63,6 +63,7 @@ export async function getManifest() {
     forms: [
       { id: 'chooser', title: 'Nový subjekt', icon: 'add', showInSidebar: false },
       { id: 'detail', title: 'Detail pronajímatele', icon: 'view', showInSidebar: false },
+      { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid', showInSidebar: false },
       { id: 'form', title: 'Formulář', icon: 'form', showInSidebar: false },
       { id: 'subject-type', title: 'Správa typu subjektů', icon: 'settings', showInSidebar: true }
     ]

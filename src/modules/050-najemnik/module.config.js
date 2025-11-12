@@ -61,6 +61,7 @@ export async function getManifest() {
     forms: [
       { id: 'chooser', title: 'Nový nájemník', icon: 'grid', showInSidebar: false },
       { id: 'detail', title: 'Detail nájemníka', icon: 'view', showInSidebar: false },
+      { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid', showInSidebar: false },
       { id: 'subject-type', title: 'Správa typu subjektů', icon: 'settings', showInSidebar: true }
     ]
   };
