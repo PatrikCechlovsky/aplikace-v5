@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Detail Layout Config Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "tabs_config": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["module", "module_label_CZ", "active_tab_key", "tab_keys", "default_tab"],
+        "properties": {
+          "module": {
+            "type": "string",
+            "pattern": "^0\\d{2}$",
+            "description": "Kód modulu, např. '030'"
+          },
+          "module_label_CZ": { "type": "string" },
+          "active_tab_key": { "type": "string" },
+          "tab_keys": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "default_tab": { "type": "string" },
+          "permissions_required": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Volitelné: seznam rolí nebo permission keys"
+          },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "list_columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["module", "tab_key", "column_key", "label_CZ", "field_path"],
+        "properties": {
+          "module": { "type": "string", "pattern": "^0\\d{2}$" },
+          "tab_key": { "type": "string" },
+          "column_key": { "type": "string" },
+          "label_CZ": { "type": "string" },
+          "field_path": { "type": "string" },
+          "sortable": { "type": "boolean", "default": false },
+          "visible": { "type": "boolean", "default": true },
+          "width_px": { "type": "integer", "minimum": 50 },
+          "order": { "type": "integer", "minimum": 0 },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "detail_bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["module", "tab_key", "field_key", "label_CZ", "binding_path", "input_type"],
+        "properties": {
+          "module": { "type": "string", "pattern": "^0\\d{2}$" },
+          "tab_key": { "type": "string" },
+          "field_key": { "type": "string" },
+          "label_CZ": { "type": "string" },
+          "binding_path": { "type": "string" },
+          "input_type": {
+            "type": "string",
+            "enum": ["text", "number", "date", "select", "readonly", "checkbox", "textarea"]
+          },
+          "readonly": { "type": "boolean", "default": false },
+          "validation_rules": {
+            "type": ["object", "string"],
+            "description": "Volitelné. Může být objekt s pravidly (JSON) nebo string popis."
+          },
+          "order": { "type": "integer", "minimum": 0 },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["tabs_config", "list_columns", "detail_bindings"],
+  "definitions": {}
+}
