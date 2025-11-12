@@ -20,10 +20,12 @@ export function renderSidebar(root, modules = [], opts = {}) {
   function render() {
     // Získat aktivní tile/form z hash
     const hash = location.hash || '';
-    const match = hash.match(/^#\/m\/([^/]+)\/([tf])\/([^/?]+)/);
+    // match groups: 1=module,2=kind(t|f),3=sectionId,4=optional entityId
+    const match = hash.match(/^#\/m\/([^/]+)\/([tf])\/([^/?]+)(?:\/([^/?]+))?/);
     const activeMod = match ? match[1] : null;
     const activeKind = match ? match[2] : null; // 't' nebo 'f'
     const activeSection = match ? match[3] : null; // id sekce
+    const activeEntityId = match && match[4] ? match[4] : null; // optional entity id if present
 
     // Helper to render tiles recursively (supports nested/collapsible tiles)
     function renderTile(t, modId, depth = 0) {
@@ -78,12 +80,21 @@ export function renderSidebar(root, modules = [], opts = {}) {
               // Render tiles (supporting nested structure)
               const tileLinks = (m.tiles || []).map(t => renderTile(t, m.id)).join('');
 
+              // If we are currently on a page that includes an entity id for this module,
+              // append the entity id to form links so "detail" style pages include the id.
+              const appendEntity = (m.id === activeMod && activeEntityId) ? `/${activeEntityId}` : '';
+
               const formLinks = (m.forms || [])
                 .filter(f => f.showInSidebar !== false) // Only show forms with showInSidebar !== false
                 .map(f => {
                   const isActive = m.id === activeMod && activeKind === 'f' && f.id === activeSection;
+                  // Build href and optionally include entity id if present for this module
+                  const hrefBase = `#/m/${m.id}/f/${f.id}`;
+                  const href = hrefBase + (appendEntity && f.id ? appendEntity : '');
+                  // add data-entity-id if available so click handlers can fallback if needed
+                  const dataEntityAttr = appendEntity ? ` data-entity-id="${activeEntityId}"` : '';
                   return `
-                    <a href="#/m/${m.id}/f/${f.id}"
+                    <a href="${href}" ${dataEntityAttr}
                       class="block text-sm rounded px-2 py-1 transition font-medium
                         ${isActive ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'text-slate-600 hover:bg-blue-50 hover:text-blue-900'}"
                     >
@@ -169,7 +180,7 @@ export function renderSidebar(root, modules = [], opts = {}) {
   function openFromHash() {
     const hash = location.hash || '';
     const m = (/#\/m\/([^\/]+)/.exec(hash) || [])[1];
-    const match = hash.match(/^#\/m\/([^/]+)\/([tf])\/([^/?]+)/);
+    const match = hash.match(/^#\/m\/([^/]+)\/([tf])\/([^/?]+)(?:\/([^/?]+))?/);
     const activeSection = match ? match[3] : null;
     
     if (m && openModId !== m) {
