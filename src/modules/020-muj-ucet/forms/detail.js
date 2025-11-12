@@ -100,24 +100,50 @@ export async function render(root) {
       label: 'Jednotky',
       icon: '📦',
       fetchData: async (userId) => {
-        // Fetch units for current user's properties
-        const result = await listUnits({ 
+        // Fetch all properties first, then fetch units for all properties
+        const propertiesResult = await listProperties({ 
           showArchived: false,
-          limit: 10
+          limit: 50
         });
-        return result;
+        
+        if (propertiesResult.error || !propertiesResult.data || propertiesResult.data.length === 0) {
+          return { data: [], error: propertiesResult.error };
+        }
+        
+        // Fetch units for all properties
+        const allUnits = [];
+        for (const property of propertiesResult.data) {
+          const unitsResult = await listUnits(property.id, { 
+            showArchived: false,
+            limit: 20
+          });
+          
+          if (unitsResult.data && unitsResult.data.length > 0) {
+            // Add property info to each unit
+            const unitsWithProperty = unitsResult.data.map(unit => ({
+              ...unit,
+              property_name: property.nazev,
+              property_id: property.id
+            }));
+            allUnits.push(...unitsWithProperty);
+          }
+        }
+        
+        // Limit to 10 units total
+        return { data: allUnits.slice(0, 10), error: null };
       },
       columns: [
         { key: 'nazev', label: 'Název', field: 'nazev' },
-        { key: 'typ_jednotky', label: 'Typ', field: 'typ_jednotky' },
-        { key: 'plocha', label: 'Plocha (m²)', field: 'plocha' },
-        { key: 'najem_mesicni', label: 'Nájem', field: 'najem_mesicni' }
+        { key: 'typ_jednotky', label: 'Typ', field: 'typ' },
+        { key: 'property_name', label: 'Nemovitost', field: 'property_name' },
+        { key: 'plocha', label: 'Plocha (m²)', field: 'plocha' }
       ],
       detailFields: [
         { key: 'nazev', label: 'Název', type: 'text', readOnly: true },
-        { key: 'typ_jednotky', label: 'Typ jednotky', type: 'text', readOnly: true },
+        { key: 'typ', label: 'Typ jednotky', type: 'text', readOnly: true },
+        { key: 'property_name', label: 'Nemovitost', type: 'text', readOnly: true },
         { key: 'plocha', label: 'Plocha (m²)', type: 'number', readOnly: true },
-        { key: 'najem_mesicni', label: 'Nájem měsíční', type: 'number', readOnly: true }
+        { key: 'oznaceni', label: 'Označení', type: 'text', readOnly: true }
       ],
       detailRoute: (row) => `#/m/040-nemovitost/f/unit-detail?id=${row.id}`
     }
