@@ -3,12 +3,15 @@ export async function getManifest() {
     id: '020-muj-ucet',
     title: 'Můj účet',
     icon: 'account',
-    // Tento modul nabízí pouze formulář "form" — žádné dlaždice (tiles)
+    // Forms including new detail overview
     forms: [
-      { id: 'form', title: 'Upravit profil', icon: 'account' }
+      { id: 'form', title: 'Upravit profil', icon: 'account', showInSidebar: false },
+      { id: 'detail', title: 'Přehled', icon: 'view', showInSidebar: true }
     ],
-    // Pokud nemáš žádné tiles, necháme pole tiles prázdné
-    tiles: []
+    // Tiles for navigation
+    tiles: [
+      { id: 'prehled', title: 'Přehled', icon: 'list' }
+    ]
   };
 }
 
