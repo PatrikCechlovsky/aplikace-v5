@@ -3,12 +3,12 @@
 Tento dokument shrnuje specifikaci "Detail Layout" pro moduly 030–100, pravidla chování UI, konfiguraci (Excel → JSON) a konkrétní implementační postupy a checklisty pro vývojáře/agenty. Vše je v češtině a obsahuje konkrétní příklady.
 
 ## 1. Účel
-Cíl: zavést jednotné zobrazení detailu entit napříč moduly 030,040,050,060,080,090,100 pomocí sdíleného komponentu DetailTabsPanel (breadcrumbs + panel záložek + seznam + detail). Současně zajistit postupné skrytí (deprekování) původního zobrazení přes feature-flag.
+Cíl: zavést jednotné zobrazení detailu entit napříč moduly 020,030,040,050,060,080,090 pomocí sdíleného komponentu DetailTabsPanel (breadcrumbs + panel záložek + seznam + detail). Současně zajistit postupné skrytí (deprekování) původního zobrazení přes feature-flag.
 
 ## 2. Shrnutí pravidel (převzato z ui-detail-layout.md)
 - URL pattern: /m/<module>/<id>?tab=<tabKey>
 - Breadcrumbs: "Domů › Modul › Entita › Aktivní záložka". Každý krok je klikací.
-- Sdílený komponent: DetailTabsPanel — používat pro moduly 030,040,050,060,080,090,100.
+- Sdílený komponent: DetailTabsPanel — používat pro moduly 020,030,040,050,060,080,090.
 - Standardní seznam záložek: Pronajímatel | Nemovitost | Jednotka | Nájemník | Smlouva | Platby | Finance | Dokumenty | Systém
 - Obsah každé záložky:
   - Seznam (List) — max. 10 položek, výška ~300px, vlastní scrollbar.
@@ -18,13 +18,14 @@ Cíl: zavést jednotné zobrazení detailu entit napříč moduly 030,040,050,06
 - Konfigurace UI bude řízena z Excelu s třemi listy: Tabs_Config, List_Columns, Detail_Bindings.
 
 ## 3. Vazba záložek na moduly (tabulka)
-- 030 Pronajímatel: aktivní tab = Pronajímatel; připojené: Nemovitosti, Nájemníci, Smlouvy, Platby, Finance
-- 040 Nemovitost: aktivní tab = Nemovitost; připojené: Jednotky, Nájemníci, Smlouvy
-- 050 Nájemník: aktivní tab = Nájemník; připojené: Smlouvy, Platby
-- 060 Smlouva: aktivní tab = Smlouva; připojené: Nájemníci, Platby
-- 080 Platby: aktivní tab = Platby; připojené: Smlouvy
-- 090 Finance: aktivní tab = Finance; připojené: Účty, Transakce
-- 100 Energie: aktivní tab = Energie; připojené: Spotřeba, Fakturace
+- 020 Můj účet: aktivní tab = Pronajímatel kde jsem já; připojené: Nemovitosti, Jednotky, Nájemníci, Smlouvy, Platby, Finance
+- 030 Pronajímatel: aktivní tab = Pronajímatel; připojené: Nemovitosti, Jednotky, Nájemníci, Smlouvy, Platby, Finance
+- 040 Nemovitost: aktivní tab = Nemovitost; připojené: Pronajímatel, Jednotky, Nájemníci, Smlouvy, Platby, Finance
+- 050 Nájemník: aktivní tab = Nájemník; připojené: Pronajimatel, Nemovitosti, Jednotky, Smlouvy, Platby, Finance
+- 060 Smlouva: aktivní tab = Smlouva; připojené: Pronajimatel, Nemovitosti, Jednotky, Nájemníci, Platby, Finance
+- 080 Platby: aktivní tab = Platby; připojené: Pronajimatel, Nemovitosti, Jednotky, Nájemníci, Smlouvy, Finance
+- 090 Finance: aktivní tab = Finance; připojené: Pronajimatel, Nemovitosti, Jednotky, Nájemníci, Smlouvy, Platby, Financee
+
 
 ## 4. Excel konfigurace — přehled listů
 1. Tabs_Config — řídí pořadí záložek a mapování per modul.
