@@ -1,0 +1,171 @@
+{
+  "tabs_config": [
+    {
+      "module": "020",
+      "module_label_CZ": "Můj účet",
+      "active_tab_key": "pronajimatel",
+      "tab_keys": ["pronajimatel", "nemovitost", "jednotka", "najemnik", "smlouva", "platba", "finance"],
+      "default_tab": "pronajimatel",
+      "permissions_required": [],
+      "notes": "Přehled uživatele jako pronajímatel - zobrazí všechny entity vztahující se k přihlášenému uživateli"
+    },
+    {
+      "module": "030",
+      "module_label_CZ": "Pronajímatel",
+      "active_tab_key": "pronajimatel",
+      "tab_keys": ["pronajimatel", "nemovitost", "jednotka", "najemnik", "smlouva", "platba", "finance"],
+      "default_tab": "pronajimatel",
+      "permissions_required": [],
+      "notes": "Detail pronajímatele a jeho vztahy"
+    },
+    {
+      "module": "040",
+      "module_label_CZ": "Nemovitost",
+      "active_tab_key": "nemovitost",
+      "tab_keys": ["pronajimatel", "nemovitost", "jednotka", "najemnik", "smlouva", "platba", "finance"],
+      "default_tab": "nemovitost",
+      "permissions_required": [],
+      "notes": "Detail nemovitosti - má dva přehledy (nemovitosti a jednotky)"
+    },
+    {
+      "module": "050",
+      "module_label_CZ": "Nájemník",
+      "active_tab_key": "najemnik",
+      "tab_keys": ["pronajimatel", "nemovitost", "jednotka", "najemnik", "smlouva", "platba", "finance"],
+      "default_tab": "najemnik",
+      "permissions_required": [],
+      "notes": "Detail nájemníka a jeho smlouvy a platby"
+    },
+    {
+      "module": "060",
+      "module_label_CZ": "Smlouva",
+      "active_tab_key": "smlouva",
+      "tab_keys": ["pronajimatel", "nemovitost", "jednotka", "najemnik", "smlouva", "platba", "finance"],
+      "default_tab": "smlouva",
+      "permissions_required": [],
+      "notes": "Detail smlouvy a její vazby"
+    },
+    {
+      "module": "080",
+      "module_label_CZ": "Platby",
+      "active_tab_key": "platba",
+      "tab_keys": ["pronajimatel", "nemovitost", "jednotka", "najemnik", "smlouva", "platba", "finance"],
+      "default_tab": "platba",
+      "permissions_required": [],
+      "notes": "Detail plateb a jejich vazby"
+    },
+    {
+      "module": "090",
+      "module_label_CZ": "Finance",
+      "active_tab_key": "finance",
+      "tab_keys": ["pronajimatel", "nemovitost", "jednotka", "najemnik", "smlouva", "platba", "finance"],
+      "default_tab": "finance",
+      "permissions_required": [],
+      "notes": "Finanční přehled a účty"
+    }
+  ],
+  "list_columns": [
+    {
+      "module": "020",
+      "tab_key": "pronajimatel",
+      "column_key": "display_name",
+      "label_CZ": "Název",
+      "field_path": "display_name",
+      "sortable": true,
+      "visible": true,
+      "order": 1
+    },
+    {
+      "module": "020",
+      "tab_key": "pronajimatel",
+      "column_key": "typ_subjektu",
+      "label_CZ": "Typ",
+      "field_path": "typ_subjektu",
+      "sortable": true,
+      "visible": true,
+      "order": 0
+    },
+    {
+      "module": "020",
+      "tab_key": "nemovitost",
+      "column_key": "nazev",
+      "label_CZ": "Název",
+      "field_path": "nazev",
+      "sortable": true,
+      "visible": true,
+      "order": 0
+    },
+    {
+      "module": "020",
+      "tab_key": "nemovitost",
+      "column_key": "mesto",
+      "label_CZ": "Město",
+      "field_path": "mesto",
+      "sortable": true,
+      "visible": true,
+      "order": 1
+    },
+    {
+      "module": "020",
+      "tab_key": "jednotka",
+      "column_key": "nazev",
+      "label_CZ": "Název",
+      "field_path": "nazev",
+      "sortable": true,
+      "visible": true,
+      "order": 0
+    },
+    {
+      "module": "020",
+      "tab_key": "jednotka",
+      "column_key": "typ_jednotky",
+      "label_CZ": "Typ",
+      "field_path": "typ_jednotky",
+      "sortable": true,
+      "visible": true,
+      "order": 1
+    }
+  ],
+  "detail_bindings": [
+    {
+      "module": "020",
+      "tab_key": "pronajimatel",
+      "field_key": "display_name",
+      "label_CZ": "Název",
+      "binding_path": "display_name",
+      "input_type": "readonly",
+      "readonly": true,
+      "order": 0
+    },
+    {
+      "module": "020",
+      "tab_key": "pronajimatel",
+      "field_key": "typ_subjektu",
+      "label_CZ": "Typ subjektu",
+      "binding_path": "typ_subjektu",
+      "input_type": "readonly",
+      "readonly": true,
+      "order": 1
+    },
+    {
+      "module": "020",
+      "tab_key": "nemovitost",
+      "field_key": "nazev",
+      "label_CZ": "Název",
+      "binding_path": "nazev",
+      "input_type": "readonly",
+      "readonly": true,
+      "order": 0
+    },
+    {
+      "module": "020",
+      "tab_key": "nemovitost",
+      "field_key": "adresa",
+      "label_CZ": "Adresa",
+      "binding_path": "ulice",
+      "input_type": "readonly",
+      "readonly": true,
+      "order": 1
+    }
+  ]
+}
