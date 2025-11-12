@@ -7,7 +7,7 @@ import { getAllowedActions } from '../security/permissions.js';
 
 // Katalog známých akcí (label/title jen pro tooltipy)
 const CATALOG = {
-  detail:  { key: 'detail',  icon: 'detail',     label: 'Detail',    title: 'Zobrazit detail' },
+  detail:  { key: 'detail',  icon: 'grid',     label: 'Přehled vazeb',    title: 'Zobrazit přehled vazeb' },
   add:     { key: 'add',     icon: 'add',        label: 'Přidat',    title: 'Přidat nový záznam' },
   edit:    { key: 'edit',    icon: 'edit',       label: 'Upravit',   title: 'Upravit záznam' },
   delete:  { key: 'delete',  icon: 'delete',     label: 'Smazat',    title: 'Smazat záznam' },
