@@ -254,28 +254,40 @@ export function toast(message, type = 'info', opts = {}) {
 
   document.addEventListener('click', function (e) {
     try {
-      const a = e.target.closest && e.target.closest('a');
+      const a = e.target && e.target.closest ? e.target.closest('a') : null;
       if (!a) return;
       const href = a.getAttribute('href') || '';
       if (!href.includes('/detail-tabs')) return;
-      const eid = a.dataset && a.dataset.entityId;
+      // first try explicit data-entity-id
+      let eid = a.dataset && a.dataset.entityId ? a.dataset.entityId : null;
+
       if (!eid) {
         // fallback: try to find sibling "Detail" link in the same menu and extract id from it
         const menuRoot = a.closest('ul,nav,div#sidebarbox,div[class*="ml-8"],li') || document.body;
-        const siblingDetail = Array.from(menuRoot.querySelectorAll('a')).find(x => /detail( smlouvy| platby|)/i.test((x.innerText||'') || '') || menuRoot.querySelector('a[href*="/f/detail"]');
+        // find links whose innerText contains 'detail' (e.g. "Detail smlouvy" / "Detail platby")
+        const siblingDetail = Array.from(menuRoot.querySelectorAll('a')).find(x => {
+          const txt = (x.innerText || '').toLowerCase();
+          return txt.includes('detail') || x.getAttribute('href')?.includes('/f/detail');
+        }) || null;
+
         const sHref = siblingDetail && siblingDetail.getAttribute ? (siblingDetail.getAttribute('href') || '') : '';
         const idMatch = sHref.match(/\/detail\/([^\/#?]+)/);
         if (idMatch && idMatch[1]) {
-          a.dataset.entityId = idMatch[1];
+          eid = idMatch[1];
+          a.dataset.entityId = eid; // cache for subsequent clicks
         }
       }
-      const finalEid = a.dataset && a.dataset.entityId;
-      if (!finalEid) return; // nothing to do
+
+      if (!eid) return; // nothing to do
+
       // if href already includes an id segment after detail-tabs, do nothing
       if (/\/detail-tabs\/[^\/#?]+/.test(href)) return;
+
       // otherwise prevent default and navigate to composed hash/path
       e.preventDefault();
-      const newHref = (href.replace(/(#?)/, '#').replace(/\/+$/, '') + '/' + encodeURIComponent(finalEid));
+      const base = href.replace(/(#?)/, '#').replace(/\/+$/, '');
+      const newHref = base + '/' + encodeURIComponent(eid);
+
       if (typeof window.navigateTo === 'function') {
         try { window.navigateTo(newHref); return; } catch (_) {}
       }
