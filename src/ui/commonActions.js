@@ -259,16 +259,26 @@ export function toast(message, type = 'info', opts = {}) {
       const href = a.getAttribute('href') || '';
       if (!href.includes('/detail-tabs')) return;
       const eid = a.dataset && a.dataset.entityId;
-      if (!eid) return; // nothing to do
+      if (!eid) {
+        // fallback: try to find sibling "Detail" link in the same menu and extract id from it
+        const menuRoot = a.closest('ul,nav,div#sidebarbox,div[class*="ml-8"],li') || document.body;
+        const siblingDetail = Array.from(menuRoot.querySelectorAll('a')).find(x => /detail( smlouvy| platby|)/i.test((x.innerText||'') || '') || menuRoot.querySelector('a[href*="/f/detail"]');
+        const sHref = siblingDetail && siblingDetail.getAttribute ? (siblingDetail.getAttribute('href') || '') : '';
+        const idMatch = sHref.match(/\/detail\/([^\/#?]+)/);
+        if (idMatch && idMatch[1]) {
+          a.dataset.entityId = idMatch[1];
+        }
+      }
+      const finalEid = a.dataset && a.dataset.entityId;
+      if (!finalEid) return; // nothing to do
       // if href already includes an id segment after detail-tabs, do nothing
       if (/\/detail-tabs\/[^\/#?]+/.test(href)) return;
       // otherwise prevent default and navigate to composed hash/path
       e.preventDefault();
-      const newHref = href.replace(/(#?)/, '#').replace(/\/+$/, '') + '/' + encodeURIComponent(eid);
+      const newHref = (href.replace(/(#?)/, '#').replace(/\/+$/, '') + '/' + encodeURIComponent(finalEid));
       if (typeof window.navigateTo === 'function') {
         try { window.navigateTo(newHref); return; } catch (_) {}
       }
-      // set location.hash for SPA style navigation if href is hash-based
       if (newHref.startsWith('#')) {
         location.hash = newHref.slice(1);
       } else {
