@@ -59,7 +59,9 @@ function normalizeAllowed(input = [], fallbackKeys = []) {
       icon: a.icon || base.icon || k,
       label: a.label || base.label || k,
       title: a.title || base.title || a.label || k,
-      href: a.href || base.href || null
+      href: a.href || base.href || null,
+      // allow passing entityId via action descriptor (optional)
+      entityId: a.entityId || a.id || null
     };
   });
 }
@@ -146,7 +148,9 @@ export function renderCommonActions(
 
     if (act.href) {
       const a = document.createElement('a');
+      // allow act.href templates like "/.../detail-tabs" and optionally attach entity id
       a.href = act.href;
+      if (act.entityId) a.dataset.entityId = String(act.entityId);
       a.className = [
         'relative inline-flex items-center justify-center w-8 h-8 rounded-md border transition',
         'border-slate-200 bg-white hover:bg-slate-100',
@@ -234,3 +238,45 @@ export function toast(message, type = 'info', opts = {}) {
     return false;
   }
 }
+
+/**
+ * Delegated click handler (fallback) to ensure links that point to "detail-tabs" navigate to entity-specific URL
+ * if a data-entity-id is present on the anchor but the href does not already include the id.
+ *
+ * This helps when sidebar/menu links are rendered in a context without the id embedded in href.
+ */
+(function setupDetailTabsHandler() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  // avoid double-registration (module is singleton, but be defensive)
+  if (window.__commonActions_detailTabsHandlerRegistered) return;
+  window.__commonActions_detailTabsHandlerRegistered = true;
+
+  document.addEventListener('click', function (e) {
+    try {
+      const a = e.target.closest && e.target.closest('a');
+      if (!a) return;
+      const href = a.getAttribute('href') || '';
+      if (!href.includes('/detail-tabs')) return;
+      const eid = a.dataset && a.dataset.entityId;
+      if (!eid) return; // nothing to do
+      // if href already includes an id segment after detail-tabs, do nothing
+      if (/\/detail-tabs\/[^\/#?]+/.test(href)) return;
+      // otherwise prevent default and navigate to composed hash/path
+      e.preventDefault();
+      const newHref = href.replace(/(#?)/, '#').replace(/\/+$/, '') + '/' + encodeURIComponent(eid);
+      if (typeof window.navigateTo === 'function') {
+        try { window.navigateTo(newHref); return; } catch (_) {}
+      }
+      // set location.hash for SPA style navigation if href is hash-based
+      if (newHref.startsWith('#')) {
+        location.hash = newHref.slice(1);
+      } else {
+        location.href = newHref;
+      }
+    } catch (err) {
+      // swallow errors in click handler
+      console.error('detail-tabs click handler error', err);
+    }
+  }, true);
+})();
