@@ -24,6 +24,7 @@ export async function getManifest() {
     ],
     forms: [
       { id: 'detail', title: 'Detail smlouvy', icon: 'visibility' },
+      { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid' },
       { id: 'edit', title: 'Editace smlouvy', icon: 'edit' },
       { id: 'predavaci-protokol', title: 'Předávací protokol', icon: 'assignment' }
     ]

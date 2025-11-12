@@ -137,6 +137,7 @@ export async function getManifest() {
       { id: 'unit-type', title: 'Správa typů jednotek', icon: 'settings', showInSidebar: true },
       { id: 'edit', title: 'Editace nemovitosti', icon: 'edit', showInSidebar: false },
       { id: 'detail', title: 'Detail nemovitosti', icon: 'eye', showInSidebar: false },
+      { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid', showInSidebar: false },
       { id: 'unit-edit', title: 'Editace jednotky', icon: 'edit', showInSidebar: false },
       { id: 'unit-detail', title: 'Detail jednotky', icon: 'eye', showInSidebar: false }
     ],
