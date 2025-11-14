@@ -132,6 +132,7 @@ export async function getManifest() {
     tiles,
     forms: [
       { id: 'chooser', title: 'Nová nemovitost', icon: 'add', showInSidebar: false },
+      { id: 'wizard-create-property', title: 'Průvodce vytvořením nemovitosti', icon: 'wizard', showInSidebar: true },
       { id: 'unit-chooser', title: 'Nová jednotka', icon: 'add', showInSidebar: false },
       { id: 'property-type', title: 'Správa typů nemovitostí', icon: 'settings', showInSidebar: true },
       { id: 'unit-type', title: 'Správa typů jednotek', icon: 'settings', showInSidebar: true },
