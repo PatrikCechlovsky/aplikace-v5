@@ -5,14 +5,12 @@ const MANIFEST = {
   id: '080-platby',
   title: 'Platby',
   icon: 'payments',
-  defaultTile: 'prehled',
+  defaultTile: 'platby',
 
   tiles: [
-    { id: 'prehled', title: 'Přehled', icon: 'list' },
-    { id: 'prijate', title: 'Přijaté platby', icon: 'south' },
-    { id: 'cekajici', title: 'Čekající na zpracování', icon: 'schedule' },
-    { id: 'pouzite', title: 'Použité', icon: 'check_circle' },
-    { id: 'vratky', title: 'Vrácené platby', icon: 'undo' },
+    { id: 'platby', title: 'Platby', icon: 'list' },
+    { id: 'prichozi', title: 'Příchozí', icon: 'south' },
+    { id: 'odchozi', title: 'Odchozí', icon: 'north' },
   ],
   forms: [
     { id: 'detail', title: 'Detail platby', icon: 'visibility' },
@@ -50,7 +48,7 @@ export async function render(kind, id, mountEl) {
 // Volitelné: akce vpravo u breadcrumbs (může vracet prázdné pole)
 export async function getActions(ctx) {
   // ctx: { kind: 'tile'|'form', id: '...' }
-  if (ctx.kind === 'tile' && ctx.id === 'prehled') {
+  if (ctx.kind === 'tile' && ctx.id === 'platby') {
     return [
       { label: 'Obnovit', icon: '🔄', onClick: () => location.reload() }
     ];
