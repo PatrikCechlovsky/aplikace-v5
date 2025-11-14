@@ -1,23 +1,19 @@
-// src/modules/080-platby/module.config.js
-// Modul pro správu plateb
+// src/modules/090-finance/module.config.js
+// Modul 090 – Finance (dashboard / přehledy)
 
 const MANIFEST = {
-  id: '080-platby',
-  title: 'Platby',
-  icon: 'payments',
-  defaultTile: 'platby',
+  id: '090-finance',
+  title: 'Finance',
+  icon: 'account_balance',
+  defaultTile: 'finance',
 
   tiles: [
-    { id: 'platby', title: 'Platby', icon: 'list' },
-    { id: 'prichozi', title: 'Příchozí', icon: 'south' },
-    { id: 'odchozi', title: 'Odchozí', icon: 'north' },
+    { id: 'finance', title: 'Finance', icon: 'account_balance_wallet' },
+    { id: 'dashboard', title: 'Přehledy', icon: 'dashboard' },
   ],
   forms: [
-    { id: 'detail', title: 'Detail platby', icon: 'visibility' },
-    { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid' },
-    { id: 'edit', title: 'Vložit platbu', icon: 'add' },
-    { id: 'alokace', title: 'Alokace platby', icon: 'account_tree' },
-    { id: 'import', title: 'Import plateb', icon: 'upload_file' },
+    { id: 'bankaccount-detail', title: 'Detail bankovního účtu', icon: 'account_balance' },
+    { id: 'context-readonly', title: 'Kontext', icon: 'visibility' },
   ],
 };
 
@@ -47,8 +43,7 @@ export async function render(kind, id, mountEl) {
 
 // Volitelné: akce vpravo u breadcrumbs (může vracet prázdné pole)
 export async function getActions(ctx) {
-  // ctx: { kind: 'tile'|'form', id: '...' }
-  if (ctx.kind === 'tile' && ctx.id === 'platby') {
+  if (ctx.kind === 'tile' && ctx.id === 'dashboard') {
     return [
       { label: 'Obnovit', icon: '🔄', onClick: () => location.reload() }
     ];

@@ -1,23 +1,23 @@
-// src/modules/080-platby/module.config.js
-// Modul pro správu plateb
+// src/modules/100-energie/module.config.js
+// Modul 100 – Energie (měřidla, odečty, rozúčtování)
 
 const MANIFEST = {
-  id: '080-platby',
-  title: 'Platby',
-  icon: 'payments',
-  defaultTile: 'platby',
+  id: '100-energie',
+  title: 'Energie',
+  icon: 'bolt',
+  defaultTile: 'meridla',
 
   tiles: [
-    { id: 'platby', title: 'Platby', icon: 'list' },
-    { id: 'prichozi', title: 'Příchozí', icon: 'south' },
-    { id: 'odchozi', title: 'Odchozí', icon: 'north' },
+    { id: 'meridla', title: 'Měřidla', icon: 'speed' },
+    { id: 'odecty', title: 'Odečty', icon: 'fact_check' },
+    { id: 'rozuctovani', title: 'Rozúčtování', icon: 'calculate' },
   ],
   forms: [
-    { id: 'detail', title: 'Detail platby', icon: 'visibility' },
-    { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid' },
-    { id: 'edit', title: 'Vložit platbu', icon: 'add' },
-    { id: 'alokace', title: 'Alokace platby', icon: 'account_tree' },
-    { id: 'import', title: 'Import plateb', icon: 'upload_file' },
+    { id: 'meter-detail', title: 'Detail měřidla', icon: 'visibility' },
+    { id: 'meter-edit', title: 'Editace měřidla', icon: 'edit' },
+    { id: 'reading-detail', title: 'Detail odečtu', icon: 'visibility' },
+    { id: 'reading-edit', title: 'Zadání odečtu', icon: 'add' },
+    { id: 'allocation-detail', title: 'Detail rozúčtování', icon: 'visibility' },
   ],
 };
 
@@ -47,8 +47,7 @@ export async function render(kind, id, mountEl) {
 
 // Volitelné: akce vpravo u breadcrumbs (může vracet prázdné pole)
 export async function getActions(ctx) {
-  // ctx: { kind: 'tile'|'form', id: '...' }
-  if (ctx.kind === 'tile' && ctx.id === 'platby') {
+  if (ctx.kind === 'tile' && ctx.id === 'meridla') {
     return [
       { label: 'Obnovit', icon: '🔄', onClick: () => location.reload() }
     ];

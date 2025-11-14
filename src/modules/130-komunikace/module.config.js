@@ -1,23 +1,24 @@
-// src/modules/080-platby/module.config.js
-// Modul pro správu plateb
+// src/modules/130-komunikace/module.config.js
+// Modul 130 – Komunikace
 
 const MANIFEST = {
-  id: '080-platby',
-  title: 'Platby',
-  icon: 'payments',
-  defaultTile: 'platby',
+  id: '130-komunikace',
+  title: 'Komunikace',
+  icon: 'email',
+  defaultTile: 'komunikace',
 
   tiles: [
-    { id: 'platby', title: 'Platby', icon: 'list' },
-    { id: 'prichozi', title: 'Příchozí', icon: 'south' },
-    { id: 'odchozi', title: 'Odchozí', icon: 'north' },
+    { id: 'komunikace', title: 'Komunikace', icon: 'forum' },
+    { id: 'sablony', title: 'Šablony', icon: 'mail' },
+    { id: 'automatizace', title: 'Automatizace', icon: 'auto_mode' },
   ],
   forms: [
-    { id: 'detail', title: 'Detail platby', icon: 'visibility' },
-    { id: 'detail-tabs', title: 'Přehled vazeb', icon: 'grid' },
-    { id: 'edit', title: 'Vložit platbu', icon: 'add' },
-    { id: 'alokace', title: 'Alokace platby', icon: 'account_tree' },
-    { id: 'import', title: 'Import plateb', icon: 'upload_file' },
+    { id: 'message-detail', title: 'Detail zprávy', icon: 'visibility' },
+    { id: 'message-edit', title: 'Nová zpráva', icon: 'add' },
+    { id: 'template-detail', title: 'Detail šablony', icon: 'visibility' },
+    { id: 'template-edit', title: 'Editace šablony', icon: 'edit' },
+    { id: 'automation-detail', title: 'Detail automatizace', icon: 'visibility' },
+    { id: 'automation-edit', title: 'Editace automatizace', icon: 'edit' },
   ],
 };
 
@@ -47,8 +48,7 @@ export async function render(kind, id, mountEl) {
 
 // Volitelné: akce vpravo u breadcrumbs (může vracet prázdné pole)
 export async function getActions(ctx) {
-  // ctx: { kind: 'tile'|'form', id: '...' }
-  if (ctx.kind === 'tile' && ctx.id === 'platby') {
+  if (ctx.kind === 'tile' && ctx.id === 'komunikace') {
     return [
       { label: 'Obnovit', icon: '🔄', onClick: () => location.reload() }
     ];
