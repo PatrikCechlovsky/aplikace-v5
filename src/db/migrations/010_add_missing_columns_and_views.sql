@@ -3,6 +3,7 @@
 -- Run this migration as service_role / superuser (to ensure extension creation works)
 -- Recommended: run on test DB first.
 
+
 -- Ensure pgcrypto for gen_random_uuid
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
