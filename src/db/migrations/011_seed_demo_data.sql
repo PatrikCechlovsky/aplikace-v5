@@ -1,6 +1,7 @@
 -- Migration 011_seed_demo_data.sql (OPRAVENÉ UUID)
 BEGIN;
 
+
 -- 1) Subjects (pronajímatelé)
 INSERT INTO subjects (id, display_name, typ_subjektu, ico, primary_email, primary_phone, city, created_at)
 VALUES
