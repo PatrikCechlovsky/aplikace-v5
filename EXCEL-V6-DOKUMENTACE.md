@@ -204,14 +204,22 @@ Excel V6 obsahuje následující moduly:
 ### Generování nového Excel V6
 
 ```bash
+# Základní použití (výchozí soubor)
 node generate-excel-v6.js
+
+# S vlastním zdrojovým souborem (parametr)
+node generate-excel-v6.js custom-source.xlsx
+
+# S vlastním zdrojovým souborem (proměnná prostředí)
+SOURCE_EXCEL=custom-source.xlsx node generate-excel-v6.js
 ```
 
 Tento příkaz:
-1. Načte zdrojový soubor `struktura-aplikace (10).xlsx`
+1. Načte zdrojový soubor (výchozí: `struktura-aplikace (10).xlsx`)
 2. Zpracuje všechny moduly
 3. Vytvoří centrální listy
 4. Vygeneruje výstupní soubor `struktura-V6.xlsx`
+5. Zobrazí varování, pokud některé listy chybí
 
 ### Požadavky
 

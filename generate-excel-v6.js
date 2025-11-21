@@ -35,15 +35,21 @@ const MODULES = [
 async function generateExcelV6() {
   console.log('📊 Starting Excel V6 generation...');
   
-  // Load source workbook
+  // Load source workbook - configurable via environment variable or default
+  const sourceFile = process.env.SOURCE_EXCEL || process.argv[2] || 'struktura-aplikace (10).xlsx';
+  console.log(`📂 Source file: ${sourceFile}`);
+  
   const sourceWorkbook = new ExcelJS.Workbook();
-  await sourceWorkbook.xlsx.readFile('struktura-aplikace (10).xlsx');
+  await sourceWorkbook.xlsx.readFile(sourceFile);
   console.log('✅ Loaded source Excel file');
   
   // Create new workbook
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Excel V6 Generator';
   workbook.created = new Date();
+  
+  // Track missing sheets for summary
+  const missingSheets = [];
   
   // Process each module
   for (const module of MODULES) {
@@ -52,10 +58,17 @@ async function generateExcelV6() {
     const sourceSheet = sourceWorkbook.getWorksheet(module.sheet);
     if (!sourceSheet) {
       console.log(`⚠️  Source sheet '${module.sheet}' not found, skipping...`);
+      missingSheets.push(module.sheet);
       continue;
     }
     
     createModuleSheet(workbook, module, sourceSheet);
+  }
+  
+  // Log summary of missing sheets
+  if (missingSheets.length > 0) {
+    console.log('\n⚠️  Warning: The following sheets were not found in source file:');
+    missingSheets.forEach(sheet => console.log(`   - ${sheet}`));
   }
   
   // Create central sheets
@@ -355,7 +368,7 @@ function extractOverviews(sourceSheet) {
     const cellA = row.getCell(1).value;
     const cellB = row.getCell(2).value;
     
-    if (!cellA) continue;
+    if (!cellA || cellA === null || cellA === undefined) continue;
     
     const cellAStr = String(cellA);
     
@@ -426,7 +439,7 @@ function extractForms(sourceSheet) {
     const cellA = row.getCell(1).value;
     const cellB = row.getCell(2).value;
     
-    if (!cellA) continue;
+    if (!cellA || cellA === null || cellA === undefined) continue;
     
     const cellAStr = String(cellA);
     
@@ -730,6 +743,11 @@ function createSablonyImportu(workbook) {
 
 // Run the generator
 generateExcelV6().catch(err => {
-  console.error('❌ Error generating Excel V6:', err);
+  console.error('❌ Error generating Excel V6:', err.message);
+  if (err.stack) {
+    console.error('\n📋 Stack trace:');
+    console.error(err.stack);
+  }
+  console.error('\n💡 Tip: Make sure the source Excel file exists and is not corrupted.');
   process.exit(1);
 });
