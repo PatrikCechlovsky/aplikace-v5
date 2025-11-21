@@ -368,7 +368,8 @@ function extractOverviews(sourceSheet) {
     const cellA = row.getCell(1).value;
     const cellB = row.getCell(2).value;
     
-    if (!cellA || cellA === null || cellA === undefined) continue;
+    // Skip empty cells (handles null, undefined, and empty string)
+    if (!cellA) continue;
     
     const cellAStr = String(cellA);
     
@@ -439,7 +440,8 @@ function extractForms(sourceSheet) {
     const cellA = row.getCell(1).value;
     const cellB = row.getCell(2).value;
     
-    if (!cellA || cellA === null || cellA === undefined) continue;
+    // Skip empty cells (handles null, undefined, and empty string)
+    if (!cellA) continue;
     
     const cellAStr = String(cellA);
     
