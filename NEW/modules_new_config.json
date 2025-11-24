@@ -1,251 +1,92 @@
 {
+  "tabsOrder": [
+    "pronajimatel",
+    "nemovitosti",
+    "jednotky",
+    "najemnici",
+    "smlouvy",
+    "sluzby",
+    "platby",
+    "finance",
+    "meridla",
+    "dokumenty"
+  ],
+
+  "emptyTabNotification": "Tato entita nemá data v této kategorii.",
+
   "modules": [
     {
       "id": "pronajimatel",
       "label": "Pronajímatelé",
-      "icon": "landlord",
+      "defaultMainTab": "pronajimatel",
       "route": "/pronajimatel",
       "listViews": [
         {
-          "id": "default",
+          "id": "all",
           "label": "Přehled pronajímatelů",
           "default": true,
           "filters": {}
         }
       ],
       "detail": {
-        "mainTab": {
-          "id": "pronajimatel-main",
-          "label": "Pronajímatel",
-          "sections": [
-            {
-              "id": "basic",
-              "label": "Základní údaje",
-              "layout": "two-column",
-              "formId": "pronajimatel-basic-form"
-            },
-            {
-              "id": "accounts",
-              "label": "Účty pronajímatele",
-              "layout": "list",
-              "listId": "pronajimatel-accounts-list"
-            },
-            {
-              "id": "attachments",
-              "label": "Přílohy",
-              "layout": "attachments",
-              "listId": "pronajimatel-attachments-list"
-            },
-            {
-              "id": "system",
-              "label": "Systémové informace",
-              "layout": "system",
-              "formId": "pronajimatel-system-form"
-            }
-          ]
-        },
-        "relationTabs": [
-          {
-            "id": "pronajimatel-nemovitosti",
-            "label": "Nemovitosti",
-            "entity": "nemovitost",
-            "relationType": "1:N",
-            "list": {
-              "listId": "nemovitost-by-pronajimatel",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "nemovitost-main-form"
-            }
+        "mainCardTab": "pronajimatel",
+        "tabs": {
+          "pronajimatel": {
+            "type": "main",
+            "sections": [
+              { "id": "basic", "form": "pronajimatel-basic" },
+              { "id": "accounts", "list": "pronajimatel-accounts" },
+              { "id": "attachments", "attachments": true },
+              { "id": "system", "form": "system-info" }
+            ]
           },
-          {
-            "id": "pronajimatel-jednotky",
-            "label": "Jednotky",
-            "entity": "jednotka",
-            "relationType": "1:N",
-            "list": {
-              "listId": "jednotka-by-pronajimatel",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "jednotka-main-form"
-            }
+          "nemovitosti": {
+            "type": "relation",
+            "listId": "nemovitosti-by-pronajimatel",
+            "detailForm": "nemovitost-main",
+            "maxListItems": 10
           },
-          {
-            "id": "pronajimatel-najemnici",
-            "label": "Nájemníci",
-            "entity": "najemnik",
-            "relationType": "1:N",
-            "list": {
-              "listId": "najemnik-by-pronajimatel",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "najemnik-main-form"
-            }
+          "jednotky": {
+            "type": "relation",
+            "listId": "jednotky-by-pronajimatel",
+            "detailForm": "jednotka-main"
           },
-          {
-            "id": "pronajimatel-smlouvy",
-            "label": "Smlouvy",
-            "entity": "smlouva",
-            "relationType": "1:N",
-            "list": {
-              "listId": "smlouva-by-pronajimatel",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "smlouva-main-form"
-            }
+          "najemnici": {
+            "type": "relation",
+            "listId": "najemnici-by-pronajimatel",
+            "detailForm": "najemnik-main"
           },
-          {
-            "id": "pronajimatel-platby",
-            "label": "Platby / Finance",
-            "entity": "platba",
-            "relationType": "1:N",
-            "list": {
-              "listId": "platba-by-pronajimatel",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "platba-main-form"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "nemovitost",
-      "label": "Nemovitosti",
-      "icon": "building",
-      "route": "/nemovitosti",
-      "listViews": [
-        {
-          "id": "default",
-          "label": "Přehled nemovitostí",
-          "default": true,
-          "filters": {}
-        },
-        {
-          "id": "byType",
-          "label": "Podle typu",
-          "default": false,
-          "filters": {
-            "groupBy": "typ_nemovitosti"
+          "smlouvy": {
+            "type": "relation",
+            "listId": "smlouvy-by-pronajimatel",
+            "detailForm": "smlouva-main"
+          },
+          "sluzby": {
+            "type": "relation",
+            "listId": "sluzby-by-pronajimatel",
+            "detailForm": "sluzby-main"
+          },
+          "platby": {
+            "type": "relation",
+            "listId": "platby-by-pronajimatel",
+            "detailForm": "platba-main"
+          },
+          "finance": {
+            "type": "relation",
+            "listId": "finance-by-pronajimatel",
+            "detailForm": "finance-main"
+          },
+          "meridla": {
+            "type": "relation",
+            "listId": "meridla-by-pronajimatel",
+            "detailForm": "meridlo-main"
+          },
+          "dokumenty": {
+            "type": "relation",
+            "listId": "dokumenty-by-pronajimatel",
+            "detailForm": "dokument-main"
           }
         }
-      ],
-      "detail": {
-        "mainTab": {
-          "id": "nemovitost-main",
-          "label": "Nemovitost",
-          "sections": [
-            {
-              "id": "basic",
-              "label": "Základní údaje",
-              "layout": "two-column",
-              "formId": "nemovitost-basic-form"
-            },
-            {
-              "id": "attachments",
-              "label": "Přílohy",
-              "layout": "attachments",
-              "listId": "nemovitost-attachments-list"
-            },
-            {
-              "id": "system",
-              "label": "Systémové informace",
-              "layout": "system",
-              "formId": "nemovitost-system-form"
-            }
-          ]
-        },
-        "relationTabs": [
-          {
-            "id": "nemovitost-pronajimatel",
-            "label": "Pronajímatel",
-            "entity": "pronajimatel",
-            "relationType": "N:1",
-            "list": {
-              "listId": "pronajimatel-by-nemovitost",
-              "limit": 10,
-              "scroll": false
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "pronajimatel-main-form"
-            }
-          },
-          {
-            "id": "nemovitost-jednotky",
-            "label": "Jednotky",
-            "entity": "jednotka",
-            "relationType": "1:N",
-            "list": {
-              "listId": "jednotka-by-nemovitost",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "jednotka-main-form"
-            }
-          },
-          {
-            "id": "nemovitost-najemnici",
-            "label": "Nájemníci",
-            "entity": "najemnik",
-            "relationType": "1:N",
-            "list": {
-              "listId": "najemnik-by-nemovitost",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "najemnik-main-form"
-            }
-          },
-          {
-            "id": "nemovitost-smlouvy",
-            "label": "Smlouvy",
-            "entity": "smlouva",
-            "relationType": "1:N",
-            "list": {
-              "listId": "smlouva-by-nemovitost",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "smlouva-main-form"
-            }
-          },
-          {
-            "id": "nemovitost-platby",
-            "label": "Platby / Finance",
-            "entity": "platba",
-            "relationType": "1:N",
-            "list": {
-              "listId": "platba-by-nemovitost",
-              "limit": 10,
-              "scroll": true
-            },
-            "detail": {
-              "type": "embed",
-              "formId": "platba-main-form"
-            }
-          }
-        ]
       }
     }
   ]
