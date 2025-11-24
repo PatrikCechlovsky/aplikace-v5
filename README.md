@@ -147,6 +147,221 @@ docs/
 - ✅ Výběr řádku a dvojklik v tabulkách
 
 ---
+# UI specifikace – Pronajímatel (layout 1–9 + vazby mezi entitami)
+
+Tento dokument definuje jednotný layout, chování a vazby mezi entitami v aplikaci **Pronajímatel**.  
+Cílem je, aby každý modul (Pronajímatel, Nemovitost, Jednotka, Nájemník, Smlouva, Platba, …) fungoval stejně.
+
+---
+
+## 1. Devítiblokový layout obrazovky
+
+Každá obrazovka používá stejnou strukturu:
+
+1. **Home button (logo)** – levý horní roh, klik → hlavní dashboard aplikace.
+2. **Breadcrumbs** – drobečková navigace `Domů > Modul > Přehled > Entita > Záložka`.
+3. **Home actions** – pravý horní roh (uživatel, hledání, notifikace, odhlášení).
+4. **Common actions** – akce nad aktuální entitou (editace, kopie, archivace/smazání, přílohy).
+5. **Vazby (connections)** – sada záložek reprezentující navázané entity.
+6. **Tabs (detail tabs)** – záložky detailu aktuální entity (hlavní karta + vazby).
+7. **Entity detail view** – obsah aktivní záložky, typicky formulář + další části.
+8. **Sidebar** – levé menu modulů aplikace (stálé, jen zvýrazňuje aktivní modul).
+9. **List view (přehled)** – tabulkový seznam entit s filtrem.
+
+---
+
+## 2. Přehled (list view – blok 9)
+
+Každý modul má alespoň jeden přehled:
+
+- zobrazení formou tabulky,
+- nahoře textový filtr,
+- volba „Zobrazit archivované“,
+- klik na řádek = otevření *detailu* dané entity.
+
+Modul může mít více přehledů (např. „Vše“, „Podle typu“, „Pouze aktivní“), ale jedná se pouze o **uložené filtry nad stejnými daty**, ne o odlišný typ obrazovky.
+
+---
+
+## 3. Detail entity – hlavní princip
+
+### 3.1 Vstup do detailu
+
+Detail entity se otevře:
+- po kliknutí na řádek v přehledu,
+- nebo z jiné vazby (např. klik na konkrétní nemovitost v záložce „Nemovitosti pronajímatele“).
+
+Po otevření detailu:
+
+- Breadcrumbs zobrazí cestu až k entitě.
+- Common actions se vztahují k aktuálně otevřené entitě.
+- Sidebar zůstává stejný (jen zvýrazní aktivní modul).
+- V pravé části se zobrazí **záložky detailu** (blok 6).
+
+---
+
+### 3.2 Dva typy záložek v detailu
+
+Každý detail entity se skládá ze dvou typů záložek:
+
+#### A) Záložka 1 – **„Hlavní karta entity“**
+
+- Je vždy **první záložka**.
+- Název odpovídá danému modulu, např.:
+  - `Pronajímatel`
+  - `Nemovitost`
+  - `Jednotka`
+  - `Nájemník`
+  - `Smlouva`
+  - `Platba`
+- Obsahuje **vše, co přímo patří k entitě samotné**, typicky v několika částech (sekcích):
+
+Příklad: **Pronajímatel – hlavní karta**
+
+1. Základní údaje pronajímatele (formulář – dvousloupcový layout),
+2. Účty pronajímatele,
+3. Přílohy pronajímatele,
+4. Systémové informace.
+
+Příklad: **Nemovitost – hlavní karta**
+
+1. Základní údaje nemovitosti,
+2. Přílohy nemovitosti,
+3. Systémové informace.
+
+Tyto části se zobrazují uvnitř bloku **7 – Entity detail view**.
+
+---
+
+#### B) Ostatní záložky – **vazby na jiné entity (blok 5)**
+
+Každá další záložka představuje **vazbu** na jiné entity.
+
+V každé takové záložce platí:
+
+- Nahoře je **seznam** (tabulka) navázaných entit (max. 10 řádků, scroll).
+- Dole je **detail** aktuálně vybrané položky (formulář / zobrazení).
+- Při otevření záložky je automaticky vybrána **první položka** v seznamu.
+- Klik na jiný řádek v seznamu přepne detail dole.
+- I pokud je v seznamu jen jedna položka, zobrazuje se stále **seznam + detail**, nikdy pouze jedno z toho.
+
+Toto je povinný standard pro všechny vazby.
+
+---
+
+## 4. Příklady chování – Pronajímatel a Nemovitost
+
+### 4.1 Detail Pronajímatele
+
+Cesta: `Domů > Pronajímatelé > Přehled > Jan Novák`
+
+Záložky:
+
+1. **Pronajímatel (hlavní karta)**  
+   - Základní údaje pronajímatele (formulář),  
+   - Účty pronajímatele,  
+   - Přílohy,  
+   - Systémové informace.
+
+2. **Nemovitosti pronajímatele**  
+   - Nahoře seznam všech nemovitostí daného pronajímatele (max 10 řádků + scroll).  
+   - Dole detail první nemovitosti: formulář nemovitosti + její části (přílohy, systém…).  
+   - Klik na jinou nemovitost v seznamu přepne detail dole.
+
+3. **Jednotky**  
+   - Seznam všech jednotek napojených přes nemovitosti daného pronajímatele.  
+   - Dole detail jednotky (formulář jednotky).
+
+4. **Nájemníci**  
+   - Seznam nájemníků napojených přes smlouvy.
+   - Dole detail nájemníka.
+
+5. **Smlouvy**  
+   - Seznam smluv (aktivních i archivovaných dle filtru).
+   - Dole detail smlouvy.
+
+6. **Platby / Finance**  
+   - Seznam plateb, případně agregované finanční údaje.  
+   - Dole detail platby / přehled.
+
+Konkrétní počet záložek je řízen konfigurací modulu, ale logika je vždy stejná: **záložka = seznam + detail**.
+
+---
+
+### 4.2 Detail Nemovitosti
+
+Cesta: `Domů > Nemovitosti > Přehled > Admin budova Beta`
+
+Záložky:
+
+1. **Nemovitost (hlavní karta)**  
+   - Základní údaje nemovitosti,  
+   - Přílohy,  
+   - Systémové informace.
+
+2. **Pronajímatel**  
+   - Seznam pronajímatelů (typicky jedna položka).
+   - Dole detail pronajímatele.
+
+3. **Jednotky**  
+   - Seznam všech jednotek této nemovitosti (max 10 řádků).  
+   - Dole detail vybrané jednotky.
+
+4. **Nájemníci**  
+   - Seznam nájemníků (odvozeno přes jednotky a smlouvy).
+   - Dole detail nájemníka.
+
+5. **Smlouvy**  
+   - Seznam smluv vztahujících se k této nemovitosti.
+   - Dole detail smlouvy.
+
+6. **Platby / Finance**  
+   - Seznam plateb nebo finanční přehled pro danou nemovitost.
+   - Dole detail platby / přehled.
+
+---
+
+## 5. Sidebar (blok 8)
+
+- Levý sloupec, vždy viditelný.
+- Obsahuje:
+  - hlavní moduly (Uživatelé, Pronajímatelé, Nemovitosti, Jednotky, Nájemníci, Smlouvy, Služby, Platby, Finance, Energie, Dokumenty, Komunikace…),
+  - jejich podmoduly a přednastavené přehledy,
+  - případné „průvodce“ (wizard) a správu číselníků.
+- Sidebar se **nemění podle detailu**, pouze zvýrazňuje aktivní modul a aktivní přehled.
+
+---
+
+## 6. Common actions (blok 4)
+
+Standardní sadu ikon/akcí je potřeba držet jednotně:
+
+- Editace entity,
+- Kopie / duplikace,
+- Archivace / smazání (podle pravidel modulu),
+- Přidání přílohy,
+- Případně další akce specifické pro modul.
+
+Akce se vždy vztahují k **aktuálně vybrané entitě** (detail, nikoli k seznamu jako celku).
+
+---
+
+## 7. JSON konfigurace modulů
+
+Konfigurace modulů, přehledů, hlavní karty a vazeb je popsána v souboru `modules.config.json`.  
+Struktura viz samostatná sekce v dokumentaci nebo příklad v tomto README.
+
+---
+
+## 8. Diagramy
+
+Pro lepší představu jsou v dokumentaci použity diagramy v MERMAID:
+
+- **Vazby entit** (Pronajímatel, Nemovitost, Jednotka, Nájemník, Smlouva, Platba, Dokument, Energie, …).
+- **Layout obrazovky** (bloky 1–9).
+
+Tyto diagramy lze vykreslit přímo v GitHubu nebo jiném nástroji podporujícím Mermaid.
+
 
 **Verze:** v5  
 **Poslední aktualizace:** 2025-10-20
