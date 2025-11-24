@@ -308,6 +308,190 @@ Pokud záložka nemá data → hlášení **„Tato entita nemá data v této ka
 - Editace, přílohy a systémové informace jsou jednotné.
 
 ---
+# UI specifikace – Mobilní rozhraní  
+### Aplikace Pronajímatel v5 → v6 (10 záložek + hlavní karta + vazby)
+
+Tento dokument definuje chování celé aplikace na mobilních zařízeních (iPhone / Android).  
+Cílem je zajistit:
+
+- plnou funkčnost všech 10 záložek,
+- přehledné zobrazení hlavní karty entity,
+- jednoduché zobrazení vazeb (list + detail),
+- funkční přílohy,
+- minimalizaci ztráty prostoru na malé obrazovce,
+- konzistentní UX napříč aplikací.
+
+---
+
+# 1. Hlavní rozdíly oproti desktopu
+
+Na mobilu se aplikační rozhraní přepne do **mobily optimalizovaného režimu**, kde:
+
+- Sidebar je skrytý,
+- 10 záložek je scrollovatelných horizontálně,
+- dvousloupcové formuláře se změní na jednosloupcové,
+- obrazovky „list + detail“ se zobrazují postupně (nejdřív list → pak detail),
+- přílohy se otevírají přes celou obrazovku,
+- všechny akce jsou dostupné z jednoho vrchního pruhu.
+
+---
+
+# 2. Sidebar (blok 8)
+
+Na mobilu se **nezobrazuje trvale**.  
+Je schovaný v levé části a otevře se pomocí tlačítka ☰ (hamburger menu):
+
+- zobrazí se přes celou obrazovku,
+- obsahuje seznam modulů,
+- po výběru se menu zavře.
+
+Sidebar se NEZOBRAZUJE společně s detailem entity → maximalizuje se pracovní prostor.
+
+---
+
+# 3. Horní lišta (bloky 1 + 3)
+
+Mobilní horní lišta obsahuje:
+
+- vlevo: **☰ (menu)** + **logo / název modulu**
+- vpravo: **home actions**
+  - 🔍 hledání  
+  - 🔔 notifikace  
+  - 👤 uživatel  
+
+Horní panel je úzký, maximalizuje místo pro obsah.
+
+---
+
+# 4. Breadcrumbs (blok 2)
+
+Breadcrumbs se zobrazují takto:
+
+- jeden řádek,
+- posuvný horizontálně,
+- zkrácený tvar (např. „… > Nemovitosti > A-101“),
+- klikatelné prvky.
+
+Uživatel má jasný přehled, kde se nachází.
+
+---
+
+# 5. Zobrazení 10 záložek
+
+## 5.1 Pevné pořadí záložek
+
+Mobil zobrazuje stejné pořadí jako desktop:
+
+1. Pronajímatel  
+2. Nemovitosti  
+3. Jednotky  
+4. Nájemníci  
+5. Smlouvy  
+6. Služby  
+7. Platby  
+8. Finance  
+9. Měřidla  
+10. Dokumenty
+
+## 5.2 Chování na mobilu
+
+- záložky jsou **scrollovatelná lišta** (horizontálně),
+- aktivní záložka je zvýrazněná,
+- text + ikona (kvůli úspoře místa),
+- záložky jsou vždy viditelné.
+
+Pokud záložka nemá data:
+
+- zobrazí se prázdný list,
+- nahoře text: **„Tato entita nemá data v této kategorii.“**
+
+---
+
+# 6. Hlavní karta entity (blok 6)
+
+Toto je klíčová část UX.
+
+### Co je hlavní karta?
+
+**Záložka odpovídající modulu, ze kterého uživatel přišel.**
+
+Příklady:
+
+- pokud uživatel přišel z přehledu Smluv → hlavní karta = záložka 5 Smlouvy,  
+- přišel z přehledu Nemovitostí → záložka 2 Nemovitosti,  
+- přišel z přehledu Jednotek → záložka 3 Jednotky,  
+- atd.
+
+### Obsah hlavní karty:
+
+1. Formulář základních údajů (jednosloupcový na mobilu)  
+2. Sekce specifické pro entitu  
+3. Přílohy (s možností archivace)  
+4. Systémové informace  
+
+### Formuláře jsou vždy jednosloupcové.  
+Tím se zaručuje vysoká čitelnost i na malém displeji.
+
+---
+
+# 7. Vedlejší záložky (bloky 1–10 kromě hlavní karty)
+
+Na desktopu se zobrazují jako **list + detail vedle sebe**.  
+Na mobilu toto není možné → proto:
+
+## 7.1 SPRÁVNÉ MOBILNÍ CHOVÁNÍ
+
+### Krok 1 – LIST  
+- zobrazí se seznam (max. 10 řádků, scroll),
+- každý řádek je vysoký a snadno kliknutelný,
+- nahoře filtr.
+
+### Krok 2 – DETAIL  
+- po kliknutí na řádek → zobrazí se detail přes celou obrazovku,
+- nahoře tlačítko „← zpět na seznam“.
+
+## 7.2 Výhody tohoto řešení
+
+- nejlepší praxe v mobilních aplikacích,
+- jednoduché ovládání,
+- maximální přehlednost,
+- žádné mačkání dvou panelů na malý displej.
+
+---
+
+# 8. Přílohy (blok Dokumenty + sekce v hlavní kartě)
+
+Na mobilní verzi:
+
+- seznam příloh = velké řádky,
+- miniatura obrázku, název, velikost, datum,
+- klik zobrazí náhled přílohy přes celou obrazovku,
+- tlačítko „Přidat přílohu“ otevře galerie / fotoaparát.
+
+## 8.1 Pravidla
+
+- přílohy se **nemazají** → archivují,
+- archivace je dostupná ve filtru,
+- verze dokumentů budou řešeny v budoucnu.
+
+---
+
+# 9. Systémové informace
+
+Zobrazují se:
+
+- až úplně dole,
+- menším písmem,
+- typicky:
+  - datum vytvoření,
+  - datum změny,
+  - kdo vytvořil,
+  - archivace ano/ne.
+
+---
+
+# 10. Kompletní mobilní obrazovka – struktura
+
 
 # Konec dokumentace
 
