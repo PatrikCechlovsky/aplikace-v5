@@ -4,6 +4,7 @@ const path = require("path");
 const OUTPUT_FILE = "v5_summary.txt";
 const MAX_PREVIEW_LINES = 10;
 const ALLOWED_EXT = [".js", ".ts", ".tsx", ".json", ".md", ".txt"];
+const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "build", "coverage", "archive"];
 
 let result = "";
 
@@ -33,6 +34,7 @@ function summarizeFile(filePath) {
 
 function walkDir(dirPath) {
   fs.readdirSync(dirPath).forEach((file) => {
+    if (EXCLUDED_DIRS.includes(file)) return;
     const fullPath = path.join(dirPath, file);
     if (fs.lstatSync(fullPath).isDirectory()) {
       walkDir(fullPath);
